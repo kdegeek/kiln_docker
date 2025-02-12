@@ -13,6 +13,7 @@ from kiln_ai.datamodel.basemodel import (
 )
 from kiln_ai.datamodel.datamodel_enums import Priority, TaskOutputRatingType
 from kiln_ai.datamodel.dataset_split import DatasetSplit
+from kiln_ai.datamodel.eval import Eval
 from kiln_ai.datamodel.json_schema import JsonObjectSchema, schema_from_json_str
 from kiln_ai.datamodel.prompt import Prompt
 from kiln_ai.datamodel.task_run import TaskRun
@@ -42,6 +43,7 @@ class Task(
         "dataset_splits": DatasetSplit,
         "finetunes": Finetune,
         "prompts": Prompt,
+        "evals": Eval,
     },
 ):
     """
@@ -90,3 +92,6 @@ class Task(
 
     def prompts(self, readonly: bool = False) -> list[Prompt]:
         return super().prompts(readonly=readonly)  # type: ignore
+
+    def evals(self, readonly: bool = False) -> list[Eval]:
+        return super().evals(readonly=readonly)  # type: ignore

@@ -63,4 +63,5 @@ __all__ = [
     "TaskOutputRating",
     "StructuredOutputMode",
     "FinetuneDataStrategy",
+    "Eval",
 ]
