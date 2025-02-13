@@ -16,17 +16,6 @@ def mock_task():
     return Task(name="Test Task", instruction="Test instruction")
 
 
-@pytest.fixture
-def valid_eval_config_data():
-    return {
-        "name": "Test Config",
-        "model_provider": "openai",
-        "model_name": "gpt-4",
-        "config_type": EvalConfigType.g_eval,
-        "properties": {"g_eval_steps": ["step1", "step2"]},
-    }
-
-
 def test_eval_state_values():
     assert EvalState.enabled == "enabled"
     assert EvalState.disabled == "disabled"
