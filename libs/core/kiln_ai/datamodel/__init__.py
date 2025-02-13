@@ -11,6 +11,7 @@ User docs: https://docs.getkiln.ai/developers/kiln-datamodel
 
 from __future__ import annotations
 
+from kiln_ai.datamodel import dataset_split, eval, strict_mode
 from kiln_ai.datamodel.datamodel_enums import (
     FinetuneDataStrategy,
     FineTuneStatusType,
@@ -43,6 +44,7 @@ from kiln_ai.datamodel.task_run import (
 __all__ = [
     "strict_mode",
     "dataset_split",
+    "eval",
     "Task",
     "Project",
     "TaskRun",
@@ -63,5 +65,4 @@ __all__ = [
     "TaskOutputRating",
     "StructuredOutputMode",
     "FinetuneDataStrategy",
-    "Eval",
 ]
