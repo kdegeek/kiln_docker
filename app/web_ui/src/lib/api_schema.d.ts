@@ -1179,7 +1179,7 @@ export interface components {
          *     Where models have instruct and raw versions, instruct is default and raw is specified.
          * @enum {string}
          */
-        ModelName: "llama_3_1_8b" | "llama_3_1_70b" | "llama_3_1_405b" | "llama_3_2_1b" | "llama_3_2_3b" | "llama_3_2_11b" | "llama_3_2_90b" | "llama_3_3_70b" | "gpt_4o_mini" | "gpt_4o" | "phi_3_5" | "phi_4" | "mistral_large" | "mistral_nemo" | "gemma_2_2b" | "gemma_2_9b" | "gemma_2_27b" | "claude_3_5_haiku" | "claude_3_5_sonnet" | "gemini_1_5_flash" | "gemini_1_5_flash_8b" | "gemini_1_5_pro" | "gemini_2_0_flash" | "nemotron_70b" | "mixtral_8x7b" | "qwen_2p5_7b" | "qwen_2p5_72b" | "deepseek_3" | "deepseek_r1" | "mistral_small_3" | "deepseek_r1_distill_qwen_32b" | "deepseek_r1_distill_llama_70b" | "deepseek_r1_distill_qwen_14b";
+        ModelName: "llama_3_1_8b" | "llama_3_1_70b" | "llama_3_1_405b" | "llama_3_2_1b" | "llama_3_2_3b" | "llama_3_2_11b" | "llama_3_2_90b" | "llama_3_3_70b" | "gpt_4o_mini" | "gpt_4o" | "phi_3_5" | "phi_4" | "mistral_large" | "mistral_nemo" | "gemma_2_2b" | "gemma_2_9b" | "gemma_2_27b" | "claude_3_5_haiku" | "claude_3_5_sonnet" | "gemini_1_5_flash" | "gemini_1_5_flash_8b" | "gemini_1_5_pro" | "gemini_2_0_flash" | "nemotron_70b" | "mixtral_8x7b" | "qwen_2p5_7b" | "qwen_2p5_72b" | "deepseek_3" | "deepseek_r1" | "mistral_small_3" | "deepseek_r1_distill_qwen_32b" | "deepseek_r1_distill_llama_70b" | "deepseek_r1_distill_qwen_14b" | "deepseek_r1_distill_qwen_1p5b" | "deepseek_r1_distill_qwen_7b" | "deepseek_r1_distill_llama_8b";
         /** OllamaConnection */
         OllamaConnection: {
             /** Message */
@@ -1269,9 +1269,29 @@ export interface components {
         };
         /**
          * Prompt
-         * @description A prompt for a task.
+         * @description A prompt for a task. This is the custom prompt parented by a task.
          */
         Prompt: {
+            /**
+             * Name
+             * @description A name for this entity.
+             */
+            name: string;
+            /**
+             * Generator Id
+             * @description The id of the generator that created this prompt.
+             */
+            generator_id?: string | null;
+            /**
+             * Prompt
+             * @description The prompt for the task.
+             */
+            prompt: string;
+            /**
+             * Chain Of Thought Instructions
+             * @description Instructions for the model 'thinking' about the requirement prior to answering. Used for chain of thought style prompting. COT will not be used unless this is provided.
+             */
+            chain_of_thought_instructions?: string | null;
             /**
              * V
              * @default 1
@@ -1288,21 +1308,6 @@ export interface components {
             created_at?: string;
             /** Created By */
             created_by?: string;
-            /**
-             * Name
-             * @description A name for this entity.
-             */
-            name: string;
-            /**
-             * Prompt
-             * @description The prompt for the task.
-             */
-            prompt: string;
-            /**
-             * Chain Of Thought Instructions
-             * @description Instructions for the model 'thinking' about the requirement prior to answering. Used for chain of thought style prompting. COT will not be used unless this is provided.
-             */
-            chain_of_thought_instructions?: string | null;
             /** Model Type */
             readonly model_type: string;
         };
@@ -1328,8 +1333,6 @@ export interface components {
         PromptGenerator: {
             /** Id */
             id: string;
-            /** Ui Id */
-            ui_id: string;
             /** Short Description */
             short_description: string;
             /** Description */

@@ -660,7 +660,7 @@ def mock_prompt_builder():
     builder.build_prompt.return_value = "Generated system message"
 
     with unittest.mock.patch(
-        "app.desktop.studio_server.finetune_api.prompt_builder_from_ui_name",
+        "app.desktop.studio_server.finetune_api.prompt_builder_from_id",
         return_value=builder,
     ) as mock:
         yield mock, builder

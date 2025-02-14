@@ -1,8 +1,12 @@
 import json
 from abc import ABCMeta, abstractmethod
-from typing import Dict
+from enum import StrEnum
+from typing import Annotated, Dict
+
+from pydantic import AfterValidator
 
 from kiln_ai.datamodel import Task, TaskRun
+from kiln_ai.utils.exhaustive_error import raise_exhaustive_enum_error
 from kiln_ai.utils.formatting import snake_case
 
 
@@ -337,25 +341,67 @@ class FineTunePromptBuilder(BasePromptBuilder):
         return self.fine_tune_model.thinking_instructions
 
 
-# TODO P2: we end up with 2 IDs for these: the keys here (ui_name) and the prompt_builder_name from the class
-# We end up maintaining this in _prompt_generators as well.
-prompt_builder_registry = {
-    "simple_prompt_builder": SimplePromptBuilder,
-    "multi_shot_prompt_builder": MultiShotPromptBuilder,
-    "few_shot_prompt_builder": FewShotPromptBuilder,
-    "repairs_prompt_builder": RepairsPromptBuilder,
-    "simple_chain_of_thought_prompt_builder": SimpleChainOfThoughtPromptBuilder,
-    "few_shot_chain_of_thought_prompt_builder": FewShotChainOfThoughtPromptBuilder,
-    "multi_shot_chain_of_thought_prompt_builder": MultiShotChainOfThoughtPromptBuilder,
-}
+# Generators that can take any task and build a prompt
+class PromptGenerators(StrEnum):
+    SIMPLE = "simple_prompt_builder"
+    MULTI_SHOT = "multi_shot_prompt_builder"
+    FEW_SHOT = "few_shot_prompt_builder"
+    REPAIRS = "repairs_prompt_builder"
+    SIMPLE_CHAIN_OF_THOUGHT = "simple_chain_of_thought_prompt_builder"
+    FEW_SHOT_CHAIN_OF_THOUGHT = "few_shot_chain_of_thought_prompt_builder"
+    MULTI_SHOT_CHAIN_OF_THOUGHT = "multi_shot_chain_of_thought_prompt_builder"
+
+
+prompt_generator_values = [pg.value for pg in PromptGenerators]
+
+
+# Our prompt ID can be one of:
+# - A saved prompt ID
+# - A fine-tune prompt ID
+# - A prompt generator name
+PromptId = Annotated[
+    str,
+    AfterValidator(lambda v: _check_prompt_id(v)),
+]
+"""
+A pydantic type that validates strings containing a valid prompt ID. 
+"""
+
+
+def _check_prompt_id(id: str) -> str:
+    """
+    Check that the prompt ID is valid.
+    """
+    if id in prompt_generator_values:
+        return id
+
+    if id.startswith("id::"):
+        # check it has 4 parts divided by :: -- 'id::project_id::task_id::prompt_id'
+        parts = id.split("::")
+        if len(parts) != 4:
+            raise ValueError(
+                f"Invalid saved prompt ID: {id}. Expected format: 'id::[project_id]::[task_id]::[prompt_id]'."
+            )
+        return id
+
+    if id.startswith("fine_tune_prompt::"):
+        # check it had a fine_tune_id after the :: -- 'fine_tune_prompt::fine_tune_id'
+        fine_tune_id = id[18:]
+        if len(fine_tune_id) == 0:
+            raise ValueError(
+                f"Invalid fine-tune prompt ID: {id}. Expected format: 'fine_tune_prompt::[fine_tune_id]'."
+            )
+        return id
+
+    raise ValueError(f"Invalid prompt ID: {id}")
 
 
 # Our UI has some names that are not the same as the class names, which also hint parameters.
-def prompt_builder_from_ui_name(ui_name: str, task: Task) -> BasePromptBuilder:
+def prompt_builder_from_id(prompt_id: str, task: Task) -> BasePromptBuilder:
     """Convert a name used in the UI to the corresponding prompt builder class.
 
     Args:
-        ui_name (str): The UI name for the prompt builder type.
+        prompt_id (str): The prompt ID.
 
     Returns:
         type[BasePromptBuilder]: The corresponding prompt builder class.
@@ -365,29 +411,35 @@ def prompt_builder_from_ui_name(ui_name: str, task: Task) -> BasePromptBuilder:
     """
 
     # Saved prompts are prefixed with "id::"
-    if ui_name.startswith("id::"):
-        prompt_id = ui_name[4:]
+    if prompt_id.startswith("id::"):
+        prompt_id = prompt_id[4:]
         return SavedPromptBuilder(task, prompt_id)
 
     # Fine-tune prompts are prefixed with "fine_tune_prompt::"
-    if ui_name.startswith("fine_tune_prompt::"):
-        fine_tune_id = ui_name[18:]
-        return FineTunePromptBuilder(task, fine_tune_id)
+    if prompt_id.startswith("fine_tune_prompt::"):
+        prompt_id = prompt_id[18:]
+        return FineTunePromptBuilder(task, prompt_id)
 
-    match ui_name:
-        case "basic":
+    # Check if the prompt_id matches any enum value
+    if prompt_id not in [member.value for member in PromptGenerators]:
+        raise ValueError(f"Unknown prompt generator: {prompt_id}")
+    typed_prompt_generator = PromptGenerators(prompt_id)
+
+    match typed_prompt_generator:
+        case PromptGenerators.SIMPLE:
             return SimplePromptBuilder(task)
-        case "few_shot":
+        case PromptGenerators.FEW_SHOT:
             return FewShotPromptBuilder(task)
-        case "many_shot":
+        case PromptGenerators.MULTI_SHOT:
             return MultiShotPromptBuilder(task)
-        case "repairs":
+        case PromptGenerators.REPAIRS:
             return RepairsPromptBuilder(task)
-        case "simple_chain_of_thought":
+        case PromptGenerators.SIMPLE_CHAIN_OF_THOUGHT:
             return SimpleChainOfThoughtPromptBuilder(task)
-        case "few_shot_chain_of_thought":
+        case PromptGenerators.FEW_SHOT_CHAIN_OF_THOUGHT:
             return FewShotChainOfThoughtPromptBuilder(task)
-        case "multi_shot_chain_of_thought":
+        case PromptGenerators.MULTI_SHOT_CHAIN_OF_THOUGHT:
             return MultiShotChainOfThoughtPromptBuilder(task)
         case _:
-            raise ValueError(f"Unknown prompt builder: {ui_name}")
+            # Type checking will find missing cases
+            raise_exhaustive_enum_error(typed_prompt_generator)

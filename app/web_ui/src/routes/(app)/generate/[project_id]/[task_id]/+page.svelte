@@ -28,7 +28,7 @@
   $: project_id = $page.params.project_id
   $: task_id = $page.params.task_id
 
-  let prompt_method = "basic"
+  let prompt_method = "simple_prompt_builder"
   let model: string = $ui_state.selected_model
 
   // Shared vars for all nodes, so UI saves last used value

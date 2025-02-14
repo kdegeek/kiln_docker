@@ -27,7 +27,7 @@ from kiln_ai.datamodel.finetune import (
     Finetune,
 )
 from kiln_ai.datamodel.project import Project
-from kiln_ai.datamodel.prompt import Prompt
+from kiln_ai.datamodel.prompt import BasePrompt, Prompt
 from kiln_ai.datamodel.task import Task, TaskRequirement
 from kiln_ai.datamodel.task_output import (
     DataSource,
@@ -61,6 +61,7 @@ __all__ = [
     "DatasetSplit",
     "RequirementRating",
     "TaskRequirement",
+    "BasePrompt",
     "Prompt",
     "TaskOutputRating",
     "StructuredOutputMode",

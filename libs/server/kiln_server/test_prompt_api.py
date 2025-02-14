@@ -3,7 +3,7 @@ from unittest.mock import patch
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from kiln_ai.adapters.prompt_builders import prompt_builder_registry
+from kiln_ai.adapters.prompt_builders import PromptGenerators
 from kiln_ai.datamodel import Project, Prompt, Task
 
 from kiln_server.custom_errors import connect_custom_errors
@@ -116,18 +116,22 @@ def test_prompt_generators_content():
     from kiln_server.prompt_api import _prompt_generators
 
     # Test a few key generators
-    basic = next(g for g in _prompt_generators if g.id == "basic")
+    basic = next(g for g in _prompt_generators if g.id == "simple_prompt_builder")
     assert basic.chain_of_thought is False
     assert "zero-shot" in basic.description.lower()
 
-    cot = next(g for g in _prompt_generators if g.id == "simple_chain_of_thought")
+    cot = next(
+        g
+        for g in _prompt_generators
+        if g.id == "simple_chain_of_thought_prompt_builder"
+    )
     assert cot.chain_of_thought is True
     assert "Chain of Thought" in cot.name
 
 
-# If we fix the TODO about maintaining these in 2 places we can remove this test, but this ensures we don't mess it up until then
-def test_all_ui_ids_are_covered():
-    generator_keys = prompt_builder_registry.keys()
-    api_list = [g.ui_id for g in _prompt_generators]
+# Check our nice UI list with descriptions covers all our generators
+def test_all_ids_are_covered():
+    generators = [e.value for e in PromptGenerators]
+    api_list = [g.id for g in _prompt_generators]
 
-    assert set(api_list) == set(generator_keys)
+    assert set(api_list) == set(generators)

@@ -1,6 +1,7 @@
 import json
 
 import pytest
+from pydantic import BaseModel, ValidationError
 
 from kiln_ai.adapters.model_adapters.base_adapter import AdapterInfo, BaseAdapter
 from kiln_ai.adapters.model_adapters.test_structured_output import (
@@ -12,12 +13,14 @@ from kiln_ai.adapters.prompt_builders import (
     FineTunePromptBuilder,
     MultiShotChainOfThoughtPromptBuilder,
     MultiShotPromptBuilder,
+    PromptGenerators,
+    PromptId,
     RepairsPromptBuilder,
     SavedPromptBuilder,
     SimpleChainOfThoughtPromptBuilder,
     SimplePromptBuilder,
     chain_of_thought_prompt,
-    prompt_builder_from_ui_name,
+    prompt_builder_from_id,
 )
 from kiln_ai.adapters.test_prompt_adaptors import build_test_task
 from kiln_ai.datamodel import (
@@ -320,48 +323,53 @@ def test_prompt_builder_name():
     assert RepairsPromptBuilder.prompt_builder_name() == "repairs_prompt_builder"
 
 
-def test_prompt_builder_from_ui_name(task_with_examples):
+def test_prompt_builder_from_id(task_with_examples):
     task = task_with_examples
-    assert isinstance(prompt_builder_from_ui_name("basic", task), SimplePromptBuilder)
     assert isinstance(
-        prompt_builder_from_ui_name("few_shot", task), FewShotPromptBuilder
+        prompt_builder_from_id("simple_prompt_builder", task), SimplePromptBuilder
     )
     assert isinstance(
-        prompt_builder_from_ui_name("many_shot", task), MultiShotPromptBuilder
+        prompt_builder_from_id("few_shot_prompt_builder", task),
+        FewShotPromptBuilder,
     )
     assert isinstance(
-        prompt_builder_from_ui_name("repairs", task), RepairsPromptBuilder
+        prompt_builder_from_id("multi_shot_prompt_builder", task),
+        MultiShotPromptBuilder,
     )
     assert isinstance(
-        prompt_builder_from_ui_name("simple_chain_of_thought", task),
+        prompt_builder_from_id("repairs_prompt_builder", task),
+        RepairsPromptBuilder,
+    )
+    assert isinstance(
+        prompt_builder_from_id("simple_chain_of_thought_prompt_builder", task),
         SimpleChainOfThoughtPromptBuilder,
     )
     assert isinstance(
-        prompt_builder_from_ui_name("few_shot_chain_of_thought", task),
+        prompt_builder_from_id("few_shot_chain_of_thought_prompt_builder", task),
         FewShotChainOfThoughtPromptBuilder,
     )
     assert isinstance(
-        prompt_builder_from_ui_name("multi_shot_chain_of_thought", task),
+        prompt_builder_from_id("multi_shot_chain_of_thought_prompt_builder", task),
         MultiShotChainOfThoughtPromptBuilder,
     )
 
-    with pytest.raises(ValueError, match="Unknown prompt builder: invalid_name"):
-        prompt_builder_from_ui_name("invalid_name", task)
+    with pytest.raises(ValueError, match="Unknown prompt generator: invalid_name"):
+        prompt_builder_from_id("invalid_name", task)
 
     with pytest.raises(ValueError, match="Prompt ID not found: 123"):
-        prompt_builder_from_ui_name("id::123", task)
+        prompt_builder_from_id("id::123", task)
 
     with pytest.raises(
         ValueError,
         match="Invalid fine-tune ID format. Expected 'project_id::task_id::fine_tune_id'",
     ):
-        prompt_builder_from_ui_name("fine_tune_prompt::123", task)
+        prompt_builder_from_id("fine_tune_prompt::123", task)
 
     with pytest.raises(
         ValueError,
         match="Fine-tune ID not found",
     ):
-        prompt_builder_from_ui_name("fine_tune_prompt::123::456::789", task)
+        prompt_builder_from_id("fine_tune_prompt::123::456::789", task)
 
     prompt = Prompt(
         name="test_prompt_name",
@@ -370,7 +378,7 @@ def test_prompt_builder_from_ui_name(task_with_examples):
         parent=task,
     )
     prompt.save_to_file()
-    pb = prompt_builder_from_ui_name("id::" + prompt.id, task)
+    pb = prompt_builder_from_id("id::" + prompt.id, task)
     assert isinstance(pb, SavedPromptBuilder)
     assert pb.prompt_id() == prompt.id
     assert pb.build_prompt(include_json_instructions=False) == "test_prompt"
@@ -390,7 +398,7 @@ def test_prompt_builder_from_ui_name(task_with_examples):
     nested_fine_tune_id = (
         task_with_examples.parent.id + "::" + task_with_examples.id + "::" + finetune.id
     )
-    pb = prompt_builder_from_ui_name(
+    pb = prompt_builder_from_id(
         "fine_tune_prompt::" + nested_fine_tune_id,
         task_with_examples,
     )
@@ -587,3 +595,86 @@ def test_build_prompt_with_json_instructions(tmp_path):
     assert task.instruction in prompt_with_json
     for requirement in task.requirements:
         assert requirement.instruction in prompt_with_json
+
+
+# Test model to validate the PromptId type
+class TestModel(BaseModel):
+    prompt_id: PromptId
+
+
+def test_valid_prompt_generator_names():
+    """Test that valid prompt generator names are accepted"""
+    for generator in PromptGenerators:
+        model = TestModel(prompt_id=generator.value)
+        assert model.prompt_id == generator.value
+
+
+def test_valid_saved_prompt_id():
+    """Test that valid saved prompt IDs are accepted"""
+    valid_id = "id::project_123::task_456::prompt_789"
+    model = TestModel(prompt_id=valid_id)
+    assert model.prompt_id == valid_id
+
+
+def test_valid_fine_tune_prompt_id():
+    """Test that valid fine-tune prompt IDs are accepted"""
+    valid_id = "fine_tune_prompt::ft_123456"
+    model = TestModel(prompt_id=valid_id)
+    assert model.prompt_id == valid_id
+
+
+@pytest.mark.parametrize(
+    "invalid_id",
+    [
+        pytest.param("id::project_123::task_456", id="missing_prompt_id"),
+        pytest.param(
+            "id::project_123::task_456::prompt_789::extra", id="too_many_parts"
+        ),
+        pytest.param("id::", id="empty_parts"),
+        pytest.param("id::project_123", id="too_few_parts"),
+    ],
+)
+def test_invalid_saved_prompt_id_format(invalid_id):
+    """Test that invalid saved prompt ID formats are rejected"""
+    with pytest.raises(ValidationError, match="Invalid saved prompt ID"):
+        TestModel(prompt_id=invalid_id)
+
+
+@pytest.mark.parametrize(
+    "invalid_id,expected_error",
+    [
+        ("fine_tune_prompt::", "Invalid fine-tune prompt ID: fine_tune_prompt::"),
+        ("fine_tune_prompt", "Invalid prompt ID: fine_tune_prompt"),
+    ],
+)
+def test_invalid_fine_tune_prompt_id_format(invalid_id, expected_error):
+    """Test that invalid fine-tune prompt ID formats are rejected"""
+    with pytest.raises(ValidationError, match=expected_error):
+        TestModel(prompt_id=invalid_id)
+
+
+def test_completely_invalid_formats():
+    """Test that completely invalid formats are rejected"""
+    invalid_ids = [
+        "",  # Empty string
+        "invalid_format",  # Random string
+        "id:wrong_format",  # Almost correct but wrong separator
+        "fine_tune:wrong_format",  # Almost correct but wrong prefix
+        ":::",  # Just separators
+    ]
+
+    for invalid_id in invalid_ids:
+        with pytest.raises(ValidationError, match="Invalid prompt ID"):
+            TestModel(prompt_id=invalid_id)
+
+
+def test_prompt_generator_case_sensitivity():
+    """Test that prompt generator names are case sensitive"""
+    # Take first generator and modify its case
+    first_generator = next(iter(PromptGenerators)).value
+    wrong_case = first_generator.upper()
+    if wrong_case == first_generator:
+        wrong_case = first_generator.lower()
+
+    with pytest.raises(ValidationError):
+        TestModel(prompt_id=wrong_case)

@@ -6,7 +6,7 @@ from kiln_ai.adapters.data_gen.data_gen_task import (
     DataGenSampleTask,
     DataGenSampleTaskInput,
 )
-from kiln_ai.adapters.prompt_builders import prompt_builder_from_ui_name
+from kiln_ai.adapters.prompt_builders import PromptId, prompt_builder_from_id
 from kiln_ai.datamodel import DataSource, DataSourceType, TaskRun
 from kiln_server.run_api import model_provider_from_string
 from kiln_server.task_api import task_from_id
@@ -60,7 +60,7 @@ class DataGenSaveSamplesApiInput(BaseModel):
     )
     output_model_name: str = Field(description="The name of the model to use")
     output_provider: str = Field(description="The provider of the model to use")
-    prompt_method: str = Field(
+    prompt_method: PromptId = Field(
         description="The prompt method used to generate the output"
     )
 
@@ -122,7 +122,7 @@ def connect_data_gen_api(app: FastAPI):
     ) -> TaskRun:
         task = task_from_id(project_id, task_id)
 
-        prompt_builder = prompt_builder_from_ui_name(sample.prompt_method, task)
+        prompt_builder = prompt_builder_from_id(sample.prompt_method, task)
 
         tags = ["synthetic"]
         if session_id:

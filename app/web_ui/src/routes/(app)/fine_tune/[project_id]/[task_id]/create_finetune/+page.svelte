@@ -31,7 +31,7 @@
   let finetune_custom_system_prompt = ""
   let finetune_custom_thinking_instructions =
     "Think step by step, explaining your reasoning."
-  let system_prompt_method = "basic"
+  let system_prompt_method = "simple_prompt_builder"
 
   $: project_id = $page.params.project_id
   $: task_id = $page.params.task_id
