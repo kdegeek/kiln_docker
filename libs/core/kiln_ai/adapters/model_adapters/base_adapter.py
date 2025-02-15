@@ -20,6 +20,12 @@ from kiln_ai.utils.config import Config
 
 
 @dataclass
+class AdapterConfig:
+    allow_saving: bool = True
+    top_logprobs: int | None = None
+
+
+@dataclass
 class AdapterInfo:
     adapter_name: str
     model_name: str
@@ -52,6 +58,7 @@ class BaseAdapter(metaclass=ABCMeta):
         model_provider_name: str,
         prompt_builder: BasePromptBuilder | None = None,
         tags: list[str] | None = None,
+        config: AdapterConfig | None = None,
     ):
         self.prompt_builder = prompt_builder or SimplePromptBuilder(kiln_task)
         self.kiln_task = kiln_task
@@ -61,6 +68,7 @@ class BaseAdapter(metaclass=ABCMeta):
         self.model_name = model_name
         self.model_provider_name = model_provider_name
         self._model_provider: KilnModelProvider | None = None
+        self.base_adapter_config = config or AdapterConfig()
 
     def model_provider(self) -> KilnModelProvider:
         """
@@ -94,8 +102,15 @@ class BaseAdapter(metaclass=ABCMeta):
         self,
         input: Dict | str,
         input_source: DataSource | None = None,
-        allow_saving: bool = True,
     ) -> TaskRun:
+        run_output, _ = await self.invoke_returning_run_output(input, input_source)
+        return run_output
+
+    async def invoke_returning_run_output(
+        self,
+        input: Dict | str,
+        input_source: DataSource | None = None,
+    ) -> Tuple[TaskRun, RunOutput]:
         # validate input
         if self.input_schema is not None:
             if not isinstance(input, dict):
@@ -130,7 +145,7 @@ class BaseAdapter(metaclass=ABCMeta):
 
         # Save the run if configured to do so, and we have a path to save to
         if (
-            allow_saving
+            self.base_adapter_config.allow_saving
             and Config.shared().autosave_runs
             and self.kiln_task.path is not None
         ):
@@ -139,7 +154,7 @@ class BaseAdapter(metaclass=ABCMeta):
             # Clear the ID to indicate it's not persisted
             run.id = None
 
-        return run
+        return run, run_output
 
     def has_structured_output(self) -> bool:
         return self.output_schema is not None

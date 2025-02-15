@@ -1,5 +1,10 @@
+import math
+import pickle
+
 import pytest
-from kiln_ai.adapters.eval.g_eval import GEval
+from kiln_ai.adapters.eval.g_eval import TOKEN_TO_SCORE_MAP, GEval
+from kiln_ai.adapters.eval.test_g_eval_data import serialized_run_output
+from kiln_ai.adapters.model_adapters.base_adapter import RunOutput
 from kiln_ai.datamodel import (
     BasePrompt,
     DataSource,
@@ -108,18 +113,20 @@ async def test_run_g_eval(test_task, test_eval_config, test_task_run):
     # Run the evaluation
     eval_result = await g_eval.run_eval(test_task_run)
 
-    # Verify the evaluation results
-    assert isinstance(eval_result, dict)
     assert "topic_alignment" in eval_result
-    assert isinstance(eval_result["topic_alignment"], int)
-    assert 1 <= eval_result["topic_alignment"] <= 5
+    topic_alignment = eval_result["topic_alignment"]
+    assert isinstance(topic_alignment, float)
+    assert 1 <= topic_alignment <= 5
 
     assert "appropriateness" in eval_result
-    assert eval_result["appropriateness"] in ["pass", "fail"]
+    appropriateness = eval_result["appropriateness"]
+    assert isinstance(appropriateness, float)
+    assert appropriateness >= 0.0 and appropriateness <= 1.0
 
     assert "overall_rating" in eval_result
-    assert isinstance(eval_result["overall_rating"], int)
-    assert 1 <= eval_result["overall_rating"] <= 5
+    overall = eval_result["overall_rating"]
+    assert isinstance(overall, float)
+    assert 1.0 <= overall <= 5.0
 
 
 @pytest.mark.paid
@@ -132,13 +139,198 @@ async def test_run_g_eval_e2e(test_task, test_eval_config, test_task_run):
 
     # Verify the evaluation results
     assert isinstance(eval_result, dict)
+
     assert "topic_alignment" in eval_result
-    assert isinstance(eval_result["topic_alignment"], int)
-    assert 1 <= eval_result["topic_alignment"] <= 5
+    topic_alignment = eval_result["topic_alignment"]
+    assert isinstance(topic_alignment, float)
+    assert 1 <= topic_alignment <= 5
 
     assert "appropriateness" in eval_result
-    assert eval_result["appropriateness"] in ["pass", "fail"]
+    appropriateness = eval_result["appropriateness"]
+    assert isinstance(appropriateness, float)
+    assert appropriateness >= 0.0 and appropriateness <= 1.0
 
     assert "overall_rating" in eval_result
-    assert isinstance(eval_result["overall_rating"], int)
-    assert 1 <= eval_result["overall_rating"] <= 5
+    overall = eval_result["overall_rating"]
+    assert isinstance(overall, float)
+    assert 1.0 <= overall <= 5.0
+
+
+async def test_g_eval_logprobs(test_task, test_eval_config, test_task_run):
+    # Create G-Eval instance
+    run_output = pickle.loads(serialized_run_output)
+    assert isinstance(run_output, RunOutput)
+    assert run_output.output_logprobs is not None
+    g_eval = GEval(test_eval_config)
+    result = g_eval.build_g_eval_score(run_output)
+
+    assert "overall_rating" in result
+    overall = result["overall_rating"]
+    assert isinstance(overall, float)
+    assert overall >= 1.0 and overall <= 5.0
+    # Confirm weighted value, and confirm the approx isn't why it's passing
+    assert pytest.approx(overall) == 3.99752802363598
+    assert pytest.approx(overall) != 4.0
+
+    # Check topic_alignment
+    assert "topic_alignment" in result
+    topic_alignment = result["topic_alignment"]
+    assert isinstance(topic_alignment, float)
+    assert topic_alignment >= 1.0 and topic_alignment <= 5.0
+    # Confirm weighted value, and confirm the approx isn't why it's passing
+    assert pytest.approx(topic_alignment) == 4.999983298485167
+    assert pytest.approx(topic_alignment) != 5.0
+
+    # Check appropriateness
+    assert "appropriateness" in result
+    appropriateness = result["appropriateness"]
+    assert isinstance(appropriateness, float)
+    assert appropriateness >= 0.0 and appropriateness <= 1.0
+    # Fail chance so low, we need to specify the precision
+    assert pytest.approx(appropriateness, 1e-12) == 0.9999999999572222
+    assert pytest.approx(appropriateness, 1e-12) != 1.0
+
+
+def test_token_case():
+    # we assume the token is lower case in the logprobs token fuzzy matching code. This will catch if we ever add a token that's not.
+    for token in TOKEN_TO_SCORE_MAP.keys():
+        assert token.lower() == token
+
+
+def test_metric_offsets_and_search_ranges(test_eval_config):
+    g_eval = GEval(test_eval_config)
+    raw_output = (
+        '{"topic_alignment": 4, "appropriateness": "pass", "overall_rating": 5}'
+    )
+    metrics = ["topic_alignment", "appropriateness", "overall_rating"]
+
+    offsets = g_eval.metric_offsets(raw_output, metrics)
+
+    assert len(offsets) == 3
+    assert offsets["topic_alignment"] == 1  # Position after opening {
+    assert offsets["appropriateness"] == 23  # Position after "appropriateness":
+    assert offsets["overall_rating"] == 50  # Position after "overall_rating":
+
+    # Test search ranges
+
+    # Test first metric
+    start, end = g_eval.token_search_range(raw_output, "topic_alignment", offsets)
+    assert start == 16  # Position after "topic_alignment"
+    assert end == 23  # Position after "appropriateness"
+
+    # Test middle metric
+    start, end = g_eval.token_search_range(raw_output, "appropriateness", offsets)
+    assert start == 38  # Position after "appropriateness"
+    assert end == 50  # Position after "overall_rating"
+
+    # Test last metric
+    start, end = g_eval.token_search_range(raw_output, "overall_rating", offsets)
+    assert start == 64  # Position after "overall_rating"
+    assert end == len(raw_output)  # end of string
+
+
+def test_metric_offsets_invalid(test_eval_config):
+    g_eval = GEval(test_eval_config)
+    raw_output = '{"topic_alignment": 4, "topic_alignment": 5}'
+    metrics = ["topic_alignment"]
+
+    with pytest.raises(ValueError, match="should appear exactly once"):
+        g_eval.metric_offsets(raw_output, metrics)
+
+    raw_output = '{"something_else": 4}'
+    with pytest.raises(ValueError, match="should appear exactly once"):
+        g_eval.metric_offsets(raw_output, metrics)
+
+
+@pytest.mark.parametrize(
+    "token_string,expected_score",
+    [
+        # Direct matches
+        ("1", 1.0),
+        ("5", 5.0),
+        ("pass", 1.0),
+        ("fail", 0.0),
+        ("critical", -1.0),
+        # Variations with quotes and spacing
+        ('"1"', 1.0),
+        (" pass ", 1.0),
+        ("PASS", 1.0),
+        ('"FAIL"', 0.0),
+        ('"pAss"', 1.0),
+        # Invalid tokens
+        ("invalid", None),
+        ("6", None),
+        ("0", None),
+        ("", None),
+    ],
+)
+def test_score_from_token_string(test_eval_config, token_string, expected_score):
+    g_eval = GEval(test_eval_config)
+    assert g_eval.score_from_token_string(token_string) == expected_score
+
+
+def test_raw_output_from_logprobs(test_eval_config):
+    g_eval = GEval(test_eval_config)
+
+    # Create a minimal RunOutput with some logprobs
+    class MockLogprob:
+        def __init__(self, token):
+            self.token = token
+
+    class MockLogprobs:
+        def __init__(self):
+            self.content = [
+                MockLogprob('{"'),
+                MockLogprob("score"),
+                MockLogprob('": '),
+                MockLogprob("5"),
+                MockLogprob("}"),
+            ]
+
+    run_output = RunOutput(
+        output={"score": 5},
+        output_logprobs=MockLogprobs(),
+        intermediate_outputs={},
+    )
+
+    raw = g_eval.raw_output_from_logprobs(run_output)
+    assert raw == '{"score": 5}'
+
+
+def test_rating_token_to_score(test_eval_config):
+    g_eval = GEval(test_eval_config)
+
+    class MockTopLogprob:
+        def __init__(self, token, logprob):
+            self.token = token
+            self.logprob = logprob
+
+    class MockTokenLogprob:
+        def __init__(self, token, top_logprobs):
+            self.token = token
+            self.top_logprobs = [MockTopLogprob(t, lp) for t, lp in top_logprobs]
+
+    # Test single token case
+    token_logprob = MockTokenLogprob("5", [("5", 0.0)])  # log(1) = 0
+    score = g_eval.rating_token_to_score(token_logprob)
+    assert score == 5.0
+
+    # Test weighted average case
+    token_logprob = MockTokenLogprob(
+        "4",
+        [
+            ("4", math.log(0.6)),  # 60% probability
+            ("5", math.log(0.4)),  # 40% probability
+        ],
+    )
+    score = g_eval.rating_token_to_score(token_logprob)
+    assert pytest.approx(score) == 4.4  # (4 * 0.6 + 5 * 0.4)
+
+    # Test invalid token
+    token_logprob = MockTokenLogprob(":", [(":", 0.0)])
+    assert g_eval.rating_token_to_score(token_logprob) is None
+
+    # Test no valid scoring tokens
+    token_logprob = MockTokenLogprob("5", [])
+    with pytest.raises(RuntimeError, match="No valid scoring tokens found"):
+        g_eval.rating_token_to_score(token_logprob)

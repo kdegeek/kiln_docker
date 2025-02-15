@@ -2,7 +2,7 @@ from os import getenv
 
 from kiln_ai import datamodel
 from kiln_ai.adapters.ml_model_list import ModelProviderName
-from kiln_ai.adapters.model_adapters.base_adapter import BaseAdapter
+from kiln_ai.adapters.model_adapters.base_adapter import AdapterConfig, BaseAdapter
 from kiln_ai.adapters.model_adapters.langchain_adapters import LangchainAdapter
 from kiln_ai.adapters.model_adapters.openai_model_adapter import (
     OpenAICompatibleAdapter,
@@ -20,6 +20,7 @@ def adapter_for_task(
     provider: ModelProviderName,
     prompt_builder: BasePromptBuilder | None = None,
     tags: list[str] | None = None,
+    base_adapter_config: AdapterConfig | None = None,
 ) -> BaseAdapter:
     # Get the provider to run. For things like the fine-tune provider, we want to run the underlying provider
     core_provider_name = core_provider(model_name, provider)
@@ -42,6 +43,7 @@ def adapter_for_task(
                 ),
                 prompt_builder=prompt_builder,
                 tags=tags,
+                base_adapter_config=base_adapter_config,
             )
         case ModelProviderName.openai:
             return OpenAICompatibleAdapter(
@@ -53,6 +55,7 @@ def adapter_for_task(
                 ),
                 prompt_builder=prompt_builder,
                 tags=tags,
+                base_adapter_config=base_adapter_config,
             )
         case ModelProviderName.openai_compatible:
             config = openai_compatible_config(model_name)
@@ -61,6 +64,7 @@ def adapter_for_task(
                 config=config,
                 prompt_builder=prompt_builder,
                 tags=tags,
+                base_adapter_config=base_adapter_config,
             )
         # Use LangchainAdapter for the rest
         case ModelProviderName.groq:
@@ -90,4 +94,5 @@ def adapter_for_task(
         provider=provider,
         prompt_builder=prompt_builder,
         tags=tags,
+        base_adapter_config=base_adapter_config,
     )

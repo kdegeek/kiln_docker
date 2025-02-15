@@ -12,6 +12,7 @@ import kiln_ai.datamodel as datamodel
 from kiln_ai.adapters.ml_model_list import StructuredOutputMode
 from kiln_ai.adapters.model_adapters.base_adapter import (
     COT_FINAL_ANSWER_PROMPT,
+    AdapterConfig,
     AdapterInfo,
     BaseAdapter,
     BasePromptBuilder,
@@ -31,6 +32,7 @@ class OpenAICompatibleAdapter(BaseAdapter):
         kiln_task: datamodel.Task,
         prompt_builder: BasePromptBuilder | None = None,
         tags: list[str] | None = None,
+        base_adapter_config: AdapterConfig | None = None,
     ):
         self.config = config
         self.client = AsyncOpenAI(
@@ -45,6 +47,7 @@ class OpenAICompatibleAdapter(BaseAdapter):
             model_provider_name=config.provider_name,
             prompt_builder=prompt_builder,
             tags=tags,
+            config=base_adapter_config,
         )
 
     async def _run(self, input: Dict | str) -> RunOutput:
@@ -115,6 +118,8 @@ class OpenAICompatibleAdapter(BaseAdapter):
             model=provider.provider_options["model"],
             messages=messages,
             extra_body=extra_body,
+            logprobs=self.base_adapter_config.top_logprobs is not None,
+            top_logprobs=self.base_adapter_config.top_logprobs,
             **response_format_options,
         )
 
@@ -133,6 +138,11 @@ class OpenAICompatibleAdapter(BaseAdapter):
             )
 
         message = response.choices[0].message
+        logprobs = response.choices[0].logprobs
+
+        # Check logprobs worked, if requested
+        if self.base_adapter_config.top_logprobs is not None and logprobs is None:
+            raise RuntimeError("Logprobs were required, but no logprobs were returned.")
 
         # Save reasoning if it exists (OpenRouter specific format)
         if require_or_reasoning:
@@ -164,16 +174,15 @@ class OpenAICompatibleAdapter(BaseAdapter):
         if not isinstance(response_content, str):
             raise RuntimeError(f"response is not a string: {response_content}")
 
+        # Parse to dict if we have structured output
+        output: Dict | str = response_content
         if self.has_structured_output():
-            structured_response = parse_json_string(response_content)
-            return RunOutput(
-                output=structured_response,
-                intermediate_outputs=intermediate_outputs,
-            )
+            output = parse_json_string(response_content)
 
         return RunOutput(
-            output=response_content,
+            output=output,
             intermediate_outputs=intermediate_outputs,
+            output_logprobs=logprobs,
         )
 
     def adapter_info(self) -> AdapterInfo:

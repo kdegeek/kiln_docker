@@ -20,6 +20,7 @@ from kiln_ai.adapters.ml_model_list import (
 )
 from kiln_ai.adapters.model_adapters.base_adapter import (
     COT_FINAL_ANSWER_PROMPT,
+    AdapterConfig,
     AdapterInfo,
     BaseAdapter,
     BasePromptBuilder,
@@ -47,6 +48,7 @@ class LangchainAdapter(BaseAdapter):
         provider: str | None = None,
         prompt_builder: BasePromptBuilder | None = None,
         tags: list[str] | None = None,
+        base_adapter_config: AdapterConfig | None = None,
     ):
         if custom_model is not None:
             self._model = custom_model
@@ -84,6 +86,7 @@ class LangchainAdapter(BaseAdapter):
             model_provider_name=provider,
             prompt_builder=prompt_builder,
             tags=tags,
+            config=base_adapter_config,
         )
 
     async def model(self) -> LangChainModelType:
@@ -129,6 +132,11 @@ class LangchainAdapter(BaseAdapter):
         return self._model
 
     async def _run(self, input: Dict | str) -> RunOutput:
+        if self.base_adapter_config.top_logprobs is not None:
+            raise ValueError(
+                "Kiln's Langchain adapter does not support logprobs/top_logprobs. Select a model from an OpenAI compatible provider (openai, openrouter, etc) instead."
+            )
+
         provider = self.model_provider()
         model = await self.model()
         chain = model

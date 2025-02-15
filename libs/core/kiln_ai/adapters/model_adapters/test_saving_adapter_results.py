@@ -45,7 +45,11 @@ def test_task(tmp_path):
 
 @pytest.fixture
 def adapter(test_task):
-    return MockAdapter(test_task, model_name="phi_3_5", model_provider_name="ollama")
+    return MockAdapter(
+        test_task,
+        model_name="phi_3_5",
+        model_provider_name="ollama",
+    )
 
 
 def test_save_run_isolation(test_task, adapter):
@@ -187,7 +191,8 @@ async def test_autosave_true_with_disabled(test_task, adapter):
 
         input_data = "Test input"
 
-        run = await adapter.invoke(input_data, allow_saving=False)
+        adapter.base_adapter_config.allow_saving = False
+        run = await adapter.invoke(input_data)
 
         # Check that no runs were saved
         assert len(test_task.runs()) == 0

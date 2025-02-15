@@ -26,21 +26,17 @@ def test_score_schema_five_star():
     assert schema["type"] == "object"
     assert schema["required"] == ["quality_score", "overall_rating"]
 
-    # Check requirement property
+    # Check requirement property, and that it's an enum of 1-5
     req_prop = schema["properties"]["quality_score"]
-    assert req_prop["type"] == "integer"
-    assert req_prop["minimum"] == 1
-    assert req_prop["maximum"] == 5
+    assert req_prop["enum"] == [1, 2, 3, 4, 5]
     assert "Quality Score" in req_prop["title"]
     assert "Rate the quality" in req_prop["description"]
     assert "between 1 and 5" in req_prop["description"]
 
-    # Check overall rating property
+    # Check overall rating property, and that it's an enum of 1-5
     assert "overall_rating" in schema["properties"]
     overall = schema["properties"]["overall_rating"]
-    assert overall["type"] == "integer"
-    assert overall["minimum"] == 1
-    assert overall["maximum"] == 5
+    assert overall["enum"] == [1, 2, 3, 4, 5]
     assert "Overall Rating" in overall["title"]
     assert "The overall rating for the task output" in overall["description"]
     assert "between 1 and 5" in overall["description"]
@@ -79,7 +75,7 @@ def test_score_schema_five_star_float():
     # Check overall rating property
     assert "overall_rating" in schema["properties"]
     overall = schema["properties"]["overall_rating"]
-    assert overall["type"] == "integer"
+    assert overall["type"] == "number"
     assert overall["minimum"] == 1
     assert overall["maximum"] == 5
     assert "Overall Rating" in overall["title"]
@@ -111,6 +107,19 @@ def test_score_schema_pass_fail():
 
     assert schema["properties"]["overall_rating"] is not None
 
+    # Now check that we can allow float scores with the proper float structure
+    schema_str = BaseEval.build_score_schema(task, allow_float_scores=True)
+    schema = json.loads(schema_str)
+
+    req_prop = schema["properties"]["pass_fail_test"]
+    assert req_prop["type"] == "number"
+    assert req_prop["minimum"] == 0
+    assert req_prop["maximum"] == 1
+    assert (
+        "between 0 and 1, with 0 being a failure and 1 being a pass"
+        in req_prop["description"]
+    )
+
 
 def test_score_schema_pass_fail_critical():
     task = Task(
@@ -134,6 +143,16 @@ def test_score_schema_pass_fail_critical():
     assert "'pass', 'fail', or 'critical'" in req_prop["description"]
 
     assert schema["properties"]["overall_rating"] is not None
+
+    # Now check that we can allow float scores with the proper float structure
+    schema_str = BaseEval.build_score_schema(task, allow_float_scores=True)
+    schema = json.loads(schema_str)
+
+    req_prop = schema["properties"]["critical_test"]
+    assert req_prop["type"] == "number"
+    assert req_prop["minimum"] == -1
+    assert req_prop["maximum"] == 1
+    assert "between -1 and 1, with 1 being a pass" in req_prop["description"]
 
 
 def test_score_schema_multiple_requirements():
