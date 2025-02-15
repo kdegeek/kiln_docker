@@ -179,6 +179,24 @@ async def test_autosave_false(test_task, adapter):
 
 
 @pytest.mark.asyncio
+async def test_autosave_true_with_disabled(test_task, adapter):
+    with patch("kiln_ai.utils.config.Config.shared") as mock_shared:
+        mock_config = mock_shared.return_value
+        mock_config.autosave_runs = True
+        mock_config.user_id = "test_user"
+
+        input_data = "Test input"
+
+        run = await adapter.invoke(input_data, allow_saving=False)
+
+        # Check that no runs were saved
+        assert len(test_task.runs()) == 0
+
+        # Check that the run ID is not set
+        assert run.id is None
+
+
+@pytest.mark.asyncio
 async def test_autosave_true(test_task, adapter):
     with patch("kiln_ai.utils.config.Config.shared") as mock_shared:
         mock_config = mock_shared.return_value

@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import TYPE_CHECKING, Dict, List, Union
 
 from pydantic import BaseModel, Field
 
@@ -17,6 +17,9 @@ from kiln_ai.datamodel.eval import Eval
 from kiln_ai.datamodel.json_schema import JsonObjectSchema, schema_from_json_str
 from kiln_ai.datamodel.prompt import Prompt
 from kiln_ai.datamodel.task_run import TaskRun
+
+if TYPE_CHECKING:
+    from kiln_ai.datamodel.project import Project
 
 
 class TaskRequirement(BaseModel):
@@ -95,3 +98,9 @@ class Task(
 
     def evals(self, readonly: bool = False) -> list[Eval]:
         return super().evals(readonly=readonly)  # type: ignore
+
+    # Workaround to return typed parent without importing Task
+    def parent_project(self) -> Union["Project", None]:
+        if self.parent is None or self.parent.__class__.__name__ != "Project":
+            return None
+        return self.parent  # type: ignore

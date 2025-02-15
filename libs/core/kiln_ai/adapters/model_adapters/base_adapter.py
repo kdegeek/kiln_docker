@@ -94,6 +94,7 @@ class BaseAdapter(metaclass=ABCMeta):
         self,
         input: Dict | str,
         input_source: DataSource | None = None,
+        allow_saving: bool = True,
     ) -> TaskRun:
         # validate input
         if self.input_schema is not None:
@@ -128,7 +129,11 @@ class BaseAdapter(metaclass=ABCMeta):
         run = self.generate_run(input, input_source, parsed_output)
 
         # Save the run if configured to do so, and we have a path to save to
-        if Config.shared().autosave_runs and self.kiln_task.path is not None:
+        if (
+            allow_saving
+            and Config.shared().autosave_runs
+            and self.kiln_task.path is not None
+        ):
             run.save_to_file()
         else:
             # Clear the ID to indicate it's not persisted

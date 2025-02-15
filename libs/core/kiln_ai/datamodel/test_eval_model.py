@@ -1,5 +1,6 @@
 import pytest
 
+from kiln_ai.datamodel import BasePrompt
 from kiln_ai.datamodel.basemodel import KilnParentModel
 from kiln_ai.datamodel.eval import (
     Eval,
@@ -41,6 +42,10 @@ def valid_eval_config_data():
                 "adapter_name": "openai_compatible",
             },
         ),
+        "prompt": BasePrompt(
+            name="Test Prompt",
+            prompt="Test prompt",
+        ),
     }
 
 
@@ -57,6 +62,15 @@ def test_eval_config_valid(valid_eval_config):
     assert valid_eval_config.model.properties["model_name"] == "gpt-4"
     assert valid_eval_config.model.properties["model_provider"] == "openai"
     assert valid_eval_config.model.properties["adapter_name"] == "openai_compatible"
+    assert valid_eval_config.prompt.name == "Test Prompt"
+    assert valid_eval_config.prompt.prompt == "Test prompt"
+
+
+def test_eval_config_missing_prompt(valid_eval_config):
+    with pytest.raises(
+        ValueError, match="Input should be a valid dictionary or instance of BasePromp"
+    ):
+        valid_eval_config.prompt = None
 
 
 def test_eval_config_missing_g_eval_steps(valid_eval_config):

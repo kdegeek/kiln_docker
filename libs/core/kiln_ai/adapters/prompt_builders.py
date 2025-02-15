@@ -5,7 +5,7 @@ from typing import Annotated, Dict
 
 from pydantic import AfterValidator
 
-from kiln_ai.datamodel import Task, TaskRun
+from kiln_ai.datamodel import BasePrompt, Task, TaskRun
 from kiln_ai.utils.exhaustive_error import raise_exhaustive_enum_error
 from kiln_ai.utils.formatting import snake_case
 
@@ -304,6 +304,61 @@ class SavedPromptBuilder(BasePromptBuilder):
         return self.prompt_model.chain_of_thought_instructions
 
 
+class EvalPromptBuilder(BasePromptBuilder):
+    """A prompt builder that looks up a static prompt in an eval config."""
+
+    def __init__(self, task: Task, eval_config_prompt_id: str):
+        parts = eval_config_prompt_id.split("::")
+        if len(parts) != 5:
+            raise ValueError(
+                f"Invalid eval prompt ID: {eval_config_prompt_id}. Expected format: 'eval_prompt::[project_id]::[task_id]::[eval_id]::[eval_config_id]'."
+            )
+
+        task_id = parts[2]
+        if task_id != task.id:
+            raise ValueError(
+                f"Eval prompt ID: {eval_config_prompt_id}. Task ID mismatch. Expected: {task.id}, got: {task_id}."
+            )
+
+        eval_id = parts[3]
+        eval = next(
+            (eval for eval in task.evals(readonly=True) if eval.id == eval_id),
+            None,
+        )
+        if not eval:
+            raise ValueError(
+                f"Eval ID not found: {eval_id} for prompt id {eval_config_prompt_id}"
+            )
+
+        eval_config_id = parts[4]
+        eval_config = next(
+            (
+                eval_config
+                for eval_config in eval.configs(readonly=True)
+                if eval_config.id == eval_config_id
+            ),
+            None,
+        )
+        if not eval_config:
+            raise ValueError(
+                f"Eval config ID not found: {eval_config_id} for prompt id {eval_config_prompt_id}"
+            )
+
+        self.prompt_model = eval_config.prompt
+        self.id = eval_config_prompt_id
+
+        super().__init__(task)
+
+    def prompt_id(self) -> str | None:
+        return self.id
+
+    def build_base_prompt(self) -> str:
+        return self.prompt_model.prompt
+
+    def chain_of_thought_prompt(self) -> str | None:
+        return self.prompt_model.chain_of_thought_instructions
+
+
 class FineTunePromptBuilder(BasePromptBuilder):
     """A prompt builder that looks up a fine-tune prompt."""
 
@@ -384,6 +439,15 @@ def _check_prompt_id(id: str) -> str:
             )
         return id
 
+    if id.startswith("eval_prompt::"):
+        # check it had a eval_id after the :: -- 'project_id::task_id::eval_id::eval_config_id'
+        parts = id.split("::")
+        if len(parts) != 5:
+            raise ValueError(
+                f"Invalid eval prompt ID: {id}. Expected format: 'eval_prompt::[project_id]::[task_id]::[eval_id]'."
+            )
+        return id
+
     if id.startswith("fine_tune_prompt::"):
         # check it had a fine_tune_id after the :: -- 'fine_tune_prompt::fine_tune_id'
         fine_tune_id = id[18:]
@@ -414,6 +478,10 @@ def prompt_builder_from_id(prompt_id: str, task: Task) -> BasePromptBuilder:
     if prompt_id.startswith("id::"):
         prompt_id = prompt_id[4:]
         return SavedPromptBuilder(task, prompt_id)
+
+    # Eval prompts are prefixed with "eval_prompt::"
+    if prompt_id.startswith("eval_prompt::"):
+        return EvalPromptBuilder(task, prompt_id)
 
     # Fine-tune prompts are prefixed with "fine_tune_prompt::"
     if prompt_id.startswith("fine_tune_prompt::"):

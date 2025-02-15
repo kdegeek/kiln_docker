@@ -8,6 +8,7 @@ from kiln_ai.adapters.model_adapters.test_structured_output import (
     build_structured_output_test_task,
 )
 from kiln_ai.adapters.prompt_builders import (
+    EvalPromptBuilder,
     FewShotChainOfThoughtPromptBuilder,
     FewShotPromptBuilder,
     FineTunePromptBuilder,
@@ -35,6 +36,7 @@ from kiln_ai.datamodel import (
     TaskOutputRating,
     TaskRun,
 )
+from kiln_ai.datamodel.eval import Eval, EvalConfig, EvalConfigType
 
 
 def test_simple_prompt_builder(tmp_path):
@@ -678,3 +680,120 @@ def test_prompt_generator_case_sensitivity():
 
     with pytest.raises(ValidationError):
         TestModel(prompt_id=wrong_case)
+
+
+@pytest.fixture
+def valid_eval_config_datasource():
+    return DataSource(
+        type=DataSourceType.synthetic,
+        properties={
+            "model_name": "gpt-4",
+            "model_provider": "openai",
+            "adapter_name": "openai_compatible",
+        },
+    )
+
+
+def test_eval_prompt_builder(tmp_path, valid_eval_config_datasource):
+    task = build_test_task(tmp_path)
+
+    # Create an eval and eval config
+    eval = Eval(
+        name="test_eval",
+        parent=task,
+    )
+    eval.save_to_file()
+
+    eval_config = EvalConfig(
+        name="test_eval_config",
+        parent=eval,
+        config_type=EvalConfigType.g_eval,
+        model=valid_eval_config_datasource,
+        prompt=Prompt(
+            name="test_prompt",
+            prompt="test_eval_prompt",
+            chain_of_thought_instructions="Think carefully",
+        ),
+        properties={"g_eval_steps": ["step1", "step2"]},
+    )
+    eval_config.save_to_file()
+
+    # Construct the eval prompt ID
+    eval_prompt_id = (
+        f"eval_prompt::{task.parent.id}::{task.id}::{eval.id}::{eval_config.id}"
+    )
+
+    # Test successful creation, constructor and ID creation
+    builders = [
+        EvalPromptBuilder(task=task, eval_config_prompt_id=eval_prompt_id),
+        prompt_builder_from_id(eval_prompt_id, task),
+    ]
+
+    for builder in builders:
+        assert (
+            builder.build_prompt(include_json_instructions=False) == "test_eval_prompt"
+        )
+        assert builder.chain_of_thought_prompt() == "Think carefully"
+        assert builder.prompt_id() == eval_prompt_id
+
+    # test accessor
+
+
+def test_eval_prompt_builder_validation_errors(tmp_path):
+    task = build_test_task(tmp_path)
+
+    # Test invalid format
+    with pytest.raises(ValueError, match="Invalid eval prompt ID"):
+        EvalPromptBuilder(task=task, eval_config_prompt_id="eval_prompt::wrong::format")
+
+    # Test task ID mismatch
+    wrong_task_id = f"eval_prompt::{task.parent.id}::wrong_task_id::eval_id::config_id"
+    with pytest.raises(ValueError, match="Task ID mismatch"):
+        EvalPromptBuilder(task=task, eval_config_prompt_id=wrong_task_id)
+
+    # Test eval not found
+    nonexistent_eval = (
+        f"eval_prompt::{task.parent.id}::{task.id}::nonexistent_eval::config_id"
+    )
+    with pytest.raises(ValueError, match="Eval ID not found"):
+        EvalPromptBuilder(task=task, eval_config_prompt_id=nonexistent_eval)
+
+    # Create eval but test config not found
+    eval = Eval(
+        name="test_eval",
+        parent=task,
+    )
+    eval.save_to_file()
+
+    nonexistent_config = (
+        f"eval_prompt::{task.parent.id}::{task.id}::{eval.id}::nonexistent_config"
+    )
+    with pytest.raises(ValueError, match="Eval config ID not found"):
+        EvalPromptBuilder(task=task, eval_config_prompt_id=nonexistent_config)
+
+
+@pytest.mark.parametrize(
+    "valid_id",
+    [
+        "eval_prompt::project_123::task_456::eval_789::config_012",  # Valid eval prompt ID
+    ],
+)
+def test_valid_eval_prompt_id(valid_id):
+    """Test that valid eval prompt IDs are accepted"""
+    model = TestModel(prompt_id=valid_id)
+    assert model.prompt_id == valid_id
+
+
+@pytest.mark.parametrize(
+    "invalid_id,expected_error",
+    [
+        ("eval_prompt::", "Invalid eval prompt ID"),
+        ("eval_prompt::p1::t1", "Invalid eval prompt ID"),
+        ("eval_prompt::p1::t1::e1", "Invalid eval prompt ID"),
+        ("eval_prompt::p1::t1::e1::c1::extra", "Invalid eval prompt ID"),
+    ],
+)
+def test_invalid_eval_prompt_id_format(invalid_id, expected_error):
+    """Test that invalid eval prompt ID formats are rejected"""
+    with pytest.raises(ValidationError, match=expected_error):
+        TestModel(prompt_id=invalid_id)
