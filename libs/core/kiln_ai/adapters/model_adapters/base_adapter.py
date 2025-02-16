@@ -5,33 +5,29 @@ from typing import Dict, Literal, Tuple
 
 from kiln_ai.adapters.ml_model_list import KilnModelProvider, StructuredOutputMode
 from kiln_ai.adapters.parsers.parser_registry import model_parser_from_id
-from kiln_ai.adapters.prompt_builders import BasePromptBuilder, SimplePromptBuilder
 from kiln_ai.adapters.provider_tools import kiln_model_provider_from
 from kiln_ai.adapters.run_output import RunOutput
 from kiln_ai.datamodel import (
     DataSource,
     DataSourceType,
-    Task,
     TaskOutput,
     TaskRun,
 )
 from kiln_ai.datamodel.json_schema import validate_schema
+from kiln_ai.datamodel.run_config import RunConfig
 from kiln_ai.utils.config import Config
 
 
 @dataclass
 class AdapterConfig:
+    """
+    An adapter config is config options that do NOT impact the output of the model.
+
+    For example: if it's saved, of if we request additional data like logprobs.
+    """
+
     allow_saving: bool = True
     top_logprobs: int | None = None
-
-
-@dataclass
-class AdapterInfo:
-    adapter_name: str
-    model_name: str
-    model_provider: str
-    prompt_builder_name: str
-    prompt_id: str | None = None
 
 
 COT_FINAL_ANSWER_PROMPT = "Considering the above, return a final result."
@@ -53,21 +49,21 @@ class BaseAdapter(metaclass=ABCMeta):
 
     def __init__(
         self,
-        kiln_task: Task,
-        model_name: str,
-        model_provider_name: str,
-        prompt_builder: BasePromptBuilder | None = None,
+        run_config: RunConfig,
         tags: list[str] | None = None,
         config: AdapterConfig | None = None,
     ):
-        self.prompt_builder = prompt_builder or SimplePromptBuilder(kiln_task)
-        self.kiln_task = kiln_task
+        self.run_config = run_config
+        # TODO: remove these? Use run_config directly?
+        self.prompt_builder = run_config.prompt_builder()
+        self.kiln_task = run_config.task
+        self.model_name = run_config.model_name
+        self.model_provider_name = run_config.model_provider_name
+        self._model_provider: KilnModelProvider | None = None
+
         self.output_schema = self.kiln_task.output_json_schema
         self.input_schema = self.kiln_task.input_json_schema
         self.default_tags = tags
-        self.model_name = model_name
-        self.model_provider_name = model_provider_name
-        self._model_provider: KilnModelProvider | None = None
         self.base_adapter_config = config or AdapterConfig()
 
     def model_provider(self) -> KilnModelProvider:
@@ -160,7 +156,7 @@ class BaseAdapter(metaclass=ABCMeta):
         return self.output_schema is not None
 
     @abstractmethod
-    def adapter_info(self) -> AdapterInfo:
+    def adapter_name(self) -> str:
         pass
 
     @abstractmethod
@@ -244,12 +240,9 @@ class BaseAdapter(metaclass=ABCMeta):
         props = {}
 
         # adapter info
-        adapter_info = self.adapter_info()
-        props["adapter_name"] = adapter_info.adapter_name
-        props["model_name"] = adapter_info.model_name
-        props["model_provider"] = adapter_info.model_provider
-        props["prompt_builder_name"] = adapter_info.prompt_builder_name
-        if adapter_info.prompt_id is not None:
-            props["prompt_id"] = adapter_info.prompt_id
+        props["adapter_name"] = self.adapter_name()
+        props["model_name"] = self.run_config.model_name
+        props["model_provider"] = self.run_config.model_provider_name
+        props["prompt_id"] = self.run_config.prompt_id
 
         return props

@@ -416,7 +416,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/projects/{project_id}/task/{task_id}/gen_prompt/{prompt_generator}": {
+    "/api/projects/{project_id}/task/{task_id}/gen_prompt/{prompt_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -424,7 +424,7 @@ export interface paths {
             cookie?: never;
         };
         /** Generate Prompt */
-        get: operations["generate_prompt_api_projects__project_id__task__task_id__gen_prompt__prompt_generator__get"];
+        get: operations["generate_prompt_api_projects__project_id__task__task_id__gen_prompt__prompt_id__get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1315,10 +1315,8 @@ export interface components {
         PromptApiResponse: {
             /** Prompt */
             prompt: string;
-            /** Prompt Builder Name */
-            prompt_builder_name: string;
-            /** Ui Generator Name */
-            ui_generator_name: string;
+            /** Prompt Id */
+            prompt_id: string;
         };
         /** PromptCreateRequest */
         PromptCreateRequest: {
@@ -2705,14 +2703,14 @@ export interface operations {
             };
         };
     };
-    generate_prompt_api_projects__project_id__task__task_id__gen_prompt__prompt_generator__get: {
+    generate_prompt_api_projects__project_id__task__task_id__gen_prompt__prompt_id__get: {
         parameters: {
             query?: never;
             header?: never;
             path: {
                 project_id: string;
                 task_id: string;
-                prompt_generator: string;
+                prompt_id: string;
             };
             cookie?: never;
         };

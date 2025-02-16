@@ -32,13 +32,13 @@
     try {
       prompt_loading = true
       const { data: prompt_response, error: get_error } = await client.GET(
-        "/api/projects/{project_id}/task/{task_id}/gen_prompt/{prompt_generator}",
+        "/api/projects/{project_id}/task/{task_id}/gen_prompt/{prompt_id}",
         {
           params: {
             path: {
               project_id,
               task_id,
-              prompt_generator,
+              prompt_id: prompt_generator,
             },
           },
         },

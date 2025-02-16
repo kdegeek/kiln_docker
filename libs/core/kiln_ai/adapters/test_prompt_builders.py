@@ -3,7 +3,7 @@ import json
 import pytest
 from pydantic import BaseModel, ValidationError
 
-from kiln_ai.adapters.model_adapters.base_adapter import AdapterInfo, BaseAdapter
+from kiln_ai.adapters.model_adapters.base_adapter import BaseAdapter
 from kiln_ai.adapters.model_adapters.test_structured_output import (
     build_structured_output_test_task,
 )
@@ -62,12 +62,8 @@ class MockAdapter(BaseAdapter):
     def _run(self, input: str) -> str:
         return "mock response"
 
-    def adapter_info(self) -> AdapterInfo:
-        return AdapterInfo(
-            adapter_name="mock_adapter",
-            model_name="mock_model",
-            model_provider="mock_provider",
-        )
+    def adapter_name(self) -> str:
+        return "mock_adapter"
 
 
 def test_simple_prompt_builder_structured_output(tmp_path):
@@ -317,12 +313,6 @@ def check_example_outputs(task: Task, count: int):
     else:
         assert "# Example Outputs" in prompt
         assert f"## Example {count}" in prompt
-
-
-def test_prompt_builder_name():
-    assert SimplePromptBuilder.prompt_builder_name() == "simple_prompt_builder"
-    assert MultiShotPromptBuilder.prompt_builder_name() == "multi_shot_prompt_builder"
-    assert RepairsPromptBuilder.prompt_builder_name() == "repairs_prompt_builder"
 
 
 def test_prompt_builder_from_id(task_with_examples):

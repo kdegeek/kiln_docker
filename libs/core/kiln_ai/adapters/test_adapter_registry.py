@@ -89,19 +89,14 @@ def test_langchain_adapter_creation(mock_config, basic_task, provider):
 
 # TODO should run for all cases
 def test_custom_prompt_builder(mock_config, basic_task):
-    class TestPromptBuilder(BasePromptBuilder):
-        def build_base_prompt(self, kiln_task) -> str:
-            return "test-prompt"
-
-    prompt_builder = TestPromptBuilder(basic_task)
     adapter = adapter_for_task(
         kiln_task=basic_task,
         model_name="gpt-4",
         provider=ModelProviderName.openai,
-        prompt_builder=prompt_builder,
+        prompt_id="simple_chain_of_thought_prompt_builder",
     )
 
-    assert adapter.prompt_builder == prompt_builder
+    assert adapter.run_config.prompt_id == "simple_chain_of_thought_prompt_builder"
 
 
 # TODO should run for all cases
@@ -129,6 +124,7 @@ def test_openai_compatible_adapter(mock_compatible_config, mock_config, basic_ta
     mock_compatible_config.return_value.model_name = "test-model"
     mock_compatible_config.return_value.api_key = "test-key"
     mock_compatible_config.return_value.base_url = "https://test.com/v1"
+    mock_compatible_config.return_value.provider_name = "CustomProvider99"
 
     adapter = adapter_for_task(
         kiln_task=basic_task,
@@ -141,6 +137,7 @@ def test_openai_compatible_adapter(mock_compatible_config, mock_config, basic_ta
     assert adapter.config.model_name == "test-model"
     assert adapter.config.api_key == "test-key"
     assert adapter.config.base_url == "https://test.com/v1"
+    assert adapter.config.provider_name == "CustomProvider99"
 
 
 def test_custom_openai_compatible_provider(mock_config, basic_task):

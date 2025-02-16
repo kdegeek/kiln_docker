@@ -6,7 +6,7 @@ from kiln_ai.adapters.data_gen.data_gen_task import (
     DataGenSampleTask,
     DataGenSampleTaskInput,
 )
-from kiln_ai.adapters.prompt_builders import PromptId, prompt_builder_from_id
+from kiln_ai.adapters.prompt_builders import PromptId
 from kiln_ai.datamodel import DataSource, DataSourceType, TaskRun
 from kiln_server.run_api import model_provider_from_string
 from kiln_server.task_api import task_from_id
@@ -122,8 +122,6 @@ def connect_data_gen_api(app: FastAPI):
     ) -> TaskRun:
         task = task_from_id(project_id, task_id)
 
-        prompt_builder = prompt_builder_from_id(sample.prompt_method, task)
-
         tags = ["synthetic"]
         if session_id:
             tags.append(f"synthetic_session_{session_id}")
@@ -132,7 +130,7 @@ def connect_data_gen_api(app: FastAPI):
             task,
             model_name=sample.output_model_name,
             provider=model_provider_from_string(sample.output_provider),
-            prompt_builder=prompt_builder,
+            prompt_id=sample.prompt_method,
             tags=tags,
         )
 

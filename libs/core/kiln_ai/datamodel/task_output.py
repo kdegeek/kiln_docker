@@ -205,13 +205,13 @@ class DataSource(BaseModel):
             not_allowed_for=[DataSourceType.human],
         ),
         DataSourceProperty(
+            # Legacy field -- allow loading from old runs, but we shouldn't be setting it.
             name="prompt_builder_name",
             type=str,
             not_allowed_for=[DataSourceType.human],
         ),
         DataSourceProperty(
-            # Optional: an ID within the scope of the prompt_builder_name.
-            # Used for prompt builders with IDs (like saved prompts, fine-tune prompts)
+            # The PromptId of the prompt. Can be a saved prompt, fine-tune, generator name, etc. See PromptId type for more details.
             name="prompt_id",
             type=str,
             not_allowed_for=[DataSourceType.human],

@@ -57,17 +57,6 @@ class BasePromptBuilder(metaclass=ABCMeta):
         """
         pass
 
-    @classmethod
-    def prompt_builder_name(cls) -> str:
-        """Returns the name of the prompt builder, to be used for persisting into the datastore.
-
-        Default implementation gets the name of the prompt builder in snake case. If you change the class name, you should override this so prior saved data is compatible.
-
-        Returns:
-            str: The prompt builder name in snake_case format.
-        """
-        return snake_case(cls.__name__)
-
     def build_user_message(self, input: Dict | str) -> str:
         """Build a user message from the input.
 

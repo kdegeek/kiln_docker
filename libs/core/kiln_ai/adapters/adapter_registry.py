@@ -8,7 +8,7 @@ from kiln_ai.adapters.model_adapters.openai_model_adapter import (
     OpenAICompatibleAdapter,
     OpenAICompatibleConfig,
 )
-from kiln_ai.adapters.prompt_builders import BasePromptBuilder
+from kiln_ai.adapters.prompt_builders import PromptId
 from kiln_ai.adapters.provider_tools import core_provider, openai_compatible_config
 from kiln_ai.utils.config import Config
 from kiln_ai.utils.exhaustive_error import raise_exhaustive_enum_error
@@ -18,7 +18,7 @@ def adapter_for_task(
     kiln_task: datamodel.Task,
     model_name: str,
     provider: ModelProviderName,
-    prompt_builder: BasePromptBuilder | None = None,
+    prompt_id: PromptId | None = None,
     tags: list[str] | None = None,
     base_adapter_config: AdapterConfig | None = None,
 ) -> BaseAdapter:
@@ -41,7 +41,7 @@ def adapter_for_task(
                         "X-Title": "KilnAI",
                     },
                 ),
-                prompt_builder=prompt_builder,
+                prompt_id=prompt_id,
                 tags=tags,
                 base_adapter_config=base_adapter_config,
             )
@@ -53,7 +53,7 @@ def adapter_for_task(
                     model_name=model_name,
                     provider_name=provider,
                 ),
-                prompt_builder=prompt_builder,
+                prompt_id=prompt_id,
                 tags=tags,
                 base_adapter_config=base_adapter_config,
             )
@@ -62,7 +62,7 @@ def adapter_for_task(
             return OpenAICompatibleAdapter(
                 kiln_task=kiln_task,
                 config=config,
-                prompt_builder=prompt_builder,
+                prompt_id=prompt_id,
                 tags=tags,
                 base_adapter_config=base_adapter_config,
             )
@@ -92,7 +92,7 @@ def adapter_for_task(
         kiln_task,
         model_name=model_name,
         provider=provider,
-        prompt_builder=prompt_builder,
+        prompt_id=prompt_id,
         tags=tags,
         base_adapter_config=base_adapter_config,
     )
