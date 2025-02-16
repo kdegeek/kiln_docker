@@ -45,7 +45,6 @@ The task the model was given is as follows:
 {eval_config.prompt.prompt}
 </eval_data>
 """
-        # TODO allow over riding of system instruction via config
 
         # Build the COT eval instructions
         cot_instructions = "First, think step by step about the model's performance following these evaluation steps:\n\n"
@@ -118,7 +117,6 @@ class GEval(BaseEval):
             ),
         )
 
-        # TODO: does eval see intermediate output? I don't think so, but think about it.
         input = f"""The model was given the following input for the task: 
 <eval_data>
 {task_run.input}
