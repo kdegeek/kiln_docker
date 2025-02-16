@@ -450,11 +450,11 @@ def _check_prompt_id(id: str) -> str:
 
 
 # Our UI has some names that are not the same as the class names, which also hint parameters.
-def prompt_builder_from_id(prompt_id: str, task: Task) -> BasePromptBuilder:
+def prompt_builder_from_id(prompt_id: PromptId, task: Task) -> BasePromptBuilder:
     """Convert a name used in the UI to the corresponding prompt builder class.
 
     Args:
-        prompt_id (str): The prompt ID.
+        prompt_id (PromptId): The prompt ID.
 
     Returns:
         type[BasePromptBuilder]: The corresponding prompt builder class.
