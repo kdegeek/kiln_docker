@@ -1,6 +1,6 @@
 import json
 from abc import ABCMeta, abstractmethod
-from enum import StrEnum
+from enum import Enum
 from typing import Annotated, Dict
 
 from pydantic import AfterValidator
@@ -397,7 +397,7 @@ class FineTunePromptBuilder(BasePromptBuilder):
 
 
 # Generators that can take any task and build a prompt
-class PromptGenerators(StrEnum):
+class PromptGenerators(str, Enum):
     SIMPLE = "simple_prompt_builder"
     MULTI_SHOT = "multi_shot_prompt_builder"
     FEW_SHOT = "few_shot_prompt_builder"
