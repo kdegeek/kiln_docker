@@ -84,5 +84,5 @@ def test_generate_prompt_id_format(client, mock_task, mock_task_from_id):
         "/api/projects/project123/task/task456/gen_prompt/invalid_generator_id"
     )
 
-    assert response.status_code == 400
-    assert "Unknown prompt generator: invalid_generator_id" in response.text
+    assert response.status_code == 422
+    assert "Value error, Invalid prompt ID: invalid_generator_id" in response.text

@@ -6,7 +6,7 @@ from pydantic import BaseModel
 
 class PromptApiResponse(BaseModel):
     prompt: str
-    prompt_id: str
+    prompt_id: PromptId
 
 
 def connect_prompt_api(app: FastAPI):
@@ -14,7 +14,7 @@ def connect_prompt_api(app: FastAPI):
     async def generate_prompt(
         project_id: str,
         task_id: str,
-        prompt_id: str,
+        prompt_id: PromptId,
     ) -> PromptApiResponse:
         task = task_from_id(project_id, task_id)
 
