@@ -10,9 +10,6 @@ from kiln_ai.datamodel import Project, Task, TaskRun
 from kiln_ai.datamodel.eval import EvalConfig, EvalConfigType
 from openai.types.chat import ChatCompletionTokenLogprob
 
-# better prompts
-# https://github.com/microsoft/promptflow/tree/main/examples/flows/evaluation/eval-summarization
-
 # all the tokens we score for, and their float scores.
 TOKEN_TO_SCORE_MAP: Dict[str, float] = {
     "1": 1.0,

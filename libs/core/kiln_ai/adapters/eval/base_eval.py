@@ -154,4 +154,4 @@ class BaseEval:
             "properties": properties,
             "required": list(properties.keys()),
         }
-        return json.dumps(schema, indent=2, ensure_ascii=False)
+        return json.dumps(schema, ensure_ascii=False)
