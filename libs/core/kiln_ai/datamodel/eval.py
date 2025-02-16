@@ -11,6 +11,7 @@ from kiln_ai.datamodel.basemodel import (
     KilnParentedModel,
     KilnParentModel,
 )
+from kiln_ai.datamodel.prompt import BasePrompt
 from kiln_ai.datamodel.task_output import DataSource, DataSourceType
 
 if TYPE_CHECKING:
@@ -24,6 +25,7 @@ class EvalState(str, Enum):
 
 class EvalConfigType(str, Enum):
     g_eval = "g_eval"
+    llm_as_judge = "llm_as_judge"
 
 
 class EvalConfig(KilnParentedModel):
@@ -43,6 +45,7 @@ class EvalConfig(KilnParentedModel):
         default={},
         description="Properties to be used to execute the eval config. This is config_type specific and should serialize to a json dict.",
     )
+    prompt: BasePrompt = Field(description="The prompt to use for this eval config.")
 
     def parent_eval(self) -> "Eval":
         if self.parent is None or self.parent.__class__.__name__ != "Eval":
@@ -51,13 +54,14 @@ class EvalConfig(KilnParentedModel):
 
     @model_validator(mode="after")
     def validate_properties(self) -> Self:
-        if self.config_type == EvalConfigType.g_eval:
-            if "g_eval_steps" not in self.properties or not isinstance(
-                self.properties["g_eval_steps"], list
+        if (
+            self.config_type == EvalConfigType.g_eval
+            or self.config_type == EvalConfigType.llm_as_judge
+        ):
+            if "eval_steps" not in self.properties or not isinstance(
+                self.properties["eval_steps"], list
             ):
-                raise ValueError(
-                    "g_eval_steps is required and must be a list for g_eval"
-                )
+                raise ValueError("eval_steps is required and must be a list for g_eval")
             return self
         else:
             raise ValueError(f"Invalid eval config type: {self.config_type}")
@@ -97,3 +101,6 @@ class Eval(KilnParentedModel, KilnParentModel, parent_of={"configs": EvalConfig}
         if self.parent is None or self.parent.__class__.__name__ != "Task":
             return None
         return self.parent  # type: ignore
+
+    def configs(self, readonly: bool = False) -> list[EvalConfig]:
+        return super().configs(readonly=readonly)  # type: ignore

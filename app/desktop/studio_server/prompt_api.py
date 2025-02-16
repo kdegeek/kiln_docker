@@ -1,5 +1,5 @@
 from fastapi import FastAPI, HTTPException
-from kiln_ai.adapters.prompt_builders import prompt_builder_from_ui_name
+from kiln_ai.adapters.prompt_builders import prompt_builder_from_id
 from kiln_server.task_api import task_from_id
 from pydantic import BaseModel
 
@@ -18,7 +18,7 @@ def connect_prompt_api(app: FastAPI):
         task = task_from_id(project_id, task_id)
 
         try:
-            prompt_builder = prompt_builder_from_ui_name(prompt_generator, task)
+            prompt_builder = prompt_builder_from_id(prompt_generator, task)
             prompt = prompt_builder.build_prompt_for_ui()
         except Exception as e:
             raise HTTPException(status_code=400, detail=str(e))

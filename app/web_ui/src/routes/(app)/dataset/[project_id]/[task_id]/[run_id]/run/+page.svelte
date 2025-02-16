@@ -36,8 +36,7 @@
     )?.name
     let prompt_generator_name = $current_task_prompts?.generators.find(
       (generator) =>
-        generator.ui_id ===
-        run?.output?.source?.properties?.prompt_builder_name,
+        generator.id === run?.output?.source?.properties?.prompt_builder_name,
     )?.name
 
     // Special case for fine-tuned prompts

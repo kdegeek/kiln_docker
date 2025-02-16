@@ -1,5 +1,6 @@
 import pytest
 
+from kiln_ai.datamodel import BasePrompt
 from kiln_ai.datamodel.basemodel import KilnParentModel
 from kiln_ai.datamodel.eval import (
     Eval,
@@ -16,34 +17,18 @@ def mock_task():
     return Task(name="Test Task", instruction="Test instruction")
 
 
-@pytest.fixture
-def valid_eval_config_data():
-    return {
-        "name": "Test Config",
-        "model_provider": "openai",
-        "model_name": "gpt-4",
-        "config_type": EvalConfigType.g_eval,
-        "properties": {"g_eval_steps": ["step1", "step2"]},
-    }
-
-
 def test_eval_state_values():
     assert EvalState.enabled == "enabled"
     assert EvalState.disabled == "disabled"
     assert len(EvalState) == 2
 
 
-def test_eval_config_type_values():
-    assert EvalConfigType.g_eval == "g_eval"
-    assert len(EvalConfigType) == 1
-
-
 @pytest.fixture
 def valid_eval_config_data():
     return {
         "name": "Test Config",
         "config_type": EvalConfigType.g_eval,
-        "properties": {"g_eval_steps": ["step1", "step2"]},
+        "properties": {"eval_steps": ["step1", "step2"]},
         "model": DataSource(
             type=DataSourceType.synthetic,
             properties={
@@ -51,6 +36,10 @@ def valid_eval_config_data():
                 "model_provider": "openai",
                 "adapter_name": "openai_compatible",
             },
+        ),
+        "prompt": BasePrompt(
+            name="Test Prompt",
+            prompt="Test prompt",
         ),
     }
 
@@ -63,16 +52,25 @@ def valid_eval_config(valid_eval_config_data):
 def test_eval_config_valid(valid_eval_config):
     assert valid_eval_config.name == "Test Config"
     assert valid_eval_config.config_type == EvalConfigType.g_eval
-    assert valid_eval_config.properties["g_eval_steps"] == ["step1", "step2"]
+    assert valid_eval_config.properties["eval_steps"] == ["step1", "step2"]
     assert valid_eval_config.model.type == DataSourceType.synthetic
     assert valid_eval_config.model.properties["model_name"] == "gpt-4"
     assert valid_eval_config.model.properties["model_provider"] == "openai"
     assert valid_eval_config.model.properties["adapter_name"] == "openai_compatible"
+    assert valid_eval_config.prompt.name == "Test Prompt"
+    assert valid_eval_config.prompt.prompt == "Test prompt"
 
 
-def test_eval_config_missing_g_eval_steps(valid_eval_config):
+def test_eval_config_missing_prompt(valid_eval_config):
     with pytest.raises(
-        ValueError, match="g_eval_steps is required and must be a list for g_eval"
+        ValueError, match="Input should be a valid dictionary or instance of BasePromp"
+    ):
+        valid_eval_config.prompt = None
+
+
+def test_eval_config_missing_eval_steps(valid_eval_config):
+    with pytest.raises(
+        ValueError, match="eval_steps is required and must be a list for g_eval"
     ):
         valid_eval_config.properties = {}
 
@@ -83,16 +81,16 @@ def test_eval_config_invalid_json(valid_eval_config):
 
     with pytest.raises(ValueError, match="Properties must be JSON serializable"):
         valid_eval_config.properties = {
-            "g_eval_steps": [],
+            "eval_steps": [],
             "invalid_key": InvalidClass(),
         }
 
 
-def test_eval_config_invalid_g_eval_steps_type(valid_eval_config):
+def test_eval_config_invalid_eval_steps_type(valid_eval_config):
     with pytest.raises(
-        ValueError, match="g_eval_steps is required and must be a list for g_eval"
+        ValueError, match="eval_steps is required and must be a list for g_eval"
     ):
-        valid_eval_config.properties = {"g_eval_steps": "not a list"}
+        valid_eval_config.properties = {"eval_steps": "not a list"}
 
 
 def test_eval_config_invalid_config_type(valid_eval_config):

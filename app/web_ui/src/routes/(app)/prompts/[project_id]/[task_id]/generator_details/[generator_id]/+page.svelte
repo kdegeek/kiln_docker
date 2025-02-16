@@ -81,7 +81,8 @@
           To improve the quality of this prompt, <a
             href={`/settings/edit_task/${project_id}/${task_id}`}
             class="link">edit the task instructions or requirements</a
-          ><span class={generator_id === "basic" ? "hidden" : ""}
+          ><span
+            class={generator_id === "simple_prompt_builder" ? "hidden" : ""}
             >, or add more data to your dataset by <a class="link" href="/run"
               >running the task</a
             >, or add ratings and repairs to your

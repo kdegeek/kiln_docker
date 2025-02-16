@@ -45,7 +45,11 @@ def test_task(tmp_path):
 
 @pytest.fixture
 def adapter(test_task):
-    return MockAdapter(test_task, model_name="phi_3_5", model_provider_name="ollama")
+    return MockAdapter(
+        test_task,
+        model_name="phi_3_5",
+        model_provider_name="ollama",
+    )
 
 
 def test_save_run_isolation(test_task, adapter):
@@ -169,6 +173,25 @@ async def test_autosave_false(test_task, adapter):
 
         input_data = "Test input"
 
+        run = await adapter.invoke(input_data)
+
+        # Check that no runs were saved
+        assert len(test_task.runs()) == 0
+
+        # Check that the run ID is not set
+        assert run.id is None
+
+
+@pytest.mark.asyncio
+async def test_autosave_true_with_disabled(test_task, adapter):
+    with patch("kiln_ai.utils.config.Config.shared") as mock_shared:
+        mock_config = mock_shared.return_value
+        mock_config.autosave_runs = True
+        mock_config.user_id = "test_user"
+
+        input_data = "Test input"
+
+        adapter.base_adapter_config.allow_saving = False
         run = await adapter.invoke(input_data)
 
         # Check that no runs were saved

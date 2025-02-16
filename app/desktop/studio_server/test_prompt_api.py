@@ -37,10 +37,8 @@ def mock_task():
 
 
 @pytest.fixture
-def mock_prompt_builder_from_ui_name(mock_task):
-    with patch(
-        "app.desktop.studio_server.prompt_api.prompt_builder_from_ui_name"
-    ) as mock:
+def mock_prompt_builder_from_id(mock_task):
+    with patch("app.desktop.studio_server.prompt_api.prompt_builder_from_id") as mock:
         mock.return_value = MockPromptBuilder(mock_task)
         yield mock
 
@@ -53,7 +51,7 @@ def mock_task_from_id(mock_task):
 
 
 def test_generate_prompt_success(
-    client, mock_task, mock_prompt_builder_from_ui_name, mock_task_from_id
+    client, mock_task, mock_prompt_builder_from_id, mock_task_from_id
 ):
     response = client.get(
         "/api/projects/project123/task/task456/gen_prompt/mock_generator"
@@ -68,17 +66,13 @@ def test_generate_prompt_success(
     }
 
     mock_task_from_id.assert_called_once_with("project123", "task456")
-    mock_prompt_builder_from_ui_name.assert_called_once_with(
-        "mock_generator", mock_task
-    )
+    mock_prompt_builder_from_id.assert_called_once_with("mock_generator", mock_task)
 
 
 def test_generate_prompt_exception(
-    client, mock_task, mock_prompt_builder_from_ui_name, mock_task_from_id
+    client, mock_task, mock_prompt_builder_from_id, mock_task_from_id
 ):
-    mock_prompt_builder_from_ui_name.side_effect = ValueError(
-        "Invalid prompt generator"
-    )
+    mock_prompt_builder_from_id.side_effect = ValueError("Invalid prompt generator")
 
     response = client.get(
         "/api/projects/project123/task/task456/gen_prompt/invalid_generator"
@@ -89,6 +83,4 @@ def test_generate_prompt_exception(
     assert data == {"detail": "Invalid prompt generator"}
 
     mock_task_from_id.assert_called_once_with("project123", "task456")
-    mock_prompt_builder_from_ui_name.assert_called_once_with(
-        "invalid_generator", mock_task
-    )
+    mock_prompt_builder_from_id.assert_called_once_with("invalid_generator", mock_task)
