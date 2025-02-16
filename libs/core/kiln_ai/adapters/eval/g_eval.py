@@ -29,6 +29,8 @@ TOKEN_TO_SCORE_MAP: Dict[str, float] = {
 class GEvalTask(Task, parent_of={}):
     """
     Kiln task for executing a G-Eval. Can be run on any Kiln adapter.
+
+    Note G-Eval implements both G-Eval and LLM as Judge as they are very similar.
     """
 
     def __init__(self, eval_config: EvalConfig, target_task: Task):
@@ -47,9 +49,9 @@ The task the model was given is as follows:
 
         # Build the COT eval instructions
         cot_instructions = "First, think step by step about the model's performance following these evaluation steps:\n\n"
-        steps = eval_config.properties["g_eval_steps"]
+        steps = eval_config.properties["eval_steps"]
         if not steps or not isinstance(steps, list):
-            raise ValueError("g_eval_steps must be a list")
+            raise ValueError("eval_steps must be a list")
         for i, step in enumerate(steps):
             cot_instructions += f"{i + 1}) {step}\n"
 
@@ -69,9 +71,22 @@ The task the model was given is as follows:
 
 
 class GEval(BaseEval):
+    """
+    A evaluator which implements G-Eval and LLM as Judge.
+
+    G-Eval is a method of evaluating the quality of a model's output. It is a weighted average of the scores of the tokens in the output. The weights are the log probabilities of the tokens in the output. https://arxiv.org/abs/2303.16634
+
+    LLM as Judge is a method of evaluating the quality of a model's output. It simply asks the LLM to score, and uses the returned output (no logprobs needed). Also called direct evaluation.
+    """
+
     def __init__(self, eval_config: EvalConfig):
-        if not eval_config.config_type == EvalConfigType.g_eval:
-            raise ValueError("GEval must be initialized with a GEval Config")
+        if (
+            eval_config.config_type != EvalConfigType.g_eval
+            and eval_config.config_type != EvalConfigType.llm_as_judge
+        ):
+            raise ValueError(
+                "GEval must be initialized with a GEval or LLM as Judge Config"
+            )
 
         super().__init__(eval_config)
 
@@ -86,6 +101,12 @@ class GEval(BaseEval):
         # We always use Simple COT for G-Eval
         prompt_builder = SimpleChainOfThoughtPromptBuilder(self.geval_task)
 
+        # Only fetch logprobs for G-Eval
+        # There are at most 5 valid rating tokens per rating type (five_star being largest), so 10 is more than enough to get to the very very unlikely
+        top_logprobs = (
+            10 if self.eval_config.config_type == EvalConfigType.g_eval else None
+        )
+
         adapter = adapter_for_task(
             self.geval_task,
             model_name,
@@ -93,8 +114,7 @@ class GEval(BaseEval):
             prompt_builder,
             base_adapter_config=AdapterConfig(
                 allow_saving=False,
-                # There are at most 5 valid rating tokens per rating type (five_star being largest), so 10 is more than enough to get to the very very unlikely
-                top_logprobs=10,
+                top_logprobs=top_logprobs,
             ),
         )
 
@@ -113,7 +133,26 @@ The model produced the following output for the task:
         # We don't need the run, but invoke_returning_run_output() runs validations for us over _run()
         _, run_output = await adapter.invoke_returning_run_output(input)
 
-        return self.build_g_eval_score(run_output)
+        if self.eval_config.config_type == EvalConfigType.llm_as_judge:
+            return self.build_llm_as_judge_score(run_output)
+        else:
+            return self.build_g_eval_score(run_output)
+
+    def build_llm_as_judge_score(self, run_output: RunOutput) -> Dict[str, float]:
+        """
+        Build the LLM as Judge score for the given run and run output.
+        """
+        # Convert the output format we asked for (discreet values) to our float scores
+        scores: Dict[str, float] = {}
+        if not isinstance(run_output.output, dict):
+            raise ValueError("LLM as Judge output must be a dictionary")
+
+        for metric, score in run_output.output.items():
+            token_score = self.score_from_token_string(f"{score}")
+            if token_score is None:
+                raise ValueError(f"No score found for metric: {metric}")
+            scores[metric] = token_score
+        return scores
 
     def build_g_eval_score(self, run_output: RunOutput) -> Dict[str, float]:
         """
@@ -272,6 +311,16 @@ The model produced the following output for the task:
         unquoted_token = token.strip().strip('"').lower()
         if unquoted_token in TOKEN_TO_SCORE_MAP:
             return TOKEN_TO_SCORE_MAP[unquoted_token]
+
+        # handle numeric tokens like "1.0"
+        try:
+            float_value = float(token)
+            if float_value.is_integer():
+                str_token = str(int(float_value))
+                if str_token in TOKEN_TO_SCORE_MAP:
+                    return TOKEN_TO_SCORE_MAP[str_token]
+        except ValueError:
+            pass
 
         return None
 

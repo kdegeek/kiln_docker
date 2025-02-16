@@ -8,6 +8,8 @@ def eval_adapter_from_type(eval_config_type: EvalConfigType) -> type[BaseEval]:
     match eval_config_type:
         case EvalConfigType.g_eval:
             return GEval
+        case EvalConfigType.llm_as_judge:
+            return GEval
         case _:
             # type checking will catch missing cases
             raise_exhaustive_enum_error(eval_config_type)

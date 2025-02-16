@@ -714,7 +714,7 @@ def test_eval_prompt_builder(tmp_path, valid_eval_config_datasource):
             prompt="test_eval_prompt",
             chain_of_thought_instructions="Think carefully",
         ),
-        properties={"g_eval_steps": ["step1", "step2"]},
+        properties={"eval_steps": ["step1", "step2"]},
     )
     eval_config.save_to_file()
 

@@ -68,7 +68,7 @@ def test_eval_config(test_task):
             prompt=test_task.instruction,
         ),
         properties={
-            "g_eval_steps": [
+            "eval_steps": [
                 "Is the joke funny?",
                 "Is the content appropriate for all audiences?",
                 "Is the joke culturally sensitive?",
@@ -105,9 +105,13 @@ def test_task_run(test_task):
     return task_run
 
 
+@pytest.mark.parametrize(
+    "config_type", [EvalConfigType.g_eval, EvalConfigType.llm_as_judge]
+)
 @pytest.mark.paid
-async def test_run_g_eval(test_task, test_eval_config, test_task_run):
+async def test_run_g_eval(test_task, test_eval_config, test_task_run, config_type):
     # Create G-Eval instance
+    test_eval_config.config_type = config_type
     g_eval = GEval(test_eval_config)
 
     # Run the evaluation
@@ -129,9 +133,13 @@ async def test_run_g_eval(test_task, test_eval_config, test_task_run):
     assert 1.0 <= overall <= 5.0
 
 
+@pytest.mark.parametrize(
+    "config_type", [EvalConfigType.g_eval, EvalConfigType.llm_as_judge]
+)
 @pytest.mark.paid
-async def test_run_g_eval_e2e(test_task, test_eval_config, test_task_run):
+async def test_run_g_eval_e2e(test_task, test_eval_config, test_task_run, config_type):
     # Create G-Eval instance
+    test_eval_config.config_type = config_type
     g_eval = GEval(test_eval_config)
 
     # Run the evaluation
@@ -189,6 +197,22 @@ async def test_g_eval_logprobs(test_task, test_eval_config, test_task_run):
     # Fail chance so low, we need to specify the precision
     assert pytest.approx(appropriateness, 1e-12) == 0.9999999999572222
     assert pytest.approx(appropriateness, 1e-12) != 1.0
+
+
+async def test_llm_as_judge(test_task, test_eval_config, test_task_run):
+    # Create G-Eval instance, set to LLM as Judge
+    run_output = pickle.loads(serialized_run_output)
+    test_eval_config.config_type = EvalConfigType.llm_as_judge
+    g_eval = GEval(test_eval_config)
+
+    assert isinstance(run_output, RunOutput)
+    assert run_output.output_logprobs is not None
+    result = g_eval.build_llm_as_judge_score(run_output)
+
+    # unlike g_eval, llm_as_judge returns the main token converted to our float scores
+    assert result["overall_rating"] == 4.0
+    assert result["topic_alignment"] == 5.0
+    assert result["appropriateness"] == 1.0
 
 
 def test_token_case():
@@ -257,11 +281,18 @@ def test_metric_offsets_invalid(test_eval_config):
         ("PASS", 1.0),
         ('"FAIL"', 0.0),
         ('"pAss"', 1.0),
+        ("1.0", 1.0),
+        ("2.0", 2.0),
+        ("3.0", 3.0),
+        ("4.0", 4.0),
+        ("5.0", 5.0),
+        ("5.0000", 5.0),
         # Invalid tokens
         ("invalid", None),
         ("6", None),
         ("0", None),
         ("", None),
+        ("4.9999999", None),
     ],
 )
 def test_score_from_token_string(test_eval_config, token_string, expected_score):

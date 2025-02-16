@@ -25,6 +25,7 @@ class EvalState(str, Enum):
 
 class EvalConfigType(str, Enum):
     g_eval = "g_eval"
+    llm_as_judge = "llm_as_judge"
 
 
 class EvalConfig(KilnParentedModel):
@@ -53,13 +54,14 @@ class EvalConfig(KilnParentedModel):
 
     @model_validator(mode="after")
     def validate_properties(self) -> Self:
-        if self.config_type == EvalConfigType.g_eval:
-            if "g_eval_steps" not in self.properties or not isinstance(
-                self.properties["g_eval_steps"], list
+        if (
+            self.config_type == EvalConfigType.g_eval
+            or self.config_type == EvalConfigType.llm_as_judge
+        ):
+            if "eval_steps" not in self.properties or not isinstance(
+                self.properties["eval_steps"], list
             ):
-                raise ValueError(
-                    "g_eval_steps is required and must be a list for g_eval"
-                )
+                raise ValueError("eval_steps is required and must be a list for g_eval")
             return self
         else:
             raise ValueError(f"Invalid eval config type: {self.config_type}")
