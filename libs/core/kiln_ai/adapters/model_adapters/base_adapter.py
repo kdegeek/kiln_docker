@@ -5,7 +5,6 @@ from typing import Dict, Literal, Tuple
 
 from kiln_ai.adapters.ml_model_list import KilnModelProvider, StructuredOutputMode
 from kiln_ai.adapters.parsers.parser_registry import model_parser_from_id
-from kiln_ai.adapters.prompt_builders import BasePromptBuilder, SimplePromptBuilder
 from kiln_ai.adapters.provider_tools import kiln_model_provider_from
 from kiln_ai.adapters.run_output import RunOutput
 from kiln_ai.datamodel import (
@@ -16,22 +15,20 @@ from kiln_ai.datamodel import (
     TaskRun,
 )
 from kiln_ai.datamodel.json_schema import validate_schema
+from kiln_ai.datamodel.run_config import RunConfig
 from kiln_ai.utils.config import Config
 
 
 @dataclass
 class AdapterConfig:
+    """
+    An adapter config is config options that do NOT impact the output of the model.
+
+    For example: if it's saved, of if we request additional data like logprobs.
+    """
+
     allow_saving: bool = True
     top_logprobs: int | None = None
-
-
-@dataclass
-class AdapterInfo:
-    adapter_name: str
-    model_name: str
-    model_provider: str
-    prompt_builder_name: str
-    prompt_id: str | None = None
 
 
 COT_FINAL_ANSWER_PROMPT = "Considering the above, return a final result."
@@ -53,22 +50,21 @@ class BaseAdapter(metaclass=ABCMeta):
 
     def __init__(
         self,
-        kiln_task: Task,
-        model_name: str,
-        model_provider_name: str,
-        prompt_builder: BasePromptBuilder | None = None,
+        run_config: RunConfig,
         tags: list[str] | None = None,
         config: AdapterConfig | None = None,
     ):
-        self.prompt_builder = prompt_builder or SimplePromptBuilder(kiln_task)
-        self.kiln_task = kiln_task
-        self.output_schema = self.kiln_task.output_json_schema
-        self.input_schema = self.kiln_task.input_json_schema
-        self.default_tags = tags
-        self.model_name = model_name
-        self.model_provider_name = model_provider_name
+        self.run_config = run_config
+        self.prompt_builder = run_config.prompt_builder()
         self._model_provider: KilnModelProvider | None = None
+
+        self.output_schema = self.task().output_json_schema
+        self.input_schema = self.task().input_json_schema
+        self.default_tags = tags
         self.base_adapter_config = config or AdapterConfig()
+
+    def task(self) -> Task:
+        return self.run_config.task
 
     def model_provider(self) -> KilnModelProvider:
         """
@@ -76,14 +72,14 @@ class BaseAdapter(metaclass=ABCMeta):
         """
         if self._model_provider is not None:
             return self._model_provider
-        if not self.model_name or not self.model_provider_name:
+        if not self.run_config.model_name or not self.run_config.model_provider_name:
             raise ValueError("model_name and model_provider_name must be provided")
         self._model_provider = kiln_model_provider_from(
-            self.model_name, self.model_provider_name
+            self.run_config.model_name, self.run_config.model_provider_name
         )
         if not self._model_provider:
             raise ValueError(
-                f"model_provider_name {self.model_provider_name} not found for model {self.model_name}"
+                f"model_provider_name {self.run_config.model_provider_name} not found for model {self.run_config.model_name}"
             )
         return self._model_provider
 
@@ -93,7 +89,7 @@ class BaseAdapter(metaclass=ABCMeta):
         input_source: DataSource | None = None,
     ) -> Dict | str:
         result = await self.invoke(input, input_source)
-        if self.kiln_task.output_json_schema is None:
+        if self.task().output_json_schema is None:
             return result.output.output
         else:
             return json.loads(result.output.output)
@@ -147,7 +143,7 @@ class BaseAdapter(metaclass=ABCMeta):
         if (
             self.base_adapter_config.allow_saving
             and Config.shared().autosave_runs
-            and self.kiln_task.path is not None
+            and self.task().path is not None
         ):
             run.save_to_file()
         else:
@@ -160,7 +156,7 @@ class BaseAdapter(metaclass=ABCMeta):
         return self.output_schema is not None
 
     @abstractmethod
-    def adapter_info(self) -> AdapterInfo:
+    def adapter_name(self) -> str:
         pass
 
     @abstractmethod
@@ -223,7 +219,7 @@ class BaseAdapter(metaclass=ABCMeta):
             )
 
         new_task_run = TaskRun(
-            parent=self.kiln_task,
+            parent=self.task(),
             input=input_str,
             input_source=input_source,
             output=TaskOutput(
@@ -244,12 +240,9 @@ class BaseAdapter(metaclass=ABCMeta):
         props = {}
 
         # adapter info
-        adapter_info = self.adapter_info()
-        props["adapter_name"] = adapter_info.adapter_name
-        props["model_name"] = adapter_info.model_name
-        props["model_provider"] = adapter_info.model_provider
-        props["prompt_builder_name"] = adapter_info.prompt_builder_name
-        if adapter_info.prompt_id is not None:
-            props["prompt_id"] = adapter_info.prompt_id
+        props["adapter_name"] = self.adapter_name()
+        props["model_name"] = self.run_config.model_name
+        props["model_provider"] = self.run_config.model_provider_name
+        props["prompt_id"] = self.run_config.prompt_id
 
         return props

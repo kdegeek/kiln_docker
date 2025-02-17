@@ -13,15 +13,15 @@ from kiln_ai.adapters.ml_model_list import StructuredOutputMode
 from kiln_ai.adapters.model_adapters.base_adapter import (
     COT_FINAL_ANSWER_PROMPT,
     AdapterConfig,
-    AdapterInfo,
     BaseAdapter,
-    BasePromptBuilder,
     RunOutput,
 )
 from kiln_ai.adapters.model_adapters.openai_compatible_config import (
     OpenAICompatibleConfig,
 )
 from kiln_ai.adapters.parsers.json_parser import parse_json_string
+from kiln_ai.adapters.prompt_builders import PromptId
+from kiln_ai.datamodel.run_config import RunConfig
 from kiln_ai.utils.exhaustive_error import raise_exhaustive_enum_error
 
 
@@ -30,7 +30,7 @@ class OpenAICompatibleAdapter(BaseAdapter):
         self,
         config: OpenAICompatibleConfig,
         kiln_task: datamodel.Task,
-        prompt_builder: BasePromptBuilder | None = None,
+        prompt_id: PromptId | None = None,
         tags: list[str] | None = None,
         base_adapter_config: AdapterConfig | None = None,
     ):
@@ -41,11 +41,17 @@ class OpenAICompatibleAdapter(BaseAdapter):
             default_headers=config.default_headers,
         )
 
-        super().__init__(
-            kiln_task,
+        run_config = RunConfig(
+            task=kiln_task,
             model_name=config.model_name,
             model_provider_name=config.provider_name,
-            prompt_builder=prompt_builder,
+        )
+
+        if prompt_id is not None:
+            run_config.prompt_id = prompt_id
+
+        super().__init__(
+            run_config=run_config,
             tags=tags,
             config=base_adapter_config,
         )
@@ -185,14 +191,8 @@ class OpenAICompatibleAdapter(BaseAdapter):
             output_logprobs=logprobs,
         )
 
-    def adapter_info(self) -> AdapterInfo:
-        return AdapterInfo(
-            model_name=self.model_name,
-            model_provider=self.model_provider_name,
-            adapter_name="kiln_openai_compatible_adapter",
-            prompt_builder_name=self.prompt_builder.__class__.prompt_builder_name(),
-            prompt_id=self.prompt_builder.prompt_id(),
-        )
+    def adapter_name(self) -> str:
+        return "kiln_openai_compatible_adapter"
 
     async def response_format_options(self) -> dict[str, Any]:
         # Unstructured if task isn't structured
@@ -204,7 +204,7 @@ class OpenAICompatibleAdapter(BaseAdapter):
             case StructuredOutputMode.json_mode:
                 return {"response_format": {"type": "json_object"}}
             case StructuredOutputMode.json_schema:
-                output_schema = self.kiln_task.output_schema()
+                output_schema = self.task().output_schema()
                 return {
                     "response_format": {
                         "type": "json_schema",
@@ -230,7 +230,7 @@ class OpenAICompatibleAdapter(BaseAdapter):
 
     def tool_call_params(self) -> dict[str, Any]:
         # Add additional_properties: false to the schema (OpenAI requires this for some models)
-        output_schema = self.kiln_task.output_schema()
+        output_schema = self.task().output_schema()
         if not isinstance(output_schema, dict):
             raise ValueError(
                 "Invalid output schema for this task. Can not use tool calls."

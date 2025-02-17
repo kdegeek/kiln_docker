@@ -57,17 +57,6 @@ class BasePromptBuilder(metaclass=ABCMeta):
         """
         pass
 
-    @classmethod
-    def prompt_builder_name(cls) -> str:
-        """Returns the name of the prompt builder, to be used for persisting into the datastore.
-
-        Default implementation gets the name of the prompt builder in snake case. If you change the class name, you should override this so prior saved data is compatible.
-
-        Returns:
-            str: The prompt builder name in snake_case format.
-        """
-        return snake_case(cls.__name__)
-
     def build_user_message(self, input: Dict | str) -> str:
         """Build a user message from the input.
 
@@ -433,9 +422,9 @@ def _check_prompt_id(id: str) -> str:
     if id.startswith("id::"):
         # check it has 4 parts divided by :: -- 'id::project_id::task_id::prompt_id'
         parts = id.split("::")
-        if len(parts) != 4:
+        if len(parts) != 2 or len(parts[1]) == 0:
             raise ValueError(
-                f"Invalid saved prompt ID: {id}. Expected format: 'id::[project_id]::[task_id]::[prompt_id]'."
+                f"Invalid saved prompt ID: {id}. Expected format: 'id::[prompt_id]'."
             )
         return id
 
@@ -461,11 +450,11 @@ def _check_prompt_id(id: str) -> str:
 
 
 # Our UI has some names that are not the same as the class names, which also hint parameters.
-def prompt_builder_from_id(prompt_id: str, task: Task) -> BasePromptBuilder:
+def prompt_builder_from_id(prompt_id: PromptId, task: Task) -> BasePromptBuilder:
     """Convert a name used in the UI to the corresponding prompt builder class.
 
     Args:
-        prompt_id (str): The prompt ID.
+        prompt_id (PromptId): The prompt ID.
 
     Returns:
         type[BasePromptBuilder]: The corresponding prompt builder class.

@@ -80,7 +80,6 @@ export function schema_from_model(
       required.push(key)
     }
   }
-  console.log(properties)
   return {
     type: "object",
     properties: properties,

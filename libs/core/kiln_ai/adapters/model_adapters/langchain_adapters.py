@@ -21,9 +21,7 @@ from kiln_ai.adapters.ml_model_list import (
 from kiln_ai.adapters.model_adapters.base_adapter import (
     COT_FINAL_ANSWER_PROMPT,
     AdapterConfig,
-    AdapterInfo,
     BaseAdapter,
-    BasePromptBuilder,
     RunOutput,
 )
 from kiln_ai.adapters.ollama_tools import (
@@ -31,6 +29,10 @@ from kiln_ai.adapters.ollama_tools import (
     ollama_base_url,
     ollama_model_installed,
 )
+from kiln_ai.adapters.prompt_builders import (
+    PromptId,
+)
+from kiln_ai.datamodel.run_config import RunConfig
 from kiln_ai.utils.config import Config
 from kiln_ai.utils.exhaustive_error import raise_exhaustive_enum_error
 
@@ -46,7 +48,7 @@ class LangchainAdapter(BaseAdapter):
         custom_model: BaseChatModel | None = None,
         model_name: str | None = None,
         provider: str | None = None,
-        prompt_builder: BasePromptBuilder | None = None,
+        prompt_id: PromptId | None = None,
         tags: list[str] | None = None,
         base_adapter_config: AdapterConfig | None = None,
     ):
@@ -80,11 +82,17 @@ class LangchainAdapter(BaseAdapter):
         if model_name is None:
             raise ValueError("model_name must be provided")
 
-        super().__init__(
-            kiln_task,
+        run_config = RunConfig(
+            task=kiln_task,
             model_name=model_name,
             model_provider_name=provider,
-            prompt_builder=prompt_builder,
+        )
+
+        if prompt_id is not None:
+            run_config.prompt_id = prompt_id
+
+        super().__init__(
+            run_config=run_config,
             tags=tags,
             config=base_adapter_config,
         )
@@ -114,15 +122,15 @@ class LangchainAdapter(BaseAdapter):
                     f"model {self._model} does not support structured output, cannot use output_json_schema"
                 )
             # Langchain expects title/description to be at top level, on top of json schema
-            output_schema = self.kiln_task.output_schema()
+            output_schema = self.task().output_schema()
             if output_schema is None:
                 raise ValueError(
-                    f"output_json_schema is not valid json: {self.kiln_task.output_json_schema}"
+                    f"output_json_schema is not valid json: {self.task().output_json_schema}"
                 )
             output_schema["title"] = "task_response"
             output_schema["description"] = "A response from the task"
             with_structured_output_options = self.get_structured_output_options(
-                self.model_name, self.model_provider_name
+                self.run_config.model_name, self.run_config.model_provider_name
             )
             self._model = self._model.with_structured_output(
                 output_schema,
@@ -199,14 +207,8 @@ class LangchainAdapter(BaseAdapter):
             intermediate_outputs=intermediate_outputs,
         )
 
-    def adapter_info(self) -> AdapterInfo:
-        return AdapterInfo(
-            model_name=self.model_name,
-            model_provider=self.model_provider_name,
-            adapter_name="kiln_langchain_adapter",
-            prompt_builder_name=self.prompt_builder.__class__.prompt_builder_name(),
-            prompt_id=self.prompt_builder.prompt_id(),
-        )
+    def adapter_name(self) -> str:
+        return "kiln_langchain_adapter"
 
     def _munge_response(self, response: Dict) -> Dict:
         # Mistral Large tool calling format is a bit different. Convert to standard format.
@@ -254,7 +256,7 @@ class LangchainAdapter(BaseAdapter):
 
     async def langchain_model_from(self) -> BaseChatModel:
         provider = self.model_provider()
-        return await langchain_model_from_provider(provider, self.model_name)
+        return await langchain_model_from_provider(provider, self.run_config.model_name)
 
 
 async def langchain_model_from_provider(

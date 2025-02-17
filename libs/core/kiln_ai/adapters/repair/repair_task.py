@@ -49,7 +49,7 @@ feedback describing what should be improved. Your job is to understand the evalu
         if run.output.source is None or run.output.source.properties is None:
             raise ValueError("No source properties found")
 
-        # Get the prompt builder - stored in 2 fields, mutually exclusive
+        # Get the prompt builder id. Need the second check because we used to store this in a prompt_builder_name field, so loading legacy runs will need this.
         prompt_id = run.output.source.properties.get(
             "prompt_id"
         ) or run.output.source.properties.get("prompt_builder_name", None)

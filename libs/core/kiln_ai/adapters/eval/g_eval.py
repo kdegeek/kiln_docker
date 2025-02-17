@@ -4,7 +4,7 @@ from typing import Dict, List, Tuple
 from kiln_ai.adapters.adapter_registry import adapter_for_task
 from kiln_ai.adapters.eval.base_eval import BaseEval
 from kiln_ai.adapters.model_adapters.base_adapter import AdapterConfig, RunOutput
-from kiln_ai.adapters.prompt_builders import SimpleChainOfThoughtPromptBuilder
+from kiln_ai.adapters.prompt_builders import PromptGenerators
 from kiln_ai.datamodel import Project, Task, TaskRun
 from kiln_ai.datamodel.eval import EvalConfig, EvalConfigType
 from openai.types.chat import ChatCompletionTokenLogprob
@@ -93,8 +93,6 @@ class GEval(BaseEval):
         """
 
         model_name, provider = self.model_and_provider()
-        # We always use Simple COT for G-Eval
-        prompt_builder = SimpleChainOfThoughtPromptBuilder(self.geval_task)
 
         # Only fetch logprobs for G-Eval
         # There are at most 5 valid rating tokens per rating type (five_star being largest), so 10 is more than enough to get to the very very unlikely
@@ -106,7 +104,8 @@ class GEval(BaseEval):
             self.geval_task,
             model_name,
             provider,
-            prompt_builder,
+            # We always use Simple COT for G-Eval
+            prompt_id=PromptGenerators.SIMPLE_CHAIN_OF_THOUGHT,
             base_adapter_config=AdapterConfig(
                 allow_saving=False,
                 top_logprobs=top_logprobs,
