@@ -58,7 +58,6 @@ def test_initialization(config, mock_task):
 
     assert isinstance(adapter.client, AsyncOpenAI)
     assert adapter.config == config
-    assert adapter.kiln_task == mock_task
     assert adapter.run_config.task == mock_task
     assert adapter.run_config.prompt_id == "simple_prompt_builder"
     assert adapter.default_tags == ["test-tag"]

@@ -84,7 +84,7 @@ def test_langchain_adapter_creation(mock_config, basic_task, provider):
     )
 
     assert isinstance(adapter, LangchainAdapter)
-    assert adapter.model_name == "test-model"
+    assert adapter.run_config.model_name == "test-model"
 
 
 # TODO should run for all cases

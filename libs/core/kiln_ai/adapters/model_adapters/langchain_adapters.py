@@ -122,15 +122,15 @@ class LangchainAdapter(BaseAdapter):
                     f"model {self._model} does not support structured output, cannot use output_json_schema"
                 )
             # Langchain expects title/description to be at top level, on top of json schema
-            output_schema = self.kiln_task.output_schema()
+            output_schema = self.task().output_schema()
             if output_schema is None:
                 raise ValueError(
-                    f"output_json_schema is not valid json: {self.kiln_task.output_json_schema}"
+                    f"output_json_schema is not valid json: {self.task().output_json_schema}"
                 )
             output_schema["title"] = "task_response"
             output_schema["description"] = "A response from the task"
             with_structured_output_options = self.get_structured_output_options(
-                self.model_name, self.model_provider_name
+                self.run_config.model_name, self.run_config.model_provider_name
             )
             self._model = self._model.with_structured_output(
                 output_schema,
@@ -256,7 +256,7 @@ class LangchainAdapter(BaseAdapter):
 
     async def langchain_model_from(self) -> BaseChatModel:
         provider = self.model_provider()
-        return await langchain_model_from_provider(provider, self.model_name)
+        return await langchain_model_from_provider(provider, self.run_config.model_name)
 
 
 async def langchain_model_from_provider(

@@ -10,6 +10,7 @@ from kiln_ai.adapters.run_output import RunOutput
 from kiln_ai.datamodel import (
     DataSource,
     DataSourceType,
+    Task,
     TaskOutput,
     TaskRun,
 )
@@ -54,17 +55,16 @@ class BaseAdapter(metaclass=ABCMeta):
         config: AdapterConfig | None = None,
     ):
         self.run_config = run_config
-        # TODO: remove these? Use run_config directly?
         self.prompt_builder = run_config.prompt_builder()
-        self.kiln_task = run_config.task
-        self.model_name = run_config.model_name
-        self.model_provider_name = run_config.model_provider_name
         self._model_provider: KilnModelProvider | None = None
 
-        self.output_schema = self.kiln_task.output_json_schema
-        self.input_schema = self.kiln_task.input_json_schema
+        self.output_schema = self.task().output_json_schema
+        self.input_schema = self.task().input_json_schema
         self.default_tags = tags
         self.base_adapter_config = config or AdapterConfig()
+
+    def task(self) -> Task:
+        return self.run_config.task
 
     def model_provider(self) -> KilnModelProvider:
         """
@@ -72,14 +72,14 @@ class BaseAdapter(metaclass=ABCMeta):
         """
         if self._model_provider is not None:
             return self._model_provider
-        if not self.model_name or not self.model_provider_name:
+        if not self.run_config.model_name or not self.run_config.model_provider_name:
             raise ValueError("model_name and model_provider_name must be provided")
         self._model_provider = kiln_model_provider_from(
-            self.model_name, self.model_provider_name
+            self.run_config.model_name, self.run_config.model_provider_name
         )
         if not self._model_provider:
             raise ValueError(
-                f"model_provider_name {self.model_provider_name} not found for model {self.model_name}"
+                f"model_provider_name {self.run_config.model_provider_name} not found for model {self.run_config.model_name}"
             )
         return self._model_provider
 
@@ -89,7 +89,7 @@ class BaseAdapter(metaclass=ABCMeta):
         input_source: DataSource | None = None,
     ) -> Dict | str:
         result = await self.invoke(input, input_source)
-        if self.kiln_task.output_json_schema is None:
+        if self.task().output_json_schema is None:
             return result.output.output
         else:
             return json.loads(result.output.output)
@@ -143,7 +143,7 @@ class BaseAdapter(metaclass=ABCMeta):
         if (
             self.base_adapter_config.allow_saving
             and Config.shared().autosave_runs
-            and self.kiln_task.path is not None
+            and self.task().path is not None
         ):
             run.save_to_file()
         else:
@@ -219,7 +219,7 @@ class BaseAdapter(metaclass=ABCMeta):
             )
 
         new_task_run = TaskRun(
-            parent=self.kiln_task,
+            parent=self.task(),
             input=input_str,
             input_source=input_source,
             output=TaskOutput(
