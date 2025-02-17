@@ -30,25 +30,31 @@
 
   let model_props: Record<string, string | number | undefined> = {}
   $: {
-    // Attempt to lookup a nice name for the prompt
-    let prompt_name = $current_task_prompts?.prompts.find(
-      (prompt) => prompt.id === run?.output?.source?.properties?.prompt_id,
-    )?.name
-    let prompt_generator_name = $current_task_prompts?.generators.find(
-      (generator) =>
-        generator.id === run?.output?.source?.properties?.prompt_builder_name,
-    )?.name
+    // Prompt ID previously was stored in the prompt_builder_name field
+    let prompt_id = (
+      run?.output?.source?.properties?.prompt_id ||
+      run?.output?.source?.properties?.prompt_builder_name ||
+      ""
+    ).toString()
 
+    let prompt_name: string | undefined = undefined
+    // Attempt to lookup a nice name for the prompt. First from named prompts, then from generators
     // Special case for fine-tuned prompts
-    if (
-      run?.output?.source?.properties?.prompt_builder_name ===
-      "fine_tune_prompt_builder"
-    ) {
-      prompt_generator_name = "Fine-Tune Prompt"
-      prompt_name = undefined
-    } else if (!prompt_generator_name && !prompt_name) {
-      prompt_generator_name =
-        "" + run?.output?.source?.properties?.prompt_builder_name
+    if (prompt_id && prompt_id.startsWith("fine_tune_prompt::")) {
+      prompt_name = "Fine-Tune Prompt"
+    }
+    if (!prompt_name) {
+      prompt_name = $current_task_prompts?.prompts.find(
+        (prompt) => "id::" + prompt.id === prompt_id,
+      )?.name
+    }
+    if (!prompt_name) {
+      prompt_name = $current_task_prompts?.generators.find(
+        (generator) => generator.id === prompt_id,
+      )?.name
+    }
+    if (!prompt_name) {
+      prompt_name = prompt_id
     }
 
     let topic_path: string | undefined = undefined
@@ -74,7 +80,6 @@
           $model_info,
         ),
         "Model Provider": run?.output?.source?.properties?.model_provider,
-        "Prompt Generator": prompt_generator_name,
         Prompt: prompt_name,
         "Created By": run?.input_source?.properties?.created_by,
         "Created At": formatDate(run?.created_at),
