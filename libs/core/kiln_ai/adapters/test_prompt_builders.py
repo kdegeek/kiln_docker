@@ -603,7 +603,7 @@ def test_valid_prompt_generator_names():
 
 def test_valid_saved_prompt_id():
     """Test that valid saved prompt IDs are accepted"""
-    valid_id = "id::project_123::task_456::prompt_789"
+    valid_id = "id::prompt_789"
     model = TestModel(prompt_id=valid_id)
     assert model.prompt_id == valid_id
 
@@ -619,11 +619,8 @@ def test_valid_fine_tune_prompt_id():
     "invalid_id",
     [
         pytest.param("id::project_123::task_456", id="missing_prompt_id"),
-        pytest.param(
-            "id::project_123::task_456::prompt_789::extra", id="too_many_parts"
-        ),
+        pytest.param("id::task_456::prompt_789", id="too_many_parts"),
         pytest.param("id::", id="empty_parts"),
-        pytest.param("id::project_123", id="too_few_parts"),
     ],
 )
 def test_invalid_saved_prompt_id_format(invalid_id):

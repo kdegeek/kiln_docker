@@ -422,9 +422,9 @@ def _check_prompt_id(id: str) -> str:
     if id.startswith("id::"):
         # check it has 4 parts divided by :: -- 'id::project_id::task_id::prompt_id'
         parts = id.split("::")
-        if len(parts) != 4:
+        if len(parts) != 2 or len(parts[1]) == 0:
             raise ValueError(
-                f"Invalid saved prompt ID: {id}. Expected format: 'id::[project_id]::[task_id]::[prompt_id]'."
+                f"Invalid saved prompt ID: {id}. Expected format: 'id::[prompt_id]'."
             )
         return id
 
