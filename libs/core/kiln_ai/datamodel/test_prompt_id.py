@@ -2,8 +2,6 @@ import pytest
 from pydantic import BaseModel, ValidationError
 
 from kiln_ai.datamodel import (
-    DataSource,
-    DataSourceType,
     PromptGenerators,
     PromptId,
 )
