@@ -12,10 +12,10 @@ jobs:
         # macos-latest is for arm64 build, macos-13 is for x86_64
         include:
           - os: windows-latest
-          - os: macos-latest # arm64
-          - os: macos-13 # x86_64
-          - os: ubuntu-latest # x86_64 (no arm64 support on GH Actions yet)
-          - os: ubuntu-22.04-arm # arm build
+          - os: macos-latest # arm64 macOS
+          - os: macos-13 # x86_64 macOS
+          - os: ubuntu-20.04 # x86_64 linux, oldest GH runner, for older libc, for maximal compatibility
+          - os: ubuntu-22.04-arm # arm linux build
 
     steps:
       - uses: actions/checkout@v4
