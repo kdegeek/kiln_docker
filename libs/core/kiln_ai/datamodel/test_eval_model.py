@@ -1,4 +1,5 @@
 import pytest
+from pydantic import ValidationError
 
 from kiln_ai.datamodel import BasePrompt
 from kiln_ai.datamodel.basemodel import KilnParentModel
@@ -6,6 +7,7 @@ from kiln_ai.datamodel.eval import (
     Eval,
     EvalConfig,
     EvalConfigType,
+    EvalRun,
     EvalState,
 )
 from kiln_ai.datamodel.task import Task
@@ -152,7 +154,7 @@ def test_eval_parent_task_wrong_type():
         Eval(name="Test Eval", parent=DummyParent())
 
 
-def test_eval_with_configs(mock_task, valid_eval_config_data, tmp_path):
+def test_eval_with_persisted_children(mock_task, valid_eval_config_data, tmp_path):
     task_path = tmp_path / "task.kiln"
     mock_task.path = task_path
     mock_task.save_to_file()
@@ -163,6 +165,16 @@ def test_eval_with_configs(mock_task, valid_eval_config_data, tmp_path):
     # Add config using the parent relationship
     config = EvalConfig(parent=eval, **valid_eval_config_data)
     config.save_to_file()
+
+    run = EvalRun(
+        parent=config,
+        dataset_id="dataset123",
+        task_run_config_id="config456",
+        input='{"key": "value"}',
+        output='{"result": "success"}',
+        scores={"accuracy": 0.95, "f1": 0.88},
+    )
+    run.save_to_file()
 
     # Test configs can be retrieved from disk
     evals = mock_task.evals()
@@ -175,3 +187,72 @@ def test_eval_with_configs(mock_task, valid_eval_config_data, tmp_path):
 
     # and back up
     assert configs[0].parent_eval().parent_task().path == task_path
+
+    # Test runs can be retrieved from disk
+    runs = configs[0].runs()
+    assert len(runs) == 1
+    assert runs[0].dataset_id == "dataset123"
+    assert runs[0].task_run_config_id == "config456"
+    assert runs[0].input == '{"key": "value"}'
+    assert runs[0].output == '{"result": "success"}'
+    assert runs[0].scores == {"accuracy": 0.95, "f1": 0.88}
+
+    # and back up
+    assert runs[0].parent_eval_config().parent_eval().parent_task().path == task_path
+
+
+def test_eval_run_valid_creation():
+    """Test creating an EvalRun with valid data"""
+    eval_run = EvalRun(
+        dataset_id="dataset123",
+        task_run_config_id="config456",
+        input='{"key": "value"}',  # JSON formatted input
+        output='{"result": "success"}',  # JSON formatted output
+        scores={"accuracy": 0.95, "f1": 0.88},
+    )
+
+    assert eval_run.dataset_id == "dataset123"
+    assert eval_run.task_run_config_id == "config456"
+    assert eval_run.input == '{"key": "value"}'
+    assert eval_run.output == '{"result": "success"}'
+    assert eval_run.scores == {"accuracy": 0.95, "f1": 0.88}
+
+
+def test_eval_run_plaintext():
+    """Test creating an EvalRun with plaintext input/output"""
+    eval_run = EvalRun(
+        dataset_id="dataset123",
+        task_run_config_id="config456",
+        input="What is the capital of France?",
+        output="The capital of France is Paris.",
+        scores={"accuracy": 1.0},
+    )
+
+    assert eval_run.input == "What is the capital of France?"
+    assert eval_run.output == "The capital of France is Paris."
+
+
+def test_eval_run_missing_required_fields():
+    """Test that omitting required fields raises ValidationError"""
+    with pytest.raises(ValidationError) as exc_info:
+        EvalRun(
+            dataset_id="dataset123",
+            # missing task_run_config_id
+            input="test",
+            output="test",
+            scores={"score": 1.0},
+        )
+
+    assert "task_run_config_id" in str(exc_info.value)
+
+
+def test_eval_run_invalid_scores():
+    """Test that scores must be a dict of floats"""
+    with pytest.raises(ValidationError):
+        EvalRun(
+            dataset_id="dataset123",
+            task_run_config_id="config456",
+            input="test",
+            output="test",
+            scores={"score": "not a float"},  # invalid score type
+        )
