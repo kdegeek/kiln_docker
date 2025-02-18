@@ -16,10 +16,12 @@ from kiln_ai.datamodel.dataset_split import DatasetSplit
 from kiln_ai.datamodel.eval import Eval
 from kiln_ai.datamodel.json_schema import JsonObjectSchema, schema_from_json_str
 from kiln_ai.datamodel.prompt import Prompt
+from kiln_ai.datamodel.prompt_id import PromptGenerators, PromptId
 from kiln_ai.datamodel.task_run import TaskRun
 
 if TYPE_CHECKING:
     from kiln_ai.datamodel.project import Project
+    from kiln_ai.datamodel.task import RunConfig
 
 
 class TaskRequirement(BaseModel):
@@ -38,6 +40,26 @@ class TaskRequirement(BaseModel):
     type: TaskOutputRatingType = Field(default=TaskOutputRatingType.five_star)
 
 
+class RunConfig(BaseModel):
+    """
+    A configuration for running a task.
+
+    This includes everything needed to run a task, except the input. Running the same RunConfig with the same input should make identical calls to the model (output may vary as models are non-deterministic).
+
+    For example: task, model, provider, prompt, etc.
+    """
+
+    task: "Task" = Field(description="The task to run.")
+    model_name: str = Field(description="The model to use for this run config.")
+    model_provider_name: str = Field(
+        description="The provider to use for this run config."
+    )
+    prompt_id: PromptId = Field(
+        description="The prompt to use for this run config. Defaults to building a simple prompt from the task if not provided.",
+        default=PromptGenerators.SIMPLE,
+    )
+
+
 class Task(
     KilnParentedModel,
     KilnParentModel,
@@ -47,6 +69,7 @@ class Task(
         "finetunes": Finetune,
         "prompts": Prompt,
         "evals": Eval,
+        # "run_configs": "RunConfig,
     },
 ):
     """

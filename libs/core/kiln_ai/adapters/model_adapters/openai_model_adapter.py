@@ -20,8 +20,8 @@ from kiln_ai.adapters.model_adapters.openai_compatible_config import (
     OpenAICompatibleConfig,
 )
 from kiln_ai.adapters.parsers.json_parser import parse_json_string
-from kiln_ai.adapters.prompt_builders import PromptId
-from kiln_ai.datamodel.run_config import RunConfig
+from kiln_ai.datamodel import PromptId
+from kiln_ai.datamodel.task import RunConfig
 from kiln_ai.utils.exhaustive_error import raise_exhaustive_enum_error
 
 

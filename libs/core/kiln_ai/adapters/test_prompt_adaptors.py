@@ -11,9 +11,9 @@ from kiln_ai.adapters.model_adapters.langchain_adapters import LangchainAdapter
 from kiln_ai.adapters.ollama_tools import ollama_online
 from kiln_ai.adapters.prompt_builders import (
     BasePromptBuilder,
-    PromptId,
     SimpleChainOfThoughtPromptBuilder,
 )
+from kiln_ai.datamodel import PromptId
 
 
 def get_all_models_and_providers():

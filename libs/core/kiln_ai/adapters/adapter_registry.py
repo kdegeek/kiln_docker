@@ -8,8 +8,8 @@ from kiln_ai.adapters.model_adapters.openai_model_adapter import (
     OpenAICompatibleAdapter,
     OpenAICompatibleConfig,
 )
-from kiln_ai.adapters.prompt_builders import PromptId
 from kiln_ai.adapters.provider_tools import core_provider, openai_compatible_config
+from kiln_ai.datamodel import PromptId
 from kiln_ai.utils.config import Config
 from kiln_ai.utils.exhaustive_error import raise_exhaustive_enum_error
 

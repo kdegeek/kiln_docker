@@ -28,6 +28,11 @@ from kiln_ai.datamodel.finetune import (
 )
 from kiln_ai.datamodel.project import Project
 from kiln_ai.datamodel.prompt import BasePrompt, Prompt
+from kiln_ai.datamodel.prompt_id import (
+    PromptGenerators,
+    PromptId,
+    prompt_generator_values,
+)
 from kiln_ai.datamodel.task import Task, TaskRequirement
 from kiln_ai.datamodel.task_output import (
     DataSource,
@@ -66,4 +71,7 @@ __all__ = [
     "TaskOutputRating",
     "StructuredOutputMode",
     "FinetuneDataStrategy",
+    "PromptId",
+    "PromptGenerators",
+    "prompt_generator_values",
 ]

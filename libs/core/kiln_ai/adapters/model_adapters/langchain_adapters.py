@@ -29,10 +29,8 @@ from kiln_ai.adapters.ollama_tools import (
     ollama_base_url,
     ollama_model_installed,
 )
-from kiln_ai.adapters.prompt_builders import (
-    PromptId,
-)
-from kiln_ai.datamodel.run_config import RunConfig
+from kiln_ai.datamodel import PromptId
+from kiln_ai.datamodel.task import RunConfig
 from kiln_ai.utils.config import Config
 from kiln_ai.utils.exhaustive_error import raise_exhaustive_enum_error
 

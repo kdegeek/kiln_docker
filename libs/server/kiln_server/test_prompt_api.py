@@ -3,8 +3,7 @@ from unittest.mock import patch
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from kiln_ai.adapters.prompt_builders import PromptGenerators
-from kiln_ai.datamodel import Project, Prompt, Task
+from kiln_ai.datamodel import Project, Prompt, PromptGenerators, Task
 
 from kiln_server.custom_errors import connect_custom_errors
 from kiln_server.prompt_api import _prompt_generators, connect_prompt_api

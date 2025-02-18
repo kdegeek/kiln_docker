@@ -5,6 +5,7 @@ from typing import Dict, Literal, Tuple
 
 from kiln_ai.adapters.ml_model_list import KilnModelProvider, StructuredOutputMode
 from kiln_ai.adapters.parsers.parser_registry import model_parser_from_id
+from kiln_ai.adapters.prompt_builders import prompt_builder_from_id
 from kiln_ai.adapters.provider_tools import kiln_model_provider_from
 from kiln_ai.adapters.run_output import RunOutput
 from kiln_ai.datamodel import (
@@ -15,7 +16,7 @@ from kiln_ai.datamodel import (
     TaskRun,
 )
 from kiln_ai.datamodel.json_schema import validate_schema
-from kiln_ai.datamodel.run_config import RunConfig
+from kiln_ai.datamodel.task import RunConfig
 from kiln_ai.utils.config import Config
 
 
@@ -55,7 +56,9 @@ class BaseAdapter(metaclass=ABCMeta):
         config: AdapterConfig | None = None,
     ):
         self.run_config = run_config
-        self.prompt_builder = run_config.prompt_builder()
+        self.prompt_builder = prompt_builder_from_id(
+            run_config.prompt_id, run_config.task
+        )
         self._model_provider: KilnModelProvider | None = None
 
         self.output_schema = self.task().output_json_schema

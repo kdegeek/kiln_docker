@@ -12,7 +12,7 @@ from kiln_ai.datamodel import (
     Project,
     Task,
 )
-from kiln_ai.datamodel.run_config import RunConfig
+from kiln_ai.datamodel.task import RunConfig
 from kiln_ai.utils.config import Config
 
 

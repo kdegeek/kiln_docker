@@ -1,58 +1,28 @@
 from typing import TYPE_CHECKING, Union
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import Field, model_validator
 from typing_extensions import Self
 
-from kiln_ai.adapters.prompt_builders import (
-    BasePromptBuilder,
-    PromptGenerators,
-    PromptId,
-    prompt_builder_from_id,
-)
 from kiln_ai.datamodel.basemodel import NAME_FIELD, KilnParentedModel
-from kiln_ai.datamodel.task import Task
 
 if TYPE_CHECKING:
-    from kiln_ai.datamodel.task import Task
+    from kiln_ai.datamodel.task import RunConfig, Task
 
 
-class RunConfig(BaseModel):
+class TaskRunConfig(KilnParentedModel):
     """
-    A configuration for running a task.
+    A Kiln model for persisting a run config in a Kiln Project, nested under a task.
 
-    This includes everything needed to run a task, except the input. Running the same RunConfig with the same input should make identical calls to the model (output may vary as models are non-deterministic).
-
-    For example: task, model, provider, prompt (ID, builder, etc), etc.
-    """
-
-    task: "Task" = Field(description="The task to run.")
-    model_name: str = Field(description="The model to use for this run config.")
-    model_provider_name: str = Field(
-        description="The provider to use for this run config."
-    )
-    prompt_id: PromptId = Field(
-        description="The prompt to use for this run config. Defaults to building a simple prompt from the task if not provided.",
-        default=PromptGenerators.SIMPLE,
-    )
-
-    def prompt_builder(self) -> BasePromptBuilder:
-        return prompt_builder_from_id(self.prompt_id, self.task)
-
-
-class TaskRunConfig(RunConfig, KilnParentedModel):
-    """
-    A run config, parented to a Kiln Task.
+    Typically used to save a method of running a task for evaluation.
 
     A run config includes everything needed to run a task, except the input. Running the same RunConfig with the same input should make identical calls to the model (output may vary as models are non-deterministic).
-
-    Used for saving and sharing run configs in a Kiln Project.
     """
 
     name: str = NAME_FIELD
     description: str | None = Field(
         default=None, description="The description of the task run config."
     )
-    run_config: RunConfig = Field(
+    run_config: "RunConfig" = Field(
         description="The run config to use for this task run."
     )
 

@@ -5,7 +5,7 @@ import pytest
 from kiln_ai.adapters.ml_model_list import KilnModelProvider, StructuredOutputMode
 from kiln_ai.adapters.model_adapters.base_adapter import BaseAdapter
 from kiln_ai.datamodel import Task
-from kiln_ai.datamodel.run_config import RunConfig
+from kiln_ai.datamodel.task import RunConfig
 
 
 class MockAdapter(BaseAdapter):
