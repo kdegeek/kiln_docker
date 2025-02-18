@@ -685,7 +685,8 @@ export interface components {
          */
         CreateDatasetSplitRequest: {
             dataset_split_type: components["schemas"]["DatasetSplitType"];
-            filter_type: components["schemas"]["DatasetFilterType"];
+            /** Filter Id */
+            filter_id: string;
             /** Name */
             name?: string | null;
             /** Description */
@@ -853,12 +854,6 @@ export interface components {
          */
         DataSourceType: "human" | "synthetic";
         /**
-         * DatasetFilterType
-         * @description Dataset filter names.
-         * @enum {string}
-         */
-        DatasetFilterType: "all" | "high_rating" | "thinking_model" | "thinking_model_high_rated";
-        /**
          * DatasetSplit
          * @description A collection of task runs, with optional splits (train, test, validation).
          *
@@ -905,8 +900,11 @@ export interface components {
             split_contents: {
                 [key: string]: string[];
             };
-            /** @description The filter used to build the dataset. */
-            filter?: components["schemas"]["DatasetFilterType"] | null;
+            /**
+             * Filter
+             * @description The filter used to build the dataset.
+             */
+            filter?: string | null;
             /** Model Type */
             readonly model_type: string;
         };
