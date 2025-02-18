@@ -15,7 +15,7 @@ from kiln_ai.datamodel.basemodel import (
     string_to_valid_name,
 )
 from kiln_ai.datamodel.model_cache import ModelCache
-from kiln_ai.datamodel.run_config import RunConfig
+from kiln_ai.datamodel.task import RunConfig
 
 
 @pytest.fixture

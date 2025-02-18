@@ -19,7 +19,7 @@ from kiln_ai.adapters.model_adapters.langchain_adapters import (
     langchain_model_from_provider,
 )
 from kiln_ai.adapters.test_prompt_adaptors import build_test_task
-from kiln_ai.datamodel.run_config import RunConfig
+from kiln_ai.datamodel.task import RunConfig
 
 
 @pytest.fixture

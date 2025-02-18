@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException
-from kiln_ai.adapters.prompt_builders import PromptId, prompt_builder_from_id
+from kiln_ai.adapters.prompt_builders import prompt_builder_from_id
+from kiln_ai.datamodel import PromptId
 from kiln_server.task_api import task_from_id
 from pydantic import BaseModel
 

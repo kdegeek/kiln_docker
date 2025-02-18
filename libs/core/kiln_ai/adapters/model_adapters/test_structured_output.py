@@ -2,8 +2,6 @@ import json
 from pathlib import Path
 from typing import Dict
 
-import jsonschema
-import jsonschema.exceptions
 import pytest
 
 import kiln_ai.datamodel as datamodel
@@ -16,13 +14,9 @@ from kiln_ai.adapters.model_adapters.base_adapter import (
     RunOutput,
 )
 from kiln_ai.adapters.ollama_tools import ollama_online
-from kiln_ai.adapters.prompt_builders import (
-    BasePromptBuilder,
-    PromptId,
-    SimpleChainOfThoughtPromptBuilder,
-)
 from kiln_ai.adapters.test_prompt_adaptors import get_all_models_and_providers
-from kiln_ai.datamodel.run_config import RunConfig
+from kiln_ai.datamodel import PromptId
+from kiln_ai.datamodel.task import RunConfig
 from kiln_ai.datamodel.test_json_schema import json_joke_schema, json_triangle_schema
 
 

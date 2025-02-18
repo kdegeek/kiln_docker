@@ -6,8 +6,7 @@ from kiln_ai.adapters.data_gen.data_gen_task import (
     DataGenSampleTask,
     DataGenSampleTaskInput,
 )
-from kiln_ai.adapters.prompt_builders import PromptId
-from kiln_ai.datamodel import DataSource, DataSourceType, TaskRun
+from kiln_ai.datamodel import DataSource, DataSourceType, PromptId, TaskRun
 from kiln_server.run_api import model_provider_from_string
 from kiln_server.task_api import task_from_id
 from pydantic import BaseModel, ConfigDict, Field

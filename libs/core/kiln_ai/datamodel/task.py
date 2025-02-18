@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING, Dict, List, Union
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
+from typing_extensions import Self
 
 from kiln_ai.datamodel import Finetune
 from kiln_ai.datamodel.basemodel import (
@@ -16,6 +17,7 @@ from kiln_ai.datamodel.dataset_split import DatasetSplit
 from kiln_ai.datamodel.eval import Eval
 from kiln_ai.datamodel.json_schema import JsonObjectSchema, schema_from_json_str
 from kiln_ai.datamodel.prompt import Prompt
+from kiln_ai.datamodel.prompt_id import PromptGenerators, PromptId
 from kiln_ai.datamodel.task_run import TaskRun
 
 if TYPE_CHECKING:
@@ -38,6 +40,62 @@ class TaskRequirement(BaseModel):
     type: TaskOutputRatingType = Field(default=TaskOutputRatingType.five_star)
 
 
+class RunConfig(BaseModel):
+    """
+    A configuration for running a task.
+
+    This includes everything needed to run a task, except the input. Running the same RunConfig with the same input should make identical calls to the model (output may vary as models are non-deterministic).
+
+    For example: task, model, provider, prompt, etc.
+    """
+
+    task: "Task" = Field(description="The task to run.")
+    model_name: str = Field(description="The model to use for this run config.")
+    model_provider_name: str = Field(
+        description="The provider to use for this run config."
+    )
+    prompt_id: PromptId = Field(
+        description="The prompt to use for this run config. Defaults to building a simple prompt from the task if not provided.",
+        default=PromptGenerators.SIMPLE,
+    )
+
+
+class TaskRunConfig(KilnParentedModel):
+    """
+    A Kiln model for persisting a run config in a Kiln Project, nested under a task.
+
+    Typically used to save a method of running a task for evaluation.
+
+    A run config includes everything needed to run a task, except the input. Running the same RunConfig with the same input should make identical calls to the model (output may vary as models are non-deterministic).
+    """
+
+    name: str = NAME_FIELD
+    description: str | None = Field(
+        default=None, description="The description of the task run config."
+    )
+    run_config: "RunConfig" = Field(
+        description="The run config to use for this task run."
+    )
+
+    # Workaround to return typed parent without importing Task
+    def parent_task(self) -> Union["Task", None]:
+        if self.parent is None or self.parent.__class__.__name__ != "Task":
+            return None
+        return self.parent  # type: ignore
+
+    @model_validator(mode="after")
+    def validate_task(self) -> Self:
+        # Check that the task in the run config matches the parent task
+        parent_task = self.parent_task()
+        if parent_task is None:
+            raise ValueError("Run config must be parented to a task")
+        if self.run_config.task is None:
+            raise ValueError("Run config must have a task")
+        if self.run_config.task.id != parent_task.id:
+            raise ValueError("Run config task must match parent task")
+        return self
+
+
 class Task(
     KilnParentedModel,
     KilnParentModel,
@@ -47,6 +105,7 @@ class Task(
         "finetunes": Finetune,
         "prompts": Prompt,
         "evals": Eval,
+        "run_configs": TaskRunConfig,
     },
 ):
     """
