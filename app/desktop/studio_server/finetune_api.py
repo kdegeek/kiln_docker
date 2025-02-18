@@ -24,9 +24,11 @@ from kiln_ai.datamodel import (
     FineTuneStatusType,
     Task,
 )
+from kiln_ai.datamodel.dataset_filters import (
+    DatasetFilterId,
+)
 from kiln_ai.datamodel.dataset_split import (
     AllSplitDefinition,
-    DatasetFilterType,
     Train60Test20Val20SplitDefinition,
     Train80Test10Val10SplitDefinition,
     Train80Test20SplitDefinition,
@@ -73,7 +75,7 @@ class CreateDatasetSplitRequest(BaseModel):
     """Request to create a dataset split"""
 
     dataset_split_type: DatasetSplitType
-    filter_type: DatasetFilterType
+    filter_id: DatasetFilterId
     name: str | None = None
     description: str | None = None
 
@@ -206,7 +208,7 @@ def connect_fine_tune_api(app: FastAPI):
             name,
             task,
             split_definitions,
-            filter_type=request.filter_type,
+            filter_id=request.filter_id,
             description=request.description,
         )
         dataset_split.save_to_file()

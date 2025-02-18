@@ -4,67 +4,19 @@ Tools for splitting datasets into train/test/validation splits. Includes filters
 
 import math
 import random
-from enum import Enum
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING
 
 from pydantic import BaseModel, Field, model_validator
 
 from kiln_ai.datamodel.basemodel import NAME_FIELD, KilnParentedModel
-from kiln_ai.datamodel.task_run import TaskRun
+from kiln_ai.datamodel.dataset_filters import (
+    DatasetFilter,
+    DatasetFilterId,
+    dataset_filter_from_id,
+)
 
 if TYPE_CHECKING:
     from kiln_ai.datamodel.task import Task
-
-
-# A type alias that takes a TaskRun and returns a boolean indicating whether the task run should be included in the split.
-# Several filters are defined below like AllDatasetFilter, HighRatingDatasetFilter, etc.
-DatasetFilter = Callable[[TaskRun], bool]
-
-
-def AllDatasetFilter(_: TaskRun) -> bool:
-    return True
-
-
-def HighRatingDatasetFilter(task_run: TaskRun) -> bool:
-    if task_run.output is None:
-        return False
-    if task_run.repaired_output is not None:
-        # Repairs always considered high quality
-        return True
-    if task_run.output.rating is None:
-        return False
-    return task_run.output.rating.is_high_quality()
-
-
-def ThinkingModelDatasetFilter(task_run: TaskRun) -> bool:
-    """
-    A filter that returns True if the task has intermediate outputs we can training a 'thinking' model on (reasoning or chain of thought)
-    """
-    return task_run.has_thinking_training_data()
-
-
-def ThinkingModelHighRatedFilter(task_run: TaskRun) -> bool:
-    """
-    A filter that returns True if the task has thinking data and the output is high quality
-    """
-    return ThinkingModelDatasetFilter(task_run) and HighRatingDatasetFilter(task_run)
-
-
-class DatasetFilterType(str, Enum):
-    """Dataset filter names."""
-
-    ALL = "all"
-    HIGH_RATING = "high_rating"
-    THINKING_MODEL = "thinking_model"
-    THINKING_MODEL_HIGH_RATED = "thinking_model_high_rated"
-
-
-dataset_filters = {
-    DatasetFilterType.ALL: AllDatasetFilter,
-    DatasetFilterType.HIGH_RATING: HighRatingDatasetFilter,
-    DatasetFilterType.THINKING_MODEL: ThinkingModelDatasetFilter,
-    DatasetFilterType.THINKING_MODEL_HIGH_RATED: ThinkingModelHighRatedFilter,
-}
 
 
 class DatasetSplitDefinition(BaseModel):
@@ -126,7 +78,7 @@ class DatasetSplit(KilnParentedModel):
     split_contents: dict[str, list[str]] = Field(
         description="The contents of each split in the dataset. The key is the split name, and the value is a list of task run IDs.",
     )
-    filter: DatasetFilterType | None = Field(
+    filter: DatasetFilterId | None = Field(
         default=None,
         description="The filter used to build the dataset.",
     )
@@ -144,13 +96,13 @@ class DatasetSplit(KilnParentedModel):
         name: str,
         task: "Task",
         splits: list[DatasetSplitDefinition],
-        filter_type: DatasetFilterType = DatasetFilterType.ALL,
+        filter_id: DatasetFilterId = "all",
         description: str | None = None,
     ):
         """
         Build a dataset split from a task.
         """
-        filter = dataset_filters[filter_type]
+        filter = dataset_filter_from_id(filter_id)
         split_contents = cls.build_split_contents(task, splits, filter)
         return cls(
             parent=task,
@@ -158,7 +110,7 @@ class DatasetSplit(KilnParentedModel):
             description=description,
             splits=splits,
             split_contents=split_contents,
-            filter=filter_type,
+            filter=filter_id,
         )
 
     @classmethod

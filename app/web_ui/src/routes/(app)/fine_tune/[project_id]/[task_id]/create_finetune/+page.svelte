@@ -298,8 +298,7 @@
             body: {
               // @ts-expect-error types are validated by the server
               dataset_split_type: new_dataset_split,
-              // @ts-expect-error types are validated by the server
-              filter_type: new_dataset_filter,
+              filter_id: new_dataset_filter,
             },
           },
         )

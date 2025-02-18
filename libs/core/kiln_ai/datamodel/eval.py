@@ -1,6 +1,6 @@
 import json
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Union
+from typing import TYPE_CHECKING, Any, Dict, Union
 
 from pydantic import Field, model_validator
 from typing_extensions import Self
@@ -17,6 +17,8 @@ from kiln_ai.datamodel.task_output import DataSource, DataSourceType
 if TYPE_CHECKING:
     from kiln_ai.datamodel.task import Task
 
+EvalScores = Dict[str, float]
+
 
 class EvalState(str, Enum):
     enabled = "enabled"
@@ -28,7 +30,35 @@ class EvalConfigType(str, Enum):
     llm_as_judge = "llm_as_judge"
 
 
-class EvalConfig(KilnParentedModel):
+class EvalRun(KilnParentedModel):
+    """
+    The results of running an eval on a single dataset item, with a specific TaskRunConfig and EvalConfig.
+    """
+
+    dataset_id: ID_TYPE = Field(
+        description="The ID of the dataset item that was used for this run (we only use it's input). Must belong to the same Task as this eval."
+    )
+    task_run_config_id: ID_TYPE = Field(
+        description="The ID of the TaskRunConfig that was run. Must belong to the same Task as this eval."
+    )
+    # This may duplicate the dataset_id.input, but we're denormalizing intentionally.
+    input: str = Field(
+        description="The input to the task. JSON formatted for structured input, plaintext for unstructured input."
+    )
+    output: str = Field(
+        description="The output of the task. JSON formatted for structured output, plaintext for unstructured output."
+    )
+    scores: EvalScores = Field(
+        description="The scores of the evaluator (specifically the EvalConfig this object is a child of)."
+    )
+
+    def parent_eval_config(self) -> "EvalConfig":
+        if self.parent is None or self.parent.__class__.__name__ != "EvalConfig":
+            raise ValueError("parent must be an EvalConfig")
+        return self.parent  # type: ignore
+
+
+class EvalConfig(KilnParentedModel, KilnParentModel, parent_of={"runs": EvalRun}):
     """
     A configuration for running an eval. This includes anything needed to run the eval on a dataset like the prompt, model, thresholds, etc.
 
