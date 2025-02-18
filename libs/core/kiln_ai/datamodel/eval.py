@@ -11,6 +11,7 @@ from kiln_ai.datamodel.basemodel import (
     KilnParentedModel,
     KilnParentModel,
 )
+from kiln_ai.datamodel.dataset_filters import DatasetFilterId
 from kiln_ai.datamodel.prompt import BasePrompt
 from kiln_ai.datamodel.task_output import DataSource, DataSourceType
 
@@ -124,6 +125,12 @@ class Eval(KilnParentedModel, KilnParentModel, parent_of={"configs": EvalConfig}
     current_config_id: ID_TYPE = Field(
         default=None,
         description="The id of the current config to use for this eval. This can be changed over time to run the same eval with different configs.",
+    )
+    eval_set_filter_id: DatasetFilterId = Field(
+        description="The id of the dataset filter which defines which dataset items are included when running this eval. Should be mutually exclusive with eval_configs_filter_id."
+    )
+    eval_configs_filter_id: DatasetFilterId = Field(
+        description="The id of the dataset filter which defines which dataset items are included when comparing the quality of the eval configs under this eval. Should consist of dataset items with ratings. Should be mutually exclusive with eval_set_filter_id."
     )
 
     # Workaround to return typed parent without importing Task

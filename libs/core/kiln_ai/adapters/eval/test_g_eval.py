@@ -47,7 +47,12 @@ def test_task(tmp_path):
 
 @pytest.fixture
 def test_eval_config(test_task):
-    eval = Eval(name="Joke Quality Eval", parent=test_task)
+    eval = Eval(
+        name="Joke Quality Eval",
+        parent=test_task,
+        eval_set_filter_id="tag::tag1",
+        eval_configs_filter_id="tag::tag2",
+    )
     eval.save_to_file()
 
     config = EvalConfig(
