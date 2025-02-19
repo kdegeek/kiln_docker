@@ -4,6 +4,7 @@ from typing import AsyncGenerator, List
 
 from kiln_ai.adapters.eval.base_eval import BaseEval
 from kiln_ai.adapters.eval.registry import eval_adapter_from_type
+from kiln_ai.datamodel.dataset_filters import dataset_filter_from_id
 from kiln_ai.datamodel.eval import EvalConfig
 from kiln_ai.datamodel.task import TaskRunConfig
 from kiln_ai.datamodel.task_run import TaskRun
@@ -60,13 +61,27 @@ class EvalRunner:
         self.eval = target_eval
 
     def collect_tasks(self) -> List[EvalJob]:
-        return []
+        """
+        Collect all jobs for this run, excluding any that have already been run.
 
-        # return [
-        #    EvalJob(item=task_run, run_config=run_config)
-        #    for task_run in self.task.runs()
-        #    for run_config in self.run_configs
-        # ]
+        The tasks:
+        - should be in one of the eval filters: the eval filter (what's being evaluated) or the eval config filter (what's being evaluated to compare eval configs).
+        - should not have already been run for this eval config
+        """
+        config_filter = dataset_filter_from_id(self.eval.eval_configs_filter_id)
+        eval_filter = dataset_filter_from_id(self.eval.eval_set_filter_id)
+
+        already_run = {
+            f"{run.dataset_id}::{run.task_run_config_id}"
+            for run in self.eval_config.runs(readonly=True)
+        }
+        return [
+            EvalJob(item=task_run, task_run_config=run_config)
+            for task_run in self.task.runs(readonly=True)
+            if config_filter(task_run) or eval_filter(task_run)
+            for run_config in self.run_configs
+            if f"{task_run.id}::{run_config.id}" not in already_run
+        ]
 
     async def run(self, concurrency: int = 25) -> AsyncGenerator[EvalProgress, None]:
         """
@@ -139,8 +154,8 @@ class EvalRunner:
             if not isinstance(evaluator, BaseEval):
                 raise ValueError("Not able to create evaluator from eval config")
 
-            result = await evaluator.run(job.item.input)
-            print(f"Result: {result}")
+            task_run, scores = await evaluator.run(job.item.input)
+            print(f"Result: {task_run.id} {scores}")
 
             return True
         except Exception as e:

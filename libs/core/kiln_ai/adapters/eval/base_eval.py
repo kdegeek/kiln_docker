@@ -40,7 +40,8 @@ class BaseEval:
 
         return model_name, ModelProviderName(provider)
 
-    async def run(self, input: str) -> EvalScores:
+    # TODO add test, nothing breaks if this returns a tuple
+    async def run(self, input: str) -> tuple[TaskRun, EvalScores]:
         run_adapter = adapter_for_task(
             self.target_task,
             self.run_config.model_name,
@@ -54,7 +55,7 @@ class BaseEval:
         eval_output = await self.run_eval(run_output)
         validate_schema(eval_output, self.score_schema)
 
-        return eval_output
+        return run_output, eval_output
 
     @abstractmethod
     # Runs the eval on the given task run and returns a dictionary of scores which should conform to the score schema

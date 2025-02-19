@@ -83,6 +83,9 @@ class EvalConfig(KilnParentedModel, KilnParentModel, parent_of={"runs": EvalRun}
             raise ValueError("parent must be an Eval")
         return self.parent  # type: ignore
 
+    def runs(self, readonly: bool = False) -> list[EvalRun]:
+        return super().runs(readonly=readonly)  # type: ignore
+
     @model_validator(mode="after")
     def validate_properties(self) -> Self:
         if (
