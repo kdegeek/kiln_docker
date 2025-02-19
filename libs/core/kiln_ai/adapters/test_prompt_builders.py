@@ -608,6 +608,8 @@ def test_eval_prompt_builder(tmp_path, valid_eval_config_datasource):
     eval = Eval(
         name="test_eval",
         parent=task,
+        eval_set_filter_id="tag::tag1",
+        eval_configs_filter_id="tag::tag2",
     )
     eval.save_to_file()
 
@@ -669,6 +671,8 @@ def test_eval_prompt_builder_validation_errors(tmp_path):
     eval = Eval(
         name="test_eval",
         parent=task,
+        eval_set_filter_id="tag::tag1",
+        eval_configs_filter_id="tag::tag2",
     )
     eval.save_to_file()
 

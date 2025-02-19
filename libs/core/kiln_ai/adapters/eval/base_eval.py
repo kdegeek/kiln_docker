@@ -1,18 +1,17 @@
 import json
 from abc import abstractmethod
-from typing import Dict
 
 from kiln_ai.adapters.adapter_registry import adapter_for_task
 from kiln_ai.adapters.ml_model_list import ModelProviderName
 from kiln_ai.adapters.model_adapters.base_adapter import AdapterConfig
 from kiln_ai.datamodel.eval import EvalConfig, EvalScores
 from kiln_ai.datamodel.json_schema import string_to_json_key, validate_schema
-from kiln_ai.datamodel.task import Task, TaskOutputRatingType, TaskRun
+from kiln_ai.datamodel.task import RunConfig, Task, TaskOutputRatingType, TaskRun
 from kiln_ai.utils.exhaustive_error import raise_exhaustive_enum_error
 
 
 class BaseEval:
-    def __init__(self, eval_config: EvalConfig):
+    def __init__(self, eval_config: EvalConfig, run_config: RunConfig):
         self.eval_config = eval_config
         eval = eval_config.parent_eval()
         if not eval:
@@ -23,6 +22,7 @@ class BaseEval:
             raise ValueError("Eval must have a parent task")
         self.target_task = task
         self.score_schema = BaseEval.build_score_schema(task, allow_float_scores=True)
+        self.run_config = run_config
 
     def model_and_provider(self) -> tuple[str, ModelProviderName]:
         model_name = self.eval_config.model.properties.get("model_name")
@@ -40,12 +40,11 @@ class BaseEval:
 
         return model_name, ModelProviderName(provider)
 
-    async def run(self, input: Dict | str) -> EvalScores:
+    async def run(self, input: str) -> tuple[TaskRun, EvalScores]:
         run_adapter = adapter_for_task(
             self.target_task,
-            # TODO: take these from evalRun
-            "llama_3_1_8b",
-            ModelProviderName.groq,
+            self.run_config.model_name,
+            ModelProviderName(self.run_config.model_provider_name),
             base_adapter_config=AdapterConfig(allow_saving=False),
         )
 
@@ -55,11 +54,11 @@ class BaseEval:
         eval_output = await self.run_eval(run_output)
         validate_schema(eval_output, self.score_schema)
 
-        return eval_output
+        return run_output, eval_output
 
     @abstractmethod
     # Runs the eval on the given task run and returns a dictionary of scores which should conform to the score schema
-    async def run_eval(self, task_run: TaskRun) -> Dict[str, float]:
+    async def run_eval(self, task_run: TaskRun) -> EvalScores:
         pass
 
     @classmethod

@@ -2,7 +2,7 @@ import pytest
 from pydantic import ValidationError
 
 from kiln_ai.datamodel.prompt_id import PromptGenerators
-from kiln_ai.datamodel.task import RunConfig, Task, TaskRunConfig
+from kiln_ai.datamodel.task import RunConfig, RunConfigProperties, Task, TaskRunConfig
 
 
 def test_runconfig_valid_creation():
@@ -46,40 +46,42 @@ def sample_task():
 
 
 @pytest.fixture
-def sample_run_config(sample_task):
-    return RunConfig(task=sample_task, model_name="gpt-4", model_provider_name="openai")
+def sample_run_config_props(sample_task):
+    return RunConfigProperties(model_name="gpt-4", model_provider_name="openai")
 
 
-def test_task_run_config_valid_creation(sample_task, sample_run_config):
+def test_task_run_config_valid_creation(sample_task, sample_run_config_props):
     config = TaskRunConfig(
         name="Test Config",
         description="Test description",
-        run_config=sample_run_config,
+        run_config_properties=sample_run_config_props,
         parent=sample_task,
     )
 
     assert config.name == "Test Config"
     assert config.description == "Test description"
-    assert config.run_config == sample_run_config
+    assert config.run_config_properties == sample_run_config_props
     assert config.parent_task() == sample_task
 
 
-def test_task_run_config_minimal_creation(sample_task, sample_run_config):
+def test_task_run_config_minimal_creation(sample_task, sample_run_config_props):
     # Test creation with only required fields
     config = TaskRunConfig(
-        name="Test Config", run_config=sample_run_config, parent=sample_task
+        name="Test Config",
+        run_config_properties=sample_run_config_props,
+        parent=sample_task,
     )
 
     assert config.name == "Test Config"
     assert config.description is None
-    assert config.run_config == sample_run_config
+    assert config.run_config_properties == sample_run_config_props
 
 
 def test_task_run_config_missing_required_fields(sample_task):
     # Test missing name
     with pytest.raises(ValidationError) as exc_info:
         TaskRunConfig(
-            run_config=RunConfig(
+            run_config_properties=RunConfigProperties(
                 task=sample_task, model_name="gpt-4", model_provider_name="openai"
             ),
             parent=sample_task,
@@ -90,17 +92,6 @@ def test_task_run_config_missing_required_fields(sample_task):
     with pytest.raises(ValidationError) as exc_info:
         TaskRunConfig(name="Test Config", parent=sample_task)
     assert "Field required" in str(exc_info.value)
-
-
-def test_task_run_config_task_mismatch(sample_task, sample_run_config):
-    # Create a different task
-    different_task = Task(name="Different Task", instruction="Different instruction")
-
-    # Test run_config task different from parent task
-    with pytest.raises(ValueError, match="Run config task must match parent task"):
-        TaskRunConfig(
-            name="Test Config", run_config=sample_run_config, parent=different_task
-        )
 
 
 def test_task_run_config_missing_task_in_run_config(sample_task):

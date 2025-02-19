@@ -17,6 +17,7 @@ from kiln_ai.datamodel import (
     TaskRun,
 )
 from kiln_ai.datamodel.eval import Eval, EvalConfig, EvalConfigType
+from kiln_ai.datamodel.task import RunConfig
 
 
 @pytest.fixture
@@ -47,7 +48,12 @@ def test_task(tmp_path):
 
 @pytest.fixture
 def test_eval_config(test_task):
-    eval = Eval(name="Joke Quality Eval", parent=test_task)
+    eval = Eval(
+        name="Joke Quality Eval",
+        parent=test_task,
+        eval_set_filter_id="tag::tag1",
+        eval_configs_filter_id="tag::tag2",
+    )
     eval.save_to_file()
 
     config = EvalConfig(
@@ -82,6 +88,16 @@ def test_eval_config(test_task):
 
 
 @pytest.fixture
+def test_run_config(test_task):
+    return RunConfig(
+        model_name="llama_3_1_8b",
+        model_provider_name="groq",
+        prompt_id="simple_prompt_builder",
+        task=test_task,
+    )
+
+
+@pytest.fixture
 def test_task_run(test_task):
     task_run = TaskRun(
         parent=test_task,
@@ -109,10 +125,12 @@ def test_task_run(test_task):
     "config_type", [EvalConfigType.g_eval, EvalConfigType.llm_as_judge]
 )
 @pytest.mark.paid
-async def test_run_g_eval(test_task, test_eval_config, test_task_run, config_type):
+async def test_run_g_eval(
+    test_task, test_eval_config, test_task_run, config_type, test_run_config
+):
     # Create G-Eval instance
     test_eval_config.config_type = config_type
-    g_eval = GEval(test_eval_config)
+    g_eval = GEval(test_eval_config, test_run_config)
 
     # Run the evaluation
     eval_result = await g_eval.run_eval(test_task_run)
@@ -137,10 +155,12 @@ async def test_run_g_eval(test_task, test_eval_config, test_task_run, config_typ
     "config_type", [EvalConfigType.g_eval, EvalConfigType.llm_as_judge]
 )
 @pytest.mark.paid
-async def test_run_g_eval_e2e(test_task, test_eval_config, test_task_run, config_type):
+async def test_run_g_eval_e2e(
+    test_task, test_eval_config, test_task_run, config_type, test_run_config
+):
     # Create G-Eval instance
     test_eval_config.config_type = config_type
-    g_eval = GEval(test_eval_config)
+    g_eval = GEval(test_eval_config, test_run_config)
 
     # Run the evaluation
     eval_result = await g_eval.run("chickens")
@@ -164,12 +184,14 @@ async def test_run_g_eval_e2e(test_task, test_eval_config, test_task_run, config
     assert 1.0 <= overall <= 5.0
 
 
-async def test_g_eval_logprobs(test_task, test_eval_config, test_task_run):
+async def test_g_eval_logprobs(
+    test_task, test_eval_config, test_task_run, test_run_config
+):
     # Create G-Eval instance
     run_output = pickle.loads(serialized_run_output)
     assert isinstance(run_output, RunOutput)
     assert run_output.output_logprobs is not None
-    g_eval = GEval(test_eval_config)
+    g_eval = GEval(test_eval_config, test_run_config)
     result = g_eval.build_g_eval_score(run_output)
 
     assert "overall_rating" in result
@@ -199,11 +221,13 @@ async def test_g_eval_logprobs(test_task, test_eval_config, test_task_run):
     assert pytest.approx(appropriateness, 1e-12) != 1.0
 
 
-async def test_llm_as_judge(test_task, test_eval_config, test_task_run):
+async def test_llm_as_judge(
+    test_task, test_eval_config, test_task_run, test_run_config
+):
     # Create G-Eval instance, set to LLM as Judge
     run_output = pickle.loads(serialized_run_output)
     test_eval_config.config_type = EvalConfigType.llm_as_judge
-    g_eval = GEval(test_eval_config)
+    g_eval = GEval(test_eval_config, test_run_config)
 
     assert isinstance(run_output, RunOutput)
     assert run_output.output_logprobs is not None
@@ -221,8 +245,10 @@ def test_token_case():
         assert token.lower() == token
 
 
-def test_metric_offsets_and_search_ranges(test_eval_config):
-    g_eval = GEval(test_eval_config)
+def test_metric_offsets_and_search_ranges(
+    test_eval_config, test_run_config, test_task_run
+):
+    g_eval = GEval(test_eval_config, test_run_config)
     raw_output = (
         '{"topic_alignment": 4, "appropriateness": "pass", "overall_rating": 5}'
     )
@@ -253,8 +279,8 @@ def test_metric_offsets_and_search_ranges(test_eval_config):
     assert end == len(raw_output)  # end of string
 
 
-def test_metric_offsets_invalid(test_eval_config):
-    g_eval = GEval(test_eval_config)
+def test_metric_offsets_invalid(test_eval_config, test_run_config):
+    g_eval = GEval(test_eval_config, test_run_config)
     raw_output = '{"topic_alignment": 4, "topic_alignment": 5}'
     metrics = ["topic_alignment"]
 
@@ -295,13 +321,15 @@ def test_metric_offsets_invalid(test_eval_config):
         ("4.9999999", None),
     ],
 )
-def test_score_from_token_string(test_eval_config, token_string, expected_score):
-    g_eval = GEval(test_eval_config)
+def test_score_from_token_string(
+    test_eval_config, token_string, expected_score, test_run_config
+):
+    g_eval = GEval(test_eval_config, test_run_config)
     assert g_eval.score_from_token_string(token_string) == expected_score
 
 
-def test_raw_output_from_logprobs(test_eval_config):
-    g_eval = GEval(test_eval_config)
+def test_raw_output_from_logprobs(test_eval_config, test_run_config):
+    g_eval = GEval(test_eval_config, test_run_config)
 
     # Create a minimal RunOutput with some logprobs
     class MockLogprob:
@@ -328,8 +356,8 @@ def test_raw_output_from_logprobs(test_eval_config):
     assert raw == '{"score": 5}'
 
 
-def test_rating_token_to_score(test_eval_config):
-    g_eval = GEval(test_eval_config)
+def test_rating_token_to_score(test_eval_config, test_run_config):
+    g_eval = GEval(test_eval_config, test_run_config)
 
     class MockTopLogprob:
         def __init__(self, token, logprob):

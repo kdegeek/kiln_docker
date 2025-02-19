@@ -2,7 +2,15 @@ import json
 
 import pytest
 from kiln_ai.adapters.eval.base_eval import BaseEval
-from kiln_ai.datamodel.task import Task, TaskOutputRatingType, TaskRequirement
+from kiln_ai.datamodel import BasePrompt, DataSource, DataSourceType
+from kiln_ai.datamodel.eval import Eval, EvalConfig
+from kiln_ai.datamodel.task import (
+    RunConfigProperties,
+    Task,
+    TaskOutputRatingType,
+    TaskRequirement,
+    TaskRunConfig,
+)
 
 
 def test_score_schema_five_star():
@@ -229,3 +237,75 @@ def test_score_schema_no_requirements():
     # Should only have overall_rating
     assert len(schema["properties"]) == 1
     assert "overall_rating" in schema["properties"]
+
+
+class TestEval(BaseEval):
+    """Test implementation of BaseEval"""
+
+    async def run_eval(self, task_run):
+        return {"overall_rating": 5, "quality": 4}
+
+
+@pytest.mark.paid
+@pytest.mark.asyncio
+async def test_run_method():
+    task = Task(
+        name="Test Task",
+        instruction="Test instruction",
+        requirements=[
+            TaskRequirement(
+                name="Quality",
+                instruction="Rate quality",
+                type=TaskOutputRatingType.five_star,
+            )
+        ],
+    )
+
+    eval_config = EvalConfig(
+        name="Test Eval Config",
+        model=DataSource(
+            type=DataSourceType.synthetic,
+            properties={
+                "model_name": "gpt-4o",
+                "model_provider": "openai",
+                "adapter_name": "test",
+            },
+        ),
+        parent=Eval(
+            name="Test Eval",
+            parent=task,
+            eval_set_filter_id="all",
+            eval_configs_filter_id="all",
+        ),
+        prompt=BasePrompt(
+            name="Test Prompt",
+            prompt="Test prompt",
+        ),
+        properties={"eval_steps": ["test_step"]},
+    )
+
+    run_config = TaskRunConfig(
+        name="Test Run Config",
+        run_config_properties=RunConfigProperties(
+            model_name="llama_3_1_8b",
+            model_provider_name="groq",
+            prompt_id="simple_prompt_builder",
+        ),
+        parent=task,
+    )
+
+    evaluator = TestEval(eval_config, run_config.run_config())
+
+    # Run the evaluation
+    task_run, eval_scores = await evaluator.run("test input")
+
+    # Verify task run was created
+    assert task_run.input == "test input"
+    assert isinstance(task_run.output.output, str)
+
+    # Verify eval scores match schema and contain expected values
+    assert eval_scores["overall_rating"] == 5
+    assert eval_scores["quality"] == 4
+
+    # Verify schema validation worked (these keys should exist per schema)
+    assert set(eval_scores.keys()) == {"overall_rating", "quality"}

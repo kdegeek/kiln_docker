@@ -114,6 +114,8 @@ def test_eval_basic_properties():
         description="Test Description",
         state=EvalState.enabled,
         current_config_id="config123",
+        eval_set_filter_id="tag::tag1",
+        eval_configs_filter_id="tag::tag2",
     )
 
     assert eval.name == "Test Eval"
@@ -123,7 +125,11 @@ def test_eval_basic_properties():
 
 
 def test_eval_default_values():
-    eval = Eval(name="Test Eval")
+    eval = Eval(
+        name="Test Eval",
+        eval_set_filter_id="tag::tag1",
+        eval_configs_filter_id="tag::tag2",
+    )
 
     assert eval.description is None
     assert eval.state == EvalState.enabled
@@ -131,7 +137,12 @@ def test_eval_default_values():
 
 
 def test_eval_parent_task_relationship(mock_task, valid_eval_config_data):
-    eval = Eval(name="Test Eval", parent=mock_task)
+    eval = Eval(
+        name="Test Eval",
+        parent=mock_task,
+        eval_set_filter_id="tag::tag1",
+        eval_configs_filter_id="tag::tag2",
+    )
     config = EvalConfig(parent=eval, **valid_eval_config_data)
 
     assert eval.parent_task() == mock_task
@@ -141,7 +152,11 @@ def test_eval_parent_task_relationship(mock_task, valid_eval_config_data):
 
 
 def test_eval_parent_task_none():
-    eval = Eval(name="Test Eval")
+    eval = Eval(
+        name="Test Eval",
+        eval_set_filter_id="tag::tag1",
+        eval_configs_filter_id="tag::tag2",
+    )
     assert eval.parent_task() is None
 
 
@@ -159,7 +174,12 @@ def test_eval_with_persisted_children(mock_task, valid_eval_config_data, tmp_pat
     mock_task.path = task_path
     mock_task.save_to_file()
 
-    eval = Eval(name="Test Eval", parent=mock_task)
+    eval = Eval(
+        name="Test Eval",
+        parent=mock_task,
+        eval_set_filter_id="tag::tag1",
+        eval_configs_filter_id="tag::tag2",
+    )
     eval.save_to_file()
 
     # Add config using the parent relationship

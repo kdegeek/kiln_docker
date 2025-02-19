@@ -6,7 +6,8 @@ from kiln_ai.adapters.eval.base_eval import BaseEval
 from kiln_ai.adapters.model_adapters.base_adapter import AdapterConfig, RunOutput
 from kiln_ai.adapters.prompt_builders import PromptGenerators
 from kiln_ai.datamodel import Project, Task, TaskRun
-from kiln_ai.datamodel.eval import EvalConfig, EvalConfigType
+from kiln_ai.datamodel.eval import EvalConfig, EvalConfigType, EvalScores
+from kiln_ai.datamodel.task import RunConfig
 from openai.types.chat import ChatCompletionTokenLogprob
 
 # all the tokens we score for, and their float scores.
@@ -74,7 +75,7 @@ class GEval(BaseEval):
     LLM as Judge is a method of evaluating the quality of a model's output. It simply asks the LLM to score, and uses the returned output (no logprobs needed). Also called direct evaluation.
     """
 
-    def __init__(self, eval_config: EvalConfig):
+    def __init__(self, eval_config: EvalConfig, run_config: RunConfig):
         if (
             eval_config.config_type != EvalConfigType.g_eval
             and eval_config.config_type != EvalConfigType.llm_as_judge
@@ -83,11 +84,11 @@ class GEval(BaseEval):
                 "GEval must be initialized with a GEval or LLM as Judge Config"
             )
 
-        super().__init__(eval_config)
+        super().__init__(eval_config, run_config)
 
         self.geval_task = GEvalTask(eval_config, self.target_task)
 
-    async def run_eval(self, task_run: TaskRun) -> Dict[str, float]:
+    async def run_eval(self, task_run: TaskRun) -> EvalScores:
         """
         Run this G-Eval on the given task run.
         """
@@ -131,12 +132,12 @@ The model produced the following output for the task:
         else:
             return self.build_g_eval_score(run_output)
 
-    def build_llm_as_judge_score(self, run_output: RunOutput) -> Dict[str, float]:
+    def build_llm_as_judge_score(self, run_output: RunOutput) -> EvalScores:
         """
         Build the LLM as Judge score for the given run and run output.
         """
         # Convert the output format we asked for (discreet values) to our float scores
-        scores: Dict[str, float] = {}
+        scores: EvalScores = {}
         if not isinstance(run_output.output, dict):
             raise ValueError("LLM as Judge output must be a dictionary")
 
@@ -147,7 +148,7 @@ The model produced the following output for the task:
             scores[metric] = token_score
         return scores
 
-    def build_g_eval_score(self, run_output: RunOutput) -> Dict[str, float]:
+    def build_g_eval_score(self, run_output: RunOutput) -> EvalScores:
         """
         Build the G-Eval score for the given run and run output.
 
@@ -174,7 +175,7 @@ The model produced the following output for the task:
         metrics: List[str] = list(outputs.keys())
         metric_offsets = self.metric_offsets(raw_output, metrics)
 
-        final_scores: Dict[str, float] = {}
+        final_scores: EvalScores = {}
         for metric in metrics:
             score = self.g_eval_single_metric(
                 run_output, metric, metric_offsets, raw_output
