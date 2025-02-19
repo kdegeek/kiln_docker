@@ -40,7 +40,24 @@ class TaskRequirement(BaseModel):
     type: TaskOutputRatingType = Field(default=TaskOutputRatingType.five_star)
 
 
-class RunConfig(BaseModel):
+class RunConfigProperties(BaseModel):
+    """
+    A configuration for running a task.
+
+    This includes everything needed to run a task, except the input and task ID. Running the same RunConfig with the same input should make identical calls to the model (output may vary as models are non-deterministic).
+    """
+
+    model_name: str = Field(description="The model to use for this run config.")
+    model_provider_name: str = Field(
+        description="The provider to use for this run config."
+    )
+    prompt_id: PromptId = Field(
+        description="The prompt to use for this run config. Defaults to building a simple prompt from the task if not provided.",
+        default=PromptGenerators.SIMPLE,
+    )
+
+
+class RunConfig(RunConfigProperties):
     """
     A configuration for running a task.
 
@@ -50,14 +67,6 @@ class RunConfig(BaseModel):
     """
 
     task: "Task" = Field(description="The task to run.")
-    model_name: str = Field(description="The model to use for this run config.")
-    model_provider_name: str = Field(
-        description="The provider to use for this run config."
-    )
-    prompt_id: PromptId = Field(
-        description="The prompt to use for this run config. Defaults to building a simple prompt from the task if not provided.",
-        default=PromptGenerators.SIMPLE,
-    )
 
 
 class TaskRunConfig(KilnParentedModel):
@@ -73,8 +82,8 @@ class TaskRunConfig(KilnParentedModel):
     description: str | None = Field(
         default=None, description="The description of the task run config."
     )
-    run_config: "RunConfig" = Field(
-        description="The run config to use for this task run."
+    run_config_properties: RunConfigProperties = Field(
+        description="The run config properties to use for this task run."
     )
 
     # Workaround to return typed parent without importing Task
@@ -83,9 +92,22 @@ class TaskRunConfig(KilnParentedModel):
             return None
         return self.parent  # type: ignore
 
+    def run_config(self) -> RunConfig:
+        parent_task = self.parent_task()
+        if parent_task is None:
+            raise ValueError("Run config must be parented to a task")
+        return RunConfig(
+            task=parent_task,
+            model_name=self.run_config_properties.model_name,
+            model_provider_name=self.run_config_properties.model_provider_name,
+            prompt_id=self.run_config_properties.prompt_id,
+        )
+
     @model_validator(mode="after")
     def validate_task(self) -> Self:
         # Check that the task in the run config matches the parent task
+        return self
+        # TODO P0
         parent_task = self.parent_task()
         if parent_task is None:
             raise ValueError("Run config must be parented to a task")
