@@ -1,7 +1,8 @@
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, patch
 
 import pytest
-from kiln_ai.adapters.eval.eval_runner import EvalRunner
+from kiln_ai.adapters.eval.base_eval import BaseEval
+from kiln_ai.adapters.eval.eval_runner import EvalJob, EvalRunner
 from kiln_ai.datamodel import (
     BasePrompt,
     DataSource,
@@ -268,3 +269,101 @@ def test_collect_tasks_empty_cases(mock_eval_runner, mock_task, data_source):
 
     jobs = mock_eval_runner.collect_tasks()
     assert len(jobs) == 0
+
+
+@pytest.mark.asyncio
+async def test_run_job_success(
+    mock_eval_runner, mock_task, data_source, mock_run_config
+):
+    # Create a task run to evaluate
+    task_run = TaskRun(
+        parent=mock_task,
+        input="test input",
+        input_source=data_source,
+        output=TaskOutput(output="test output"),
+    )
+    task_run.save_to_file()
+
+    # Create eval job
+    job = EvalJob(item=task_run, task_run_config=mock_run_config)
+
+    # Mock the evaluator
+    mock_result_run = TaskRun(
+        input="test input",
+        input_source=data_source,
+        output=TaskOutput(output="evaluated output"),
+    )
+    mock_scores = {"accuracy": 0.95}
+
+    class MockEvaluator(BaseEval):
+        async def run(self, input_text):
+            return mock_result_run, mock_scores
+
+    with patch(
+        "kiln_ai.adapters.eval.eval_runner.eval_adapter_from_type",
+        return_value=lambda *args: MockEvaluator(*args),
+    ):
+        success = await mock_eval_runner.run_job(job)
+
+    assert success is True
+
+    # Verify eval run was saved
+    eval_runs = mock_eval_runner.eval_config.runs()
+    assert len(eval_runs) == 1
+    saved_run = eval_runs[0]
+    assert saved_run.dataset_id == task_run.id
+    assert saved_run.task_run_config_id == mock_run_config.id
+    assert saved_run.scores == mock_scores
+    assert saved_run.input == "test input"
+    assert saved_run.output == "evaluated output"
+
+
+@pytest.mark.asyncio
+async def test_run_job_invalid_evaluator(
+    mock_eval_runner, mock_task, data_source, mock_run_config
+):
+    task_run = TaskRun(
+        parent=mock_task,
+        input="test input",
+        input_source=data_source,
+        output=TaskOutput(output="test output"),
+    )
+    task_run.save_to_file()
+    job = EvalJob(item=task_run, task_run_config=mock_run_config)
+
+    # Return an invalid evaluator type
+    with patch(
+        "kiln_ai.adapters.eval.eval_runner.eval_adapter_from_type",
+        return_value=lambda *args: object(),
+    ):
+        success = await mock_eval_runner.run_job(job)
+
+    assert success is False
+    assert len(mock_eval_runner.eval_config.runs()) == 0
+
+
+@pytest.mark.asyncio
+async def test_run_job_evaluator_error(
+    mock_eval_runner, mock_task, data_source, mock_run_config
+):
+    task_run = TaskRun(
+        parent=mock_task,
+        input="test input",
+        input_source=data_source,
+        output=TaskOutput(output="test output"),
+    )
+    task_run.save_to_file()
+    job = EvalJob(item=task_run, task_run_config=mock_run_config)
+
+    class ErrorEvaluator(BaseEval):
+        async def run(self, input_text):
+            raise ValueError("Evaluation failed")
+
+    with patch(
+        "kiln_ai.adapters.eval.eval_runner.eval_adapter_from_type",
+        return_value=lambda *args: ErrorEvaluator(*args),
+    ):
+        success = await mock_eval_runner.run_job(job)
+
+    assert success is False
+    assert len(mock_eval_runner.eval_config.runs()) == 0

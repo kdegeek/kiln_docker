@@ -5,7 +5,7 @@ from typing import AsyncGenerator, List
 from kiln_ai.adapters.eval.base_eval import BaseEval
 from kiln_ai.adapters.eval.registry import eval_adapter_from_type
 from kiln_ai.datamodel.dataset_filters import dataset_filter_from_id
-from kiln_ai.datamodel.eval import EvalConfig
+from kiln_ai.datamodel.eval import EvalConfig, EvalRun
 from kiln_ai.datamodel.task import TaskRunConfig
 from kiln_ai.datamodel.task_run import TaskRun
 
@@ -154,10 +154,20 @@ class EvalRunner:
             if not isinstance(evaluator, BaseEval):
                 raise ValueError("Not able to create evaluator from eval config")
 
-            task_run, scores = await evaluator.run(job.item.input)
-            print(f"Result: {task_run.id} {scores}")
+            result_task_run, scores = await evaluator.run(job.item.input)
+
+            # Save the job result
+            eval_run = EvalRun(
+                parent=self.eval_config,
+                task_run_config_id=job.task_run_config.id,
+                dataset_id=job.item.id,
+                scores=scores,
+                input=job.item.input,
+                output=result_task_run.output.output,
+            )
+            eval_run.save_to_file()
 
             return True
         except Exception as e:
-            print(f"Error running job: {e}")
+            print(f"Error running eval job for dataset item {job.item.id}: {e}")
             return False
