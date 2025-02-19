@@ -40,7 +40,6 @@ class BaseEval:
 
         return model_name, ModelProviderName(provider)
 
-    # TODO add test, nothing breaks if this returns a tuple
     async def run(self, input: str) -> tuple[TaskRun, EvalScores]:
         run_adapter = adapter_for_task(
             self.target_task,
