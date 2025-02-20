@@ -4,7 +4,7 @@ from abc import abstractmethod
 from kiln_ai.adapters.adapter_registry import adapter_for_task
 from kiln_ai.adapters.ml_model_list import ModelProviderName
 from kiln_ai.adapters.model_adapters.base_adapter import AdapterConfig
-from kiln_ai.datamodel.eval import EvalConfig, EvalScores
+from kiln_ai.datamodel.eval import Eval, EvalConfig, EvalScores
 from kiln_ai.datamodel.json_schema import string_to_json_key, validate_schema
 from kiln_ai.datamodel.task import RunConfig, Task, TaskOutputRatingType, TaskRun
 from kiln_ai.utils.exhaustive_error import raise_exhaustive_enum_error
@@ -21,7 +21,7 @@ class BaseEval:
         if not task:
             raise ValueError("Eval must have a parent task")
         self.target_task = task
-        self.score_schema = BaseEval.build_score_schema(task, allow_float_scores=True)
+        self.score_schema = BaseEval.build_score_schema(eval, allow_float_scores=True)
         self.run_config = run_config
 
     def model_and_provider(self) -> tuple[str, ModelProviderName]:
@@ -62,7 +62,7 @@ class BaseEval:
         pass
 
     @classmethod
-    def build_score_schema(cls, task: Task, allow_float_scores: bool = False) -> str:
+    def build_score_schema(cls, eval: Eval, allow_float_scores: bool = False) -> str:
         """
         Build a JSON schema for the scoring output of the task requirements
 
@@ -74,20 +74,17 @@ class BaseEval:
 
         # Note: python maintains order, which is good as we want the user defined order, and overall last
         properties = {}
-        for requirement in task.requirements:
-            property_key = string_to_json_key(requirement.name)
-            if property_key in properties or property_key == "overall_rating":
+        for output_score in eval.output_scores:
+            output_score_json_key = output_score.json_key()
+
+            if len(output_score_json_key) == 0:
                 raise ValueError(
-                    f"Duplicate requirement name: {requirement.name}. Can not be used as unique JSON schema key."
-                )
-            if len(property_key) == 0:
-                raise ValueError(
-                    f"Invalid requirement name: {requirement.name}. Can not be used as JSON schema key."
+                    f"Invalid output score name: {output_score.name}. Can not be used as JSON schema key."
                 )
             property: dict[str, str | int | float | list[str] | list[int]] = {
-                "title": requirement.name,
+                "title": output_score.name,
             }
-            match requirement.type:
+            match output_score.type:
                 case TaskOutputRatingType.five_star:
                     if allow_float_scores:
                         property["type"] = "number"
@@ -97,7 +94,7 @@ class BaseEval:
                         property["enum"] = [1, 2, 3, 4, 5]
 
                     property["description"] = (
-                        f"{requirement.instruction}\n\nThe rating should be between 1 and 5, with 1 being the worst and 5 being the best."
+                        f"{output_score.instruction}\n\nThe rating should be between 1 and 5, with 1 being the worst and 5 being the best."
                     )
                 case TaskOutputRatingType.pass_fail:
                     if allow_float_scores:
@@ -105,12 +102,12 @@ class BaseEval:
                         property["minimum"] = 0
                         property["maximum"] = 1
                         property["description"] = (
-                            f"{requirement.instruction}\n\nThe rating should be between 0 and 1, with 0 being a failure and 1 being a pass."
+                            f"{output_score.instruction}\n\nThe rating should be between 0 and 1, with 0 being a failure and 1 being a pass."
                         )
                     else:
                         property["enum"] = ["pass", "fail"]
                         property["description"] = (
-                            f"{requirement.instruction}\n\nThe rating should be either 'pass' or 'fail'."
+                            f"{output_score.instruction}\n\nThe rating should be either 'pass' or 'fail'."
                         )
                 case TaskOutputRatingType.pass_fail_critical:
                     if allow_float_scores:
@@ -118,35 +115,20 @@ class BaseEval:
                         property["minimum"] = -1
                         property["maximum"] = 1
                         property["description"] = (
-                            f"{requirement.instruction}\n\nThe rating should be between -1 and 1, with 1 being a pass, 0 being a failure, and -1 being a critical failure (very severe failure)."
+                            f"{output_score.instruction}\n\nThe rating should be between -1 and 1, with 1 being a pass, 0 being a failure, and -1 being a critical failure (very severe failure)."
                         )
                     else:
                         property["enum"] = ["pass", "fail", "critical"]
                         property["description"] = (
-                            f"{requirement.instruction}\n\nThe rating should be either 'pass', 'fail', or 'critical' where critical a very severe failure."
+                            f"{output_score.instruction}\n\nThe rating should be either 'pass', 'fail', or 'critical' where critical a very severe failure."
                         )
                 case TaskOutputRatingType.custom:
                     # Skip custom rating types in evals
                     continue
                 case _:
-                    raise_exhaustive_enum_error(requirement.type)
+                    raise_exhaustive_enum_error(output_score.type)
 
-            properties[property_key] = property
-
-        if allow_float_scores:
-            properties["overall_rating"] = {
-                "type": "number",
-                "minimum": 1,
-                "maximum": 5,
-                "title": "Overall Rating",
-                "description": "The overall rating for the task output.\n\nThe rating should be between 1 and 5, with 1 being the worst and 5 being the best.",
-            }
-        else:
-            properties["overall_rating"] = {
-                "enum": [1, 2, 3, 4, 5],
-                "title": "Overall Rating",
-                "description": "The overall rating for the task output.\n\nThe rating should be between 1 and 5, with 1 being the worst and 5 being the best.",
-            }
+            properties[output_score_json_key] = property
 
         schema = {
             "type": "object",

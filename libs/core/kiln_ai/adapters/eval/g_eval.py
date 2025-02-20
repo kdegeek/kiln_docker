@@ -6,7 +6,7 @@ from kiln_ai.adapters.eval.base_eval import BaseEval
 from kiln_ai.adapters.model_adapters.base_adapter import AdapterConfig, RunOutput
 from kiln_ai.adapters.prompt_builders import PromptGenerators
 from kiln_ai.datamodel import Project, Task, TaskRun
-from kiln_ai.datamodel.eval import EvalConfig, EvalConfigType, EvalScores
+from kiln_ai.datamodel.eval import Eval, EvalConfig, EvalConfigType, EvalScores
 from kiln_ai.datamodel.task import RunConfig
 from openai.types.chat import ChatCompletionTokenLogprob
 
@@ -30,8 +30,7 @@ class GEvalTask(Task, parent_of={}):
     Note G-Eval implements both G-Eval and LLM as Judge as they are very similar.
     """
 
-    def __init__(self, eval_config: EvalConfig, target_task: Task):
-        # This keep the typechecker happy. TODO: shouldn't need this or parent_of above.
+    def __init__(self, eval_config: EvalConfig):
         tmp_project = Project(name="GEval")
 
         system_instruction = f"""
@@ -51,11 +50,14 @@ The task the model was given is as follows:
         for i, step in enumerate(steps):
             cot_instructions += f"{i + 1}) {step}\n"
 
-        # We restrict the LLM scoring to integer scores (see later logprob calculation, which requires integer scores)
-        # However, the overall score we output can be a float.
-        output_schema = BaseEval.build_score_schema(
-            target_task, allow_float_scores=False
-        )
+        eval = eval_config.parent_eval()
+        if not eval:
+            raise ValueError("Eval config must have a parent eval")
+
+        # Build the output schema from the eval's target output scores.
+        # We restrict the LLM's output scoring schema to discrete scores (pass/fail/critical/1-5) - allow_float_scores=False
+        # However, the final scores from the evaluator can be a float (see later logprob calculation, which requires integer scores)
+        output_schema = BaseEval.build_score_schema(eval, allow_float_scores=False)
 
         super().__init__(
             name="GEval Task",
@@ -86,7 +88,7 @@ class GEval(BaseEval):
 
         super().__init__(eval_config, run_config)
 
-        self.geval_task = GEvalTask(eval_config, self.target_task)
+        self.geval_task = GEvalTask(eval_config)
 
     async def run_eval(self, task_run: TaskRun) -> EvalScores:
         """

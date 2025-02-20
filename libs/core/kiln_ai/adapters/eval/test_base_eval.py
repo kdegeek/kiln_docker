@@ -3,7 +3,7 @@ import json
 import pytest
 from kiln_ai.adapters.eval.base_eval import BaseEval
 from kiln_ai.datamodel import BasePrompt, DataSource, DataSourceType
-from kiln_ai.datamodel.eval import Eval, EvalConfig
+from kiln_ai.datamodel.eval import Eval, EvalConfig, EvalOutputScore
 from kiln_ai.datamodel.task import (
     RunConfigProperties,
     Task,
@@ -14,32 +14,38 @@ from kiln_ai.datamodel.task import (
 
 
 def test_score_schema_five_star():
-    # Create a task with a five-star requirement
-    task = Task(
-        name="Test Task",
-        instruction="Test instruction",
-        requirements=[
-            TaskRequirement(
+    # Create an eval with a five-star score
+    eval = Eval(
+        name="Test Eval",
+        eval_set_filter_id="tag::tag1",
+        eval_configs_filter_id="tag::tag2",
+        output_scores=[
+            EvalOutputScore(
                 name="Quality Score",
                 instruction="Rate the quality",
                 type=TaskOutputRatingType.five_star,
-            )
+            ),
+            EvalOutputScore(
+                name="Overall Rating",
+                instruction="The overall rating for the task output",
+                type=TaskOutputRatingType.five_star,
+            ),
         ],
     )
 
-    schema_str = BaseEval.build_score_schema(task)
+    schema_str = BaseEval.build_score_schema(eval)
     schema = json.loads(schema_str)
 
     # Check basic schema structure
     assert schema["type"] == "object"
     assert schema["required"] == ["quality_score", "overall_rating"]
 
-    # Check requirement property, and that it's an enum of 1-5
-    req_prop = schema["properties"]["quality_score"]
-    assert req_prop["enum"] == [1, 2, 3, 4, 5]
-    assert "Quality Score" in req_prop["title"]
-    assert "Rate the quality" in req_prop["description"]
-    assert "between 1 and 5" in req_prop["description"]
+    # Check score property, and that it's an enum of 1-5
+    score_prop = schema["properties"]["quality_score"]
+    assert score_prop["enum"] == [1, 2, 3, 4, 5]
+    assert "Quality Score" in score_prop["title"]
+    assert "Rate the quality" in score_prop["description"]
+    assert "between 1 and 5" in score_prop["description"]
 
     # Check overall rating property, and that it's an enum of 1-5
     assert "overall_rating" in schema["properties"]
@@ -51,34 +57,40 @@ def test_score_schema_five_star():
 
 
 def test_score_schema_five_star_float():
-    # Create a task with a five-star requirement
-    task = Task(
-        name="Test Task",
-        instruction="Test instruction",
-        requirements=[
-            TaskRequirement(
+    # Create an eval with a five-star score
+    eval = Eval(
+        name="Test Eval",
+        eval_set_filter_id="tag::tag1",
+        eval_configs_filter_id="tag::tag2",
+        output_scores=[
+            EvalOutputScore(
                 name="Quality Score",
                 instruction="Rate the quality",
                 type=TaskOutputRatingType.five_star,
-            )
+            ),
+            EvalOutputScore(
+                name="Overall Rating",
+                instruction="The overall rating for the task output",
+                type=TaskOutputRatingType.five_star,
+            ),
         ],
     )
 
-    schema_str = BaseEval.build_score_schema(task, allow_float_scores=True)
+    schema_str = BaseEval.build_score_schema(eval, allow_float_scores=True)
     schema = json.loads(schema_str)
 
     # Check basic schema structure
     assert schema["type"] == "object"
     assert schema["required"] == ["quality_score", "overall_rating"]
 
-    # Check requirement property
-    req_prop = schema["properties"]["quality_score"]
-    assert req_prop["type"] == "number"
-    assert req_prop["minimum"] == 1
-    assert req_prop["maximum"] == 5
-    assert "Quality Score" in req_prop["title"]
-    assert "Rate the quality" in req_prop["description"]
-    assert "between 1 and 5" in req_prop["description"]
+    # Check score property
+    score_prop = schema["properties"]["quality_score"]
+    assert score_prop["type"] == "number"
+    assert score_prop["minimum"] == 1
+    assert score_prop["maximum"] == 5
+    assert "Quality Score" in score_prop["title"]
+    assert "Rate the quality" in score_prop["description"]
+    assert "between 1 and 5" in score_prop["description"]
 
     # Check overall rating property
     assert "overall_rating" in schema["properties"]
@@ -92,101 +104,119 @@ def test_score_schema_five_star_float():
 
 
 def test_score_schema_pass_fail():
-    task = Task(
-        name="Test Task",
-        instruction="Test instruction",
-        requirements=[
-            TaskRequirement(
+    eval = Eval(
+        name="Test Eval",
+        eval_set_filter_id="tag::tag1",
+        eval_configs_filter_id="tag::tag2",
+        output_scores=[
+            EvalOutputScore(
                 name="Pass Fail Test",
                 instruction="Check if it passes",
                 type=TaskOutputRatingType.pass_fail,
-            )
+            ),
+            EvalOutputScore(
+                name="Overall Rating",
+                instruction="The overall rating for the task output",
+                type=TaskOutputRatingType.five_star,
+            ),
         ],
     )
 
-    schema_str = BaseEval.build_score_schema(task)
+    schema_str = BaseEval.build_score_schema(eval)
     schema = json.loads(schema_str)
 
-    req_prop = schema["properties"]["pass_fail_test"]
-    assert req_prop["enum"] == ["pass", "fail"]
-    assert "Pass Fail Test" in req_prop["title"]
-    assert "Check if it passes" in req_prop["description"]
-    assert "'pass' or 'fail'" in req_prop["description"]
+    score_prop = schema["properties"]["pass_fail_test"]
+    assert score_prop["enum"] == ["pass", "fail"]
+    assert "Pass Fail Test" in score_prop["title"]
+    assert "Check if it passes" in score_prop["description"]
+    assert "'pass' or 'fail'" in score_prop["description"]
 
     assert schema["properties"]["overall_rating"] is not None
 
     # Now check that we can allow float scores with the proper float structure
-    schema_str = BaseEval.build_score_schema(task, allow_float_scores=True)
+    schema_str = BaseEval.build_score_schema(eval, allow_float_scores=True)
     schema = json.loads(schema_str)
 
-    req_prop = schema["properties"]["pass_fail_test"]
-    assert req_prop["type"] == "number"
-    assert req_prop["minimum"] == 0
-    assert req_prop["maximum"] == 1
+    score_prop = schema["properties"]["pass_fail_test"]
+    assert score_prop["type"] == "number"
+    assert score_prop["minimum"] == 0
+    assert score_prop["maximum"] == 1
     assert (
         "between 0 and 1, with 0 being a failure and 1 being a pass"
-        in req_prop["description"]
+        in score_prop["description"]
     )
 
 
 def test_score_schema_pass_fail_critical():
-    task = Task(
-        name="Test Task",
-        instruction="Test instruction",
-        requirements=[
-            TaskRequirement(
+    eval = Eval(
+        name="Test Eval",
+        eval_set_filter_id="tag::tag1",
+        eval_configs_filter_id="tag::tag2",
+        output_scores=[
+            EvalOutputScore(
                 name="Critical Test",
                 instruction="Check for critical issues",
                 type=TaskOutputRatingType.pass_fail_critical,
-            )
+            ),
+            EvalOutputScore(
+                name="Overall Rating",
+                instruction="The overall rating for the task output",
+                type=TaskOutputRatingType.five_star,
+            ),
         ],
     )
 
-    schema_str = BaseEval.build_score_schema(task)
+    schema_str = BaseEval.build_score_schema(eval)
     schema = json.loads(schema_str)
 
-    req_prop = schema["properties"]["critical_test"]
-    assert "enum" in req_prop
-    assert req_prop["enum"] == ["pass", "fail", "critical"]
-    assert "'pass', 'fail', or 'critical'" in req_prop["description"]
+    score_prop = schema["properties"]["critical_test"]
+    assert "enum" in score_prop
+    assert score_prop["enum"] == ["pass", "fail", "critical"]
+    assert "'pass', 'fail', or 'critical'" in score_prop["description"]
 
     assert schema["properties"]["overall_rating"] is not None
 
     # Now check that we can allow float scores with the proper float structure
-    schema_str = BaseEval.build_score_schema(task, allow_float_scores=True)
+    schema_str = BaseEval.build_score_schema(eval, allow_float_scores=True)
     schema = json.loads(schema_str)
 
-    req_prop = schema["properties"]["critical_test"]
-    assert req_prop["type"] == "number"
-    assert req_prop["minimum"] == -1
-    assert req_prop["maximum"] == 1
-    assert "between -1 and 1, with 1 being a pass" in req_prop["description"]
+    score_prop = schema["properties"]["critical_test"]
+    assert score_prop["type"] == "number"
+    assert score_prop["minimum"] == -1
+    assert score_prop["maximum"] == 1
+    assert "between -1 and 1, with 1 being a pass" in score_prop["description"]
 
 
-def test_score_schema_multiple_requirements():
-    task = Task(
-        name="Test Task",
-        instruction="Test instruction",
-        requirements=[
-            TaskRequirement(
+def test_score_schema_multiple_scores():
+    eval = Eval(
+        name="Test Eval",
+        eval_set_filter_id="tag::tag1",
+        eval_configs_filter_id="tag::tag2",
+        output_scores=[
+            EvalOutputScore(
                 name="Quality",
                 instruction="Rate quality",
                 type=TaskOutputRatingType.five_star,
             ),
-            TaskRequirement(
+            EvalOutputScore(
                 name="Pass Check",
                 instruction="Basic pass check",
                 type=TaskOutputRatingType.pass_fail,
             ),
-            TaskRequirement(
+            EvalOutputScore(
                 name="Security",
                 instruction="Check security",
                 type=TaskOutputRatingType.pass_fail_critical,
             ),
+            EvalOutputScore(
+                name="Overall Rating",
+                instruction="The overall rating for the task output",
+                type=TaskOutputRatingType.five_star,
+            ),
         ],
     )
 
-    schema_str = BaseEval.build_score_schema(task)
+    schema_str = BaseEval.build_score_schema(eval)
     schema = json.loads(schema_str)
 
     # Verify order is maintained
@@ -198,45 +228,16 @@ def test_score_schema_multiple_requirements():
     ]
 
 
-def test_score_schema_custom_type_skipped():
-    task = Task(
-        name="Test Task",
-        instruction="Test instruction",
-        requirements=[
-            TaskRequirement(
-                name="Custom Rating",
-                instruction="Custom rating",
-                type=TaskOutputRatingType.custom,
-            ),
-            TaskRequirement(
-                name="Quality",
-                instruction="Rate quality",
-                type=TaskOutputRatingType.five_star,
-            ),
-        ],
-    )
-
-    schema_str = BaseEval.build_score_schema(task)
-    schema = json.loads(schema_str)
-
-    # Custom type should be skipped
-    assert len(schema["properties"]) == 2  # one requirement + overall_rating
-
-    # Verify only non-custom requirement and overall_rating are present
-    props = list(schema["properties"].keys())
-    assert "quality" in props
-    assert "overall_rating" in props
-
-
-def test_score_schema_no_requirements():
-    task = Task(name="Test Task", instruction="Test instruction", requirements=[])
-
-    schema_str = BaseEval.build_score_schema(task)
-    schema = json.loads(schema_str)
-
-    # Should only have overall_rating
-    assert len(schema["properties"]) == 1
-    assert "overall_rating" in schema["properties"]
+def test_score_schema_no_scores():
+    # This should raise an error since at least one score is required
+    with pytest.raises(ValueError, match="output_scores are required"):
+        eval = Eval(
+            name="Test Eval",
+            eval_set_filter_id="tag::tag1",
+            eval_configs_filter_id="tag::tag2",
+            output_scores=[],
+        )
+        BaseEval.build_score_schema(eval)
 
 
 class TestEval(BaseEval):
@@ -257,7 +258,7 @@ async def test_run_method():
                 name="Quality",
                 instruction="Rate quality",
                 type=TaskOutputRatingType.five_star,
-            )
+            ),
         ],
     )
 
@@ -276,6 +277,18 @@ async def test_run_method():
             parent=task,
             eval_set_filter_id="all",
             eval_configs_filter_id="all",
+            output_scores=[
+                EvalOutputScore(
+                    name="Quality",
+                    instruction="Rate quality",
+                    type=TaskOutputRatingType.five_star,
+                ),
+                EvalOutputScore(
+                    name="Overall Rating",
+                    instruction="The overall rating for the task output",
+                    type=TaskOutputRatingType.five_star,
+                ),
+            ],
         ),
         prompt=BasePrompt(
             name="Test Prompt",

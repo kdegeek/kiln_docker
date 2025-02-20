@@ -9,9 +9,10 @@ from kiln_ai.datamodel import (
     DataSourceType,
     Task,
     TaskOutput,
+    TaskOutputRatingType,
     TaskRun,
 )
-from kiln_ai.datamodel.eval import Eval, EvalConfig, EvalRun
+from kiln_ai.datamodel.eval import Eval, EvalConfig, EvalOutputScore, EvalRun
 from kiln_ai.datamodel.task import RunConfigProperties, TaskRunConfig
 
 
@@ -35,6 +36,13 @@ def mock_eval(mock_task):
         description="test",
         eval_set_filter_id="all",
         eval_configs_filter_id="all",
+        output_scores=[
+            EvalOutputScore(
+                name="Accuracy",
+                instruction="Check if the output is accurate",
+                type=TaskOutputRatingType.pass_fail,
+            ),
+        ],
         parent=mock_task,
     )
     eval.save_to_file()
@@ -190,7 +198,7 @@ def test_collect_tasks_excludes_already_run(mock_eval_runner, mock_task, data_so
         task_run_config_id=mock_eval_runner.run_configs[0].id,
         input="test",
         output="test",
-        scores={"score": 1.0},
+        scores={"accuracy": 1.0},
     ).save_to_file()
 
     # Set filter to match the task

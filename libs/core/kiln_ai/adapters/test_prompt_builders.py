@@ -36,7 +36,7 @@ from kiln_ai.datamodel import (
     TaskOutputRating,
     TaskRun,
 )
-from kiln_ai.datamodel.eval import Eval, EvalConfig, EvalConfigType
+from kiln_ai.datamodel.eval import Eval, EvalConfig, EvalConfigType, EvalOutputScore
 
 
 def test_simple_prompt_builder(tmp_path):
@@ -610,6 +610,12 @@ def test_eval_prompt_builder(tmp_path, valid_eval_config_datasource):
         parent=task,
         eval_set_filter_id="tag::tag1",
         eval_configs_filter_id="tag::tag2",
+        output_scores=[
+            EvalOutputScore(
+                name="accuracy",
+                type="five_star",
+            ),
+        ],
     )
     eval.save_to_file()
 
@@ -673,6 +679,12 @@ def test_eval_prompt_builder_validation_errors(tmp_path):
         parent=task,
         eval_set_filter_id="tag::tag1",
         eval_configs_filter_id="tag::tag2",
+        output_scores=[
+            EvalOutputScore(
+                name="accuracy",
+                type="five_star",
+            ),
+        ],
     )
     eval.save_to_file()
 
