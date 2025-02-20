@@ -119,6 +119,27 @@ function localStorageStore<T>(key: string, initialValue: T) {
   return store
 }
 
+export async function load_task(
+  project_id: string,
+  task_id: string,
+): Promise<Task | null> {
+  const {
+    data, // only present if 2XX response
+    error, // only present if 4XX or 5XX response
+  } = await client.GET("/api/projects/{project_id}/tasks/{task_id}", {
+    params: {
+      path: {
+        project_id: project_id,
+        task_id: task_id,
+      },
+    },
+  })
+  if (error) {
+    throw error
+  }
+  return data
+}
+
 export async function load_current_task(project: Project | null) {
   let task: Task | null = null
   try {
@@ -126,21 +147,7 @@ export async function load_current_task(project: Project | null) {
     if (!project || !project?.id || !task_id) {
       return
     }
-    const {
-      data, // only present if 2XX response
-      error, // only present if 4XX or 5XX response
-    } = await client.GET("/api/projects/{project_id}/tasks/{task_id}", {
-      params: {
-        path: {
-          project_id: project.id,
-          task_id: task_id,
-        },
-      },
-    })
-    if (error) {
-      throw error
-    }
-    task = data
+    task = await load_task(project.id, task_id)
 
     // Load the current task's prompts after 50ms, as it's not the most critical data
     setTimeout(() => {

@@ -657,6 +657,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/projects/{project_id}/tasks/{task_id}/sdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Generate Evaluator */
+        post: operations["generate_evaluator_api_projects__project_id__tasks__task_id__sdf_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -937,6 +954,26 @@ export interface components {
          * @enum {string}
          */
         DatasetSplitType: "train_test" | "train_test_val" | "train_test_val_80" | "all";
+        /**
+         * EvalOutputScore
+         * @description A definition of a score that an evaluator will produce.
+         *
+         *     Very similar to TaskRequirement, but conceptually different so separate models.
+         */
+        EvalOutputScore: {
+            /**
+             * Name
+             * @description The name of the score. Will be provided to the model so use a descriptive name. Should align to the model's TaskRequirement name if you want to use human evals to evaluate the evaluator's performance.
+             */
+            name: string;
+            /**
+             * Instruction
+             * @description A description of the score, used to help the model understand the goal of the score. Will be provided to evaluator models, so should be written for the model, not the team/user.
+             */
+            instruction?: string | null;
+            /** @description The type of rating to use ('five_star', 'pass_fail', 'pass_fail_critical'). */
+            type: components["schemas"]["TaskOutputRatingType"];
+        };
         /**
          * FineTuneParameter
          * @description A parameter for a fine-tune. Hyperparameters, etc.
@@ -3252,6 +3289,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    generate_evaluator_api_projects__project_id__tasks__task_id__sdf_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EvalOutputScore"];
                 };
             };
             /** @description Validation Error */
