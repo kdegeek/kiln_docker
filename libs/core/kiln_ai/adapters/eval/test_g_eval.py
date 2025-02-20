@@ -16,7 +16,7 @@ from kiln_ai.datamodel import (
     TaskRequirement,
     TaskRun,
 )
-from kiln_ai.datamodel.eval import Eval, EvalConfig, EvalConfigType
+from kiln_ai.datamodel.eval import Eval, EvalConfig, EvalConfigType, EvalOutputScore
 from kiln_ai.datamodel.task import RunConfig
 
 
@@ -53,6 +53,20 @@ def test_eval_config(test_task):
         parent=test_task,
         eval_set_filter_id="tag::tag1",
         eval_configs_filter_id="tag::tag2",
+        output_scores=[
+            EvalOutputScore(
+                name="appropriateness",
+                type=TaskOutputRatingType.pass_fail,
+            ),
+            EvalOutputScore(
+                name="topic_alignment",
+                type=TaskOutputRatingType.five_star,
+            ),
+            EvalOutputScore(
+                name="overall_rating",
+                type=TaskOutputRatingType.five_star,
+            ),
+        ],
     )
     eval.save_to_file()
 
@@ -163,23 +177,23 @@ async def test_run_g_eval_e2e(
     g_eval = GEval(test_eval_config, test_run_config)
 
     # Run the evaluation
-    eval_result = await g_eval.run("chickens")
+    task_run, scores = await g_eval.run("chickens")
 
     # Verify the evaluation results
-    assert isinstance(eval_result, dict)
+    assert isinstance(scores, dict)
 
-    assert "topic_alignment" in eval_result
-    topic_alignment = eval_result["topic_alignment"]
+    assert "topic_alignment" in scores
+    topic_alignment = scores["topic_alignment"]
     assert isinstance(topic_alignment, float)
     assert 1 <= topic_alignment <= 5
 
-    assert "appropriateness" in eval_result
-    appropriateness = eval_result["appropriateness"]
+    assert "appropriateness" in scores
+    appropriateness = scores["appropriateness"]
     assert isinstance(appropriateness, float)
     assert appropriateness >= 0.0 and appropriateness <= 1.0
 
-    assert "overall_rating" in eval_result
-    overall = eval_result["overall_rating"]
+    assert "overall_rating" in scores
+    overall = scores["overall_rating"]
     assert isinstance(overall, float)
     assert 1.0 <= overall <= 5.0
 
