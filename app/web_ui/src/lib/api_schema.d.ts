@@ -657,7 +657,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/projects/{project_id}/tasks/{task_id}/sdf": {
+    "/api/projects/{project_id}/tasks/{task_id}/create_evaluator": {
         parameters: {
             query?: never;
             header?: never;
@@ -666,8 +666,42 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Generate Evaluator */
-        post: operations["generate_evaluator_api_projects__project_id__tasks__task_id__sdf_post"];
+        /** Create Evaluator */
+        post: operations["create_evaluator_api_projects__project_id__tasks__task_id__create_evaluator_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/projects/{project_id}/tasks/{task_id}/eval/{eval_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Eval */
+        get: operations["get_eval_api_projects__project_id__tasks__task_id__eval__eval_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/projects/{project_id}/tasks/{task_id}/eval/{eval_id}/create_eval_config": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Eval Config */
+        post: operations["create_eval_config_api_projects__project_id__tasks__task_id__eval__eval_id__create_eval_config_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -686,6 +720,34 @@ export interface components {
             provider_id: string;
             /** Models */
             models: components["schemas"]["ModelDetails"][];
+        };
+        /**
+         * BasePrompt
+         * @description A prompt for a task. This is the basic data storage format which can be used throughout a project.
+         *
+         *     The "Prompt" model name is reserved for the custom prompts parented by a task.
+         */
+        BasePrompt: {
+            /**
+             * Name
+             * @description A name for this entity.
+             */
+            name: string;
+            /**
+             * Generator Id
+             * @description The id of the generator that created this prompt.
+             */
+            generator_id?: string | null;
+            /**
+             * Prompt
+             * @description The prompt for the task.
+             */
+            prompt: string;
+            /**
+             * Chain Of Thought Instructions
+             * @description Instructions for the model 'thinking' about the requirement prior to answering. Used for chain of thought style prompting. COT will not be used unless this is provided.
+             */
+            chain_of_thought_instructions?: string | null;
         };
         /** Body_edit_tags_api_projects__project_id__tasks__task_id__runs_edit_tags_post */
         Body_edit_tags_api_projects__project_id__tasks__task_id__runs_edit_tags_post: {
@@ -708,6 +770,31 @@ export interface components {
             name?: string | null;
             /** Description */
             description?: string | null;
+        };
+        /** CreateEvalConfigRequest */
+        CreateEvalConfigRequest: {
+            type: components["schemas"]["EvalConfigType"];
+            /** Properties */
+            properties: Record<string, never>;
+            /** Model Name */
+            model_name: string;
+            provider: components["schemas"]["ModelProviderName"];
+            /** Prompt Id */
+            prompt_id: string;
+        };
+        /** CreateEvaluatorRequest */
+        CreateEvaluatorRequest: {
+            /** Name */
+            name: string;
+            /** Description */
+            description: string;
+            template: components["schemas"]["EvalTemplate"] | null;
+            /** Output Scores */
+            output_scores: components["schemas"]["EvalOutputScore"][];
+            /** Eval Set Filter Id */
+            eval_set_filter_id: string;
+            /** Eval Configs Filter Id */
+            eval_configs_filter_id: string;
         };
         /**
          * CreateFinetuneRequest
@@ -954,6 +1041,110 @@ export interface components {
          * @enum {string}
          */
         DatasetSplitType: "train_test" | "train_test_val" | "train_test_val_80" | "all";
+        /** Eval */
+        Eval: {
+            /**
+             * V
+             * @default 1
+             */
+            v: number;
+            /** Id */
+            id?: string | null;
+            /** Path */
+            path?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at?: string;
+            /** Created By */
+            created_by?: string;
+            /**
+             * Name
+             * @description A name for this entity.
+             */
+            name: string;
+            /**
+             * Description
+             * @description The description of the eval
+             */
+            description?: string | null;
+            /**
+             * @description The state of the eval: enabled or disabled.
+             * @default enabled
+             */
+            state: components["schemas"]["EvalState"];
+            /** @description The template selected when creating this eval. Useful for suggesting eval steps and output scores. */
+            template?: components["schemas"]["EvalTemplate"] | null;
+            /**
+             * Current Config Id
+             * @description The id of the current config to use for this eval. This can be changed over time to run the same eval with different configs.
+             */
+            current_config_id?: string | null;
+            /**
+             * Eval Set Filter Id
+             * @description The id of the dataset filter which defines which dataset items are included when running this eval. Should be mutually exclusive with eval_configs_filter_id.
+             */
+            eval_set_filter_id: string;
+            /**
+             * Eval Configs Filter Id
+             * @description The id of the dataset filter which defines which dataset items are included when comparing the quality of the eval configs under this eval. Should consist of dataset items with ratings. Should be mutually exclusive with eval_set_filter_id.
+             */
+            eval_configs_filter_id: string;
+            /**
+             * Output Scores
+             * @description The scores this evaluator should produce.
+             */
+            output_scores: components["schemas"]["EvalOutputScore"][];
+            /** Model Type */
+            readonly model_type: string;
+        };
+        /**
+         * EvalConfig
+         * @description A configuration for running an eval. This includes anything needed to run the eval on a dataset like the prompt, model, thresholds, etc.
+         *
+         *     A eval might have many configs, example running the same eval with 2 different models. Comparing eval results is only valid when the same eval is run with the same config.
+         */
+        EvalConfig: {
+            /**
+             * V
+             * @default 1
+             */
+            v: number;
+            /** Id */
+            id?: string | null;
+            /** Path */
+            path?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at?: string;
+            /** Created By */
+            created_by?: string;
+            /** @description The model to use for this eval config. */
+            model: components["schemas"]["DataSource"];
+            /**
+             * @description This is used to determine the type of eval to run.
+             * @default g_eval
+             */
+            config_type: components["schemas"]["EvalConfigType"];
+            /**
+             * Properties
+             * @description Properties to be used to execute the eval config. This is config_type specific and should serialize to a json dict.
+             * @default {}
+             */
+            properties: Record<string, never>;
+            /** @description The prompt to use for this eval config. Both when running the task to generate outputs to evaluate and when explaining to the eval model what the goal of the task was. This is a frozen prompt, so this eval config is consistent over time (for example, if the user selects multi-shot prompting, this saves that dynamic prompt at the point the eval config is created). Freezing the prompt ensures consistent evals. */
+            prompt: components["schemas"]["BasePrompt"];
+            /** Model Type */
+            readonly model_type: string;
+        };
+        /**
+         * EvalConfigType
+         * @enum {string}
+         */
+        EvalConfigType: "g_eval" | "llm_as_judge";
         /**
          * EvalOutputScore
          * @description A definition of a score that an evaluator will produce.
@@ -974,6 +1165,17 @@ export interface components {
             /** @description The type of rating to use ('five_star', 'pass_fail', 'pass_fail_critical'). */
             type: components["schemas"]["TaskOutputRatingType"];
         };
+        /**
+         * EvalState
+         * @enum {string}
+         */
+        EvalState: "enabled" | "disabled";
+        /**
+         * EvalTemplate
+         * @description An eval template is a pre-defined eval that can be used as a starting point for a new eval.
+         * @enum {string}
+         */
+        EvalTemplate: "kiln_requirements" | "toxicity" | "bias" | "maliciousness" | "factual_correctness" | "jailbreak";
         /**
          * FineTuneParameter
          * @description A parameter for a fine-tune. Hyperparameters, etc.
@@ -1200,6 +1402,8 @@ export interface components {
             supports_structured_output: boolean;
             /** Supports Data Gen */
             supports_data_gen: boolean;
+            /** Supports Logprobs */
+            supports_logprobs: boolean;
             /**
              * Untested Model
              * @default false
@@ -1215,6 +1419,12 @@ export interface components {
          * @enum {string}
          */
         ModelName: "llama_3_1_8b" | "llama_3_1_70b" | "llama_3_1_405b" | "llama_3_2_1b" | "llama_3_2_3b" | "llama_3_2_11b" | "llama_3_2_90b" | "llama_3_3_70b" | "gpt_4o_mini" | "gpt_4o" | "phi_3_5" | "phi_4" | "mistral_large" | "mistral_nemo" | "gemma_2_2b" | "gemma_2_9b" | "gemma_2_27b" | "claude_3_5_haiku" | "claude_3_5_sonnet" | "gemini_1_5_flash" | "gemini_1_5_flash_8b" | "gemini_1_5_pro" | "gemini_2_0_flash" | "nemotron_70b" | "mixtral_8x7b" | "qwen_2p5_7b" | "qwen_2p5_72b" | "deepseek_3" | "deepseek_r1" | "mistral_small_3" | "deepseek_r1_distill_qwen_32b" | "deepseek_r1_distill_llama_70b" | "deepseek_r1_distill_qwen_14b" | "deepseek_r1_distill_qwen_1p5b" | "deepseek_r1_distill_qwen_7b" | "deepseek_r1_distill_llama_8b";
+        /**
+         * ModelProviderName
+         * @description Enumeration of supported AI model providers.
+         * @enum {string}
+         */
+        ModelProviderName: "openai" | "groq" | "amazon_bedrock" | "ollama" | "openrouter" | "fireworks_ai" | "kiln_fine_tune" | "kiln_custom_registry" | "openai_compatible";
         /** OllamaConnection */
         OllamaConnection: {
             /** Message */
@@ -3302,13 +3512,50 @@ export interface operations {
             };
         };
     };
-    generate_evaluator_api_projects__project_id__tasks__task_id__sdf_post: {
+    create_evaluator_api_projects__project_id__tasks__task_id__create_evaluator_post: {
         parameters: {
             query?: never;
             header?: never;
             path: {
                 project_id: string;
                 task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateEvaluatorRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Eval"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_eval_api_projects__project_id__tasks__task_id__eval__eval_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                task_id: string;
+                eval_id: string;
             };
             cookie?: never;
         };
@@ -3320,7 +3567,44 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["EvalOutputScore"];
+                    "application/json": components["schemas"]["Eval"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_eval_config_api_projects__project_id__tasks__task_id__eval__eval_id__create_eval_config_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                task_id: string;
+                eval_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateEvalConfigRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EvalConfig"];
                 };
             };
             /** @description Validation Error */

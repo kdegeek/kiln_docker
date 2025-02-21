@@ -24,6 +24,19 @@ if TYPE_CHECKING:
 EvalScores = Dict[str, float]
 
 
+class EvalTemplate(str, Enum):
+    """
+    An eval template is a pre-defined eval that can be used as a starting point for a new eval.
+    """
+
+    kiln_requirements = "kiln_requirements"
+    toxicity = "toxicity"
+    bias = "bias"
+    maliciousness = "maliciousness"
+    factual_correctness = "factual_correctness"
+    jailbreak = "jailbreak"
+
+
 class EvalState(str, Enum):
     enabled = "enabled"
     disabled = "disabled"
@@ -159,7 +172,6 @@ class EvalConfig(KilnParentedModel, KilnParentModel, parent_of={"runs": EvalRun}
     A eval might have many configs, example running the same eval with 2 different models. Comparing eval results is only valid when the same eval is run with the same config.
     """
 
-    name: str = NAME_FIELD
     model: DataSource = Field(description="The model to use for this eval config.")
     config_type: EvalConfigType = Field(
         default=EvalConfigType.g_eval,
@@ -219,6 +231,10 @@ class Eval(KilnParentedModel, KilnParentModel, parent_of={"configs": EvalConfig}
     state: EvalState = Field(
         default=EvalState.enabled,
         description="The state of the eval: enabled or disabled.",
+    )
+    template: EvalTemplate | None = Field(
+        default=None,
+        description="The template selected when creating this eval. Useful for suggesting eval steps and output scores.",
     )
     current_config_id: ID_TYPE = Field(
         default=None,

@@ -123,6 +123,7 @@ class KilnModelProvider(BaseModel):
     structured_output_mode: StructuredOutputMode = StructuredOutputMode.default
     parser: ModelParserID | None = None
     reasoning_capable: bool = False
+    supports_logprobs: bool = False
 
 
 class KilnModel(BaseModel):
@@ -155,11 +156,13 @@ built_in_models: List[KilnModel] = [
                 provider_options={"model": "gpt-4o-mini"},
                 provider_finetune_id="gpt-4o-mini-2024-07-18",
                 structured_output_mode=StructuredOutputMode.json_schema,
+                supports_logprobs=True,
             ),
             KilnModelProvider(
                 name=ModelProviderName.openrouter,
                 provider_options={"model": "openai/gpt-4o-mini"},
                 structured_output_mode=StructuredOutputMode.json_schema,
+                supports_logprobs=True,
             ),
         ],
     ),
@@ -174,11 +177,13 @@ built_in_models: List[KilnModel] = [
                 provider_options={"model": "gpt-4o"},
                 provider_finetune_id="gpt-4o-2024-08-06",
                 structured_output_mode=StructuredOutputMode.json_schema,
+                supports_logprobs=True,
             ),
             KilnModelProvider(
                 name=ModelProviderName.openrouter,
                 provider_options={"model": "openai/gpt-4o"},
                 structured_output_mode=StructuredOutputMode.json_schema,
+                supports_logprobs=True,
             ),
         ],
     ),
