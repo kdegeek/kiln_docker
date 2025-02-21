@@ -95,7 +95,7 @@
             <tr
               class="hover cursor-pointer"
               on:click={() => {
-                goto(`/evals/${project_id}/${task_id}/eval/${evaluator.id}`)
+                goto(`/evals/${project_id}/${task_id}/${evaluator.id}`)
               }}
             >
               <td> {evaluator.id} </td>

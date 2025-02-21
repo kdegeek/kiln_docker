@@ -71,6 +71,32 @@ def mock_eval(mock_task):
 
 
 @pytest.fixture
+def mock_eval_config(mock_eval):
+    eval_config = EvalConfig(
+        id="eval_config1",
+        config_type=EvalConfigType.g_eval,
+        properties={"eval_steps": ["step1", "step2"]},
+        parent=mock_eval,
+        model=DataSource(
+            id="model1",
+            type=DataSourceType.synthetic,
+            properties={
+                "model_name": "gpt-4",
+                "model_provider": "openai",
+                "adapter_name": "TODO",
+            },
+        ),
+        prompt=BasePrompt(
+            name="test",
+            prompt="base prompt",
+            chain_of_thought_instructions="cot prompt",
+        ),
+    )
+    eval_config.save_to_file()
+    return eval_config
+
+
+@pytest.fixture
 def mock_task_from_id(mock_task):
     with patch("app.desktop.studio_server.evals_api.task_from_id") as mock:
         mock.return_value = mock_task
@@ -209,3 +235,28 @@ async def test_create_eval_config(
     assert config.prompt.chain_of_thought_instructions == "cot prompt"
     assert config.properties["eval_steps"][0] == "step1"
     assert config.properties["eval_steps"][1] == "step2"
+
+
+def test_get_eval_configs(
+    client, mock_task_from_id, mock_eval, mock_task, mock_eval_config
+):
+    mock_task_from_id.return_value = mock_task
+
+    with patch("app.desktop.studio_server.evals_api.eval_from_id") as mock_eval_from_id:
+        mock_eval_from_id.return_value = mock_eval
+        response = client.get(
+            "/api/projects/project1/tasks/task1/eval/eval1/eval_configs"
+        )
+
+    assert response.status_code == 200
+    configs = response.json()
+    assert isinstance(configs, list)
+    assert len(configs) == 1
+
+    config = configs[0]
+    assert config["config_type"] == mock_eval_config.config_type
+    assert config["properties"] == mock_eval_config.properties
+    assert config["model"]["type"] == mock_eval_config.model.type
+    assert isinstance(config["prompt"], dict)
+
+    mock_eval_from_id.assert_called_once_with("project1", "task1", "eval1")
