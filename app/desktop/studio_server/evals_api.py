@@ -74,6 +74,11 @@ def connect_evals_api(app: FastAPI):
     async def get_eval(project_id: str, task_id: str, eval_id: str) -> Eval:
         return eval_from_id(project_id, task_id, eval_id)
 
+    @app.get("/api/projects/{project_id}/tasks/{task_id}/evals")
+    async def get_evals(project_id: str, task_id: str) -> list[Eval]:
+        task = task_from_id(project_id, task_id)
+        return task.evals()
+
     @app.post(
         "/api/projects/{project_id}/tasks/{task_id}/eval/{eval_id}/create_eval_config"
     )

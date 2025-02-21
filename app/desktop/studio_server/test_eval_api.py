@@ -77,6 +77,19 @@ def mock_task_from_id(mock_task):
         yield mock
 
 
+def test_get_evals_success(client, mock_task, mock_task_from_id, mock_eval):
+    mock_task_from_id.return_value = mock_task
+
+    response = client.get("/api/projects/project1/tasks/task1/evals")
+
+    assert response.status_code == 200
+    result = response.json()
+    assert len(result) == 1
+    assert result[0]["id"] == "eval1"
+    assert result[0]["name"] == "Test Eval"
+    mock_task_from_id.assert_called_once_with("project1", "task1")
+
+
 def test_get_eval_success(client, mock_task, mock_task_from_id, mock_eval):
     mock_task_from_id.return_value = mock_task
 
