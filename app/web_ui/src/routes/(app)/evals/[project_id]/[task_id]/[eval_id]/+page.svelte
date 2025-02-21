@@ -7,7 +7,17 @@
   import { page } from "$app/stores"
   import { formatDate } from "$lib/utils/formatters"
   import FormElement from "$lib/utils/form_element.svelte"
-  import type { EvalConfig, EvalConfigType } from "$lib/types"
+  import type { EvalConfig, EvalConfigType, ProviderModels } from "$lib/types"
+  import { goto } from "$app/navigation"
+  import {
+    model_info,
+    load_model_info,
+    model_name,
+    provider_name_from_id,
+    prompt_name_from_id,
+    load_available_prompts,
+    load_available_models,
+  } from "$lib/stores"
 
   $: project_id = $page.params.project_id
   $: task_id = $page.params.task_id
@@ -31,6 +41,10 @@
     // Can actually do these in parallel
     get_eval()
     get_eval_configs()
+    // These are all just needed for better labels
+    load_model_info()
+    load_available_prompts()
+    load_available_models()
   })
 
   async function get_eval() {
@@ -97,17 +111,11 @@
   }
 
   $: add_eval_config(current_eval_config_id)
-  let last_selected_valid_id: string | null = null
 
   function add_eval_config(selected_id: string | null) {
-    if (selected_id !== "add_config") {
-      last_selected_valid_id = selected_id
-      return
+    if (selected_id === "add_config") {
+      goto(`/evals/${project_id}/${task_id}/${eval_id}/create_eval_config`)
     }
-
-    // Reset the selected id, so we don't leave "add_config" selected
-    current_eval_config_id = last_selected_valid_id
-    alert("Not implemented")
   }
 
   type UiProperty = {
@@ -124,10 +132,15 @@
     )
   }
 
-  function get_eval_config_name(eval_config: EvalConfig): string {
+  function get_eval_config_name(
+    eval_config: EvalConfig,
+    model_info: ProviderModels | null,
+  ): string {
     let name = eval_config_to_ui_name(eval_config.config_type)
     let parts = []
-    parts.push(eval_config.model.properties["model_name"])
+    parts.push(
+      model_name(eval_config.model.properties["model_name"], model_info),
+    )
     parts.push(eval_config.prompt.name)
     return name + " (" + parts.join(", ") + ")"
   }
@@ -169,6 +182,7 @@
   }
   function get_eval_config_properties(
     eval_config_id: string | null,
+    model_info: ProviderModels | null,
   ): UiProperty[] {
     if (!eval_config_id) {
       return []
@@ -187,32 +201,39 @@
     })
     properties.push({
       name: "Model",
-      value: eval_config.model.properties["model_name"] + "",
+      value: model_name(
+        eval_config.model.properties["model_name"] + "",
+        model_info,
+      ),
     })
     properties.push({
       name: "Provider",
-      value: eval_config.model.properties["model_provider"] + "",
+      value: provider_name_from_id(
+        eval_config.model.properties["model_provider"] + "",
+      ),
     })
     properties.push({
       name: "Prompt",
-      value: eval_config.prompt.name + "",
+      value: prompt_name_from_id(eval_config.prompt.name + ""),
     })
     return properties
   }
 
   function get_eval_config_select_options(
     configs: EvalConfig[] | null,
-  ): [string, string][] {
-    if (!configs) {
-      return []
-    }
-    const results: [string, string][] = []
-    for (const c of configs) {
+  ): [string, [unknown, string][]][] {
+    const configs_options: [string, string][] = []
+    for (const c of configs || []) {
       if (c.id) {
-        results.push([c.id, get_eval_config_name(c)])
+        configs_options.push([c.id, get_eval_config_name(c, $model_info)])
       }
     }
-    results.push(["add_config", "Add Config"])
+
+    const results: [string, [unknown, string][]][] = []
+    if (configs_options.length > 0) {
+      results.push(["Eval Configs", configs_options])
+    }
+    results.push(["Manage", [["add_config", "Add Config"]]])
     return results
   }
 </script>
@@ -252,19 +273,21 @@
           <div class="text-xs text-gray-500">
             How this evaluator will be run.
           </div>
+          <FormElement
+            hide_label={true}
+            id="eval_config_select"
+            label="Eval Config"
+            inputType="select"
+            bind:value={current_eval_config_id}
+            select_options_grouped={get_eval_config_select_options(
+              eval_configs,
+            )}
+          />
         </div>
-        <FormElement
-          hide_label={true}
-          id="eval_config_select"
-          label="Eval Config"
-          inputType="select"
-          bind:value={current_eval_config_id}
-          select_options={get_eval_config_select_options(eval_configs)}
-        />
         <div
           class="grid grid-cols-[auto,1fr] gap-y-2 gap-x-4 text-sm 2xl:text-base"
         >
-          {#each get_eval_config_properties(current_eval_config_id) as property}
+          {#each get_eval_config_properties(current_eval_config_id, $model_info) as property}
             <div class="flex items-center">{property.name}</div>
             <div class="flex items-center text-gray-500 overflow-x-hidden">
               {property.value}
