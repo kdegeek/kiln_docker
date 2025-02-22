@@ -453,14 +453,17 @@
     </div>
     <div>
       <div class="text-xl font-bold">Results</div>
+      <div class="text-xs text-gray-500 mb-4">
+        Filtered by the selected eval config and grouped by task run config.
+      </div>
       <div class="overflow-x-auto rounded-lg border">
         <table class="table">
           <thead>
             <tr>
               <th> Name </th>
-              <th> Prompt </th>
               <th> Model </th>
               <th> Provider </th>
+              <th> Prompt </th>
             </tr>
           </thead>
           <tbody>

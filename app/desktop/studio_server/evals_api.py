@@ -4,6 +4,7 @@ from typing import Any
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import StreamingResponse
+from kiln_ai.adapters.eval.eval_runner import EvalRunner
 from kiln_ai.adapters.ml_model_list import ModelProviderName
 from kiln_ai.adapters.prompt_builders import prompt_builder_from_id
 from kiln_ai.datamodel import (
@@ -232,16 +233,22 @@ def connect_evals_api(app: FastAPI):
                 for run_config_id in run_config_ids
             ]
 
+        eval_runner = EvalRunner(
+            eval_config=eval_config,
+            run_configs=run_configs,
+        )
+
+        # Async messages via server side events (SSE)
         async def event_generator():
-            for i in range(10):  # Simulate 10 steps
-                await asyncio.sleep(0.2)  # Simulate work
+            async for progress in eval_runner.run():
                 data = {
-                    "progress": i + 1,
-                    "total": 10,
-                    "status": "processing" if i < 9 else "complete",
+                    "progress": progress.complete,
+                    "total": progress.total,
+                    "errors": progress.errors,
                 }
-                print(data)
                 yield f"data: {json.dumps(data)}\n\n"
+
+            # Send the final complete message the app expects, and uses to stop listening
             yield "data: complete\n\n"
 
         return StreamingResponse(

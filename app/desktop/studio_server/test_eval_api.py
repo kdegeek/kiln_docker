@@ -1,3 +1,4 @@
+import json
 from unittest.mock import Mock, patch
 
 import pytest
@@ -19,6 +20,7 @@ from kiln_ai.datamodel.eval import (
     EvalOutputScore,
     EvalTemplate,
 )
+from kiln_ai.datamodel.task import RunConfigProperties, TaskRunConfig
 
 from app.desktop.studio_server.evals_api import (
     CreateEvalConfigRequest,
@@ -95,6 +97,23 @@ def mock_eval_config(mock_eval):
     )
     eval_config.save_to_file()
     return eval_config
+
+
+@pytest.fixture
+def mock_run_config(mock_task):
+    run_config = TaskRunConfig(
+        parent=mock_task,
+        id="run_config1",
+        name="Test Run Config",
+        description="Test Description",
+        run_config_properties=RunConfigProperties(
+            model_name="gpt-4",
+            model_provider_name="openai",
+            prompt_id="simple_chain_of_thought_prompt_builder",
+        ),
+    )
+    run_config.save_to_file()
+    return run_config
 
 
 @pytest.fixture
@@ -297,3 +316,81 @@ def test_get_eval_configs(
     assert isinstance(config["prompt"], dict)
 
     mock_eval_from_id.assert_called_once_with("project1", "task1", "eval1")
+
+
+@pytest.mark.asyncio
+async def test_run_eval_config(
+    client, mock_task_from_id, mock_task, mock_eval, mock_eval_config, mock_run_config
+):
+    mock_task_from_id.return_value = mock_task
+
+    # Mock progress updates
+    progress_updates = [
+        Mock(complete=1, total=3, errors=0),
+        Mock(complete=2, total=3, errors=0),
+        Mock(complete=3, total=3, errors=0),
+    ]
+
+    # Create async generator for mock progress
+    async def mock_run():
+        for progress in progress_updates:
+            yield progress
+
+    with (
+        patch(
+            "app.desktop.studio_server.evals_api.task_run_config_from_id"
+        ) as mock_run_config_from_id,
+        patch("app.desktop.studio_server.evals_api.EvalRunner") as MockEvalRunner,
+    ):
+        mock_run_config_from_id.return_value = mock_run_config
+        mock_eval_runner = Mock()
+        mock_eval_runner.run.return_value = mock_run()
+        MockEvalRunner.return_value = mock_eval_runner
+
+        # Make request with specific run_config_ids
+        response = client.get(
+            "/api/projects/project1/tasks/task1/eval/eval1/eval_config/eval_config1/run",
+            params={"run_config_ids": ["run_config1", "run_config2"]},
+        )
+
+        assert response.status_code == 200
+
+        # Parse SSE messages
+        messages = [msg for msg in response.iter_lines() if msg]
+
+        # Should have 4 messages: 3 progress updates and 1 complete
+        assert len(messages) == 4
+
+        # Check progress messages
+        for i, msg in enumerate(messages[:-1]):
+            assert msg.startswith("data: ")
+            data = json.loads(msg.split("data: ")[1])
+            assert data["progress"] == i + 1
+            assert data["total"] == 3
+            assert data["errors"] == 0
+
+        # Check complete message
+        assert messages[-1] == "data: complete"
+
+
+@pytest.mark.asyncio
+async def test_run_eval_config_no_run_configs_error(
+    client, mock_task_from_id, mock_task, mock_eval, mock_eval_config
+):
+    mock_task_from_id.return_value = mock_task
+
+    with patch(
+        "app.desktop.studio_server.evals_api.eval_config_from_id"
+    ) as mock_eval_config_from_id:
+        mock_eval_config_from_id.return_value = mock_eval_config
+
+        # Make request with no run_config_ids and all_run_configs=False
+        response = client.get(
+            "/api/projects/project1/tasks/task1/eval/eval1/eval_config/eval_config1/run"
+        )
+
+        assert response.status_code == 400
+        assert (
+            response.json()["detail"]
+            == "No run config ids provided. At least one run config id is required."
+        )
