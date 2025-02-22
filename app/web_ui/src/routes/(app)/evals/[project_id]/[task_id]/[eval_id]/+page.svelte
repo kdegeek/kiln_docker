@@ -25,6 +25,7 @@
   import Dialog from "$lib/ui/dialog.svelte"
   import AvailableModelsDropdown from "../../../../run/available_models_dropdown.svelte"
   import PromptTypeSelector from "../../../../run/prompt_type_selector.svelte"
+  import Warning from "$lib/ui/warning.svelte"
 
   $: project_id = $page.params.project_id
   $: task_id = $page.params.task_id
@@ -244,14 +245,14 @@
       value: eval_config_to_ui_name(eval_config.config_type),
     })
     properties.push({
-      name: "Model",
+      name: "Eval Model",
       value: model_name(
         eval_config.model.properties["model_name"] + "",
         model_info,
       ),
     })
     properties.push({
-      name: "Provider",
+      name: "Eval Provider",
       value: provider_name_from_id(
         eval_config.model.properties["model_provider"] + "",
       ),
@@ -282,17 +283,30 @@
   }
 
   let run_dialog: Dialog | null = null
+  let running_progress_dialog: Dialog | null = null
 
-  let eval_running = false
   let eval_run_error: KilnError | null = null
-  let progress = "not_started"
+  let eval_state:
+    | "not_started"
+    | "running"
+    | "complete"
+    | "complete_with_errors" = "not_started"
+  let eval_complete_count = 0
+  let eval_total_count = 0
+  let eval_error_count = 0
+
   function run_eval(): boolean {
-    progress = "starting"
     if (!current_eval_config_id) {
-      throw new Error("No eval config selected")
+      eval_run_error = new KilnError("No eval config selected", null)
+      eval_state = "complete_with_errors"
+      return false
     }
 
-    eval_running = true
+    eval_state = "running"
+    eval_complete_count = 0
+    eval_total_count = 0
+    eval_error_count = 0
+
     const eventSource = new EventSource(
       `${base_url}/api/projects/${project_id}/tasks/${task_id}/eval/${eval_id}/eval_config/${current_eval_config_id}/run?all_run_configs=true`,
     )
@@ -300,27 +314,31 @@
     eventSource.onmessage = (event) => {
       try {
         if (event.data === "complete") {
-          progress = "complete"
           eventSource.close()
-          eval_running = false
+          eval_state =
+            eval_error_count > 0 ? "complete_with_errors" : "complete"
         } else {
           const data = JSON.parse(event.data)
-          progress = data.progress
+          eval_complete_count = data.progress
+          eval_total_count = data.total
+          eval_error_count = data.errors
+          eval_state = "running"
         }
       } catch (error) {
-        console.error("Error parsing SSE data:", error)
+        eval_run_error = createKilnError(error)
+        eval_state = "complete_with_errors"
       }
     }
 
     // Don't restart on an error
     eventSource.onerror = (error) => {
-      console.error("SSE error:", error)
       eventSource.close()
-      progress = "error"
-      eval_running = false
+      eval_state = "complete_with_errors"
       eval_run_error = createKilnError(error)
     }
 
+    // Switch over to the progress dialog
+    running_progress_dialog?.show()
     return true
   }
 
@@ -374,21 +392,10 @@
 <AppPage
   title="Evaluator"
   subtitle={evaluator?.name}
-  sub_subtitle={`${progress} ${base_url}`}
   action_buttons={[
     {
-      label: "Add Run Config",
-      handler: () => {
-        add_task_config_dialog?.show()
-      },
-      primary: true,
-    },
-    {
-      label: "Run Evals",
-      handler: () => {
-        run_dialog?.show()
-      },
-      primary: true,
+      label: "Evaluate Eval Configs",
+      href: `/evals/${project_id}/${task_id}/${eval_id}/TODO`,
     },
   ]}
 >
@@ -422,12 +429,8 @@
       </div>
       <div class="grow basis-1/2 flex flex-col gap-4">
         <div>
-          <div class="text-xl font-bold">Config</div>
-          <div class="text-xs text-gray-500">
-            <a href="TODO" class="link"
-              >Find optimal config for running this eval</a
-            >
-          </div>
+          <div class="text-xl font-bold mb-2">Config</div>
+
           <FormElement
             hide_label={true}
             id="eval_config_select"
@@ -448,54 +451,119 @@
               {property.value}
             </div>
           {/each}
+          <div class="flex items-center">Config Quality</div>
+          <div class="flex items-center text-gray-500 overflow-x-hidden">
+            <a href="TODO" class="link"> Compare and optimize </a>
+          </div>
         </div>
       </div>
     </div>
-    <div>
-      <div class="text-xl font-bold">Results</div>
-      <div class="text-xs text-gray-500 mb-4">
-        Filtered by the selected eval config and grouped by task run config.
-      </div>
-      <div class="overflow-x-auto rounded-lg border">
-        <table class="table">
-          <thead>
-            <tr>
-              <th> Name </th>
-              <th> Model </th>
-              <th> Provider </th>
-              <th> Prompt </th>
-            </tr>
-          </thead>
-          <tbody>
-            {#each task_run_configs || [] as task_run_config}
-              <tr
-                class="hover cursor-pointer"
+    <div class="mt-2">
+      {#if task_run_configs?.length}
+        <div class="flex flex-col lg:flex-row gap-8 xl:gap-16 mb-6">
+          <div class="grow">
+            <div class="text-xl font-bold">Results</div>
+            <div class="text-xs text-gray-500">
+              Filtered by the selected eval config and grouped by task run
+              config.
+            </div>
+          </div>
+          <div>
+            {#if eval_state === "not_started"}
+              <button
+                class="btn btn-mid mr-2"
                 on:click={() => {
-                  console.log("TODO: link")
+                  add_task_config_dialog?.show()
+                }}>Add Run Config</button
+              >
+              <button
+                class="btn btn-mid btn-primary"
+                on:click={() => {
+                  run_dialog?.show()
+                }}>Run Eval</button
+              >
+            {:else}
+              <button
+                class="btn btn-mid"
+                on:click={() => {
+                  running_progress_dialog?.show()
                 }}
               >
-                <td> {task_run_config.name} </td>
-                <td>
-                  {model_name(
-                    task_run_config?.run_config_properties?.model_name,
-                    $model_info,
-                  )}
-                </td>
-                <td>
-                  {provider_name_from_id(
-                    task_run_config?.run_config_properties?.model_provider_name,
-                  )}
-                </td>
-                <td>
-                  {prompt_name_from_id(
-                    task_run_config?.run_config_properties?.prompt_id,
-                  )}
-                </td>
+                {#if eval_state === "running"}
+                  <div class="loading loading-spinner loading-xs"></div>
+                  Running...
+                {:else if eval_state === "complete"}
+                  Eval Complete
+                {:else if eval_state === "complete_with_errors"}
+                  Eval Complete with Errors
+                {:else}
+                  Eval Status
+                {/if}
+              </button>
+            {/if}
+          </div>
+        </div>
+        <div class="overflow-x-auto rounded-lg border">
+          <table class="table">
+            <thead>
+              <tr>
+                <th> Run Config Name </th>
+                <th> Task Model </th>
+                <th> Task Provider </th>
+                <th> Task Prompt </th>
               </tr>
-            {/each}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {#each task_run_configs || [] as task_run_config}
+                <tr
+                  class="hover cursor-pointer"
+                  on:click={() => {
+                    console.log("TODO: link")
+                  }}
+                >
+                  <td> {task_run_config.name} </td>
+                  <td>
+                    {model_name(
+                      task_run_config?.run_config_properties?.model_name,
+                      $model_info,
+                    )}
+                  </td>
+                  <td>
+                    {provider_name_from_id(
+                      task_run_config?.run_config_properties
+                        ?.model_provider_name,
+                    )}
+                  </td>
+                  <td>
+                    {prompt_name_from_id(
+                      task_run_config?.run_config_properties?.prompt_id,
+                    )}
+                  </td>
+                </tr>
+              {/each}
+            </tbody>
+          </table>
+        </div>
+      {:else}
+        <div class="text-xl font-bold">Results</div>
+        <div
+          class="font-light text-sm max-w-[400px] mx-auto flex flex-col gap-2 mt-8"
+        >
+          <div class="font-medium text-lg">Create a Run Config</div>
+          <div>
+            A task run config defines how the task is run, such as which model
+            and prompt to use. Create one to run this evaluator.
+          </div>
+          <button
+            class="btn btn-primary"
+            on:click={() => {
+              add_task_config_dialog?.show()
+            }}
+          >
+            Add Task Config
+          </button>
+        </div>
+      {/if}
     </div>
   {/if}
 </AppPage>
@@ -537,6 +605,56 @@
 </Dialog>
 
 <Dialog
+  bind:this={running_progress_dialog}
+  title="Eval Progress"
+  action_buttons={eval_state === "complete" ||
+  eval_state === "complete_with_errors"
+    ? [
+        {
+          label: "Close",
+          isCancel: true,
+          isPrimary: false,
+        },
+      ]
+    : []}
+>
+  <div
+    class="mt-12 mb-6 flex flex-col items-center justify-center min-h-[100px] text-center"
+  >
+    {#if eval_state === "complete"}
+      <div class="font-medium">Eval Complete 🎉</div>
+      {#if eval_total_count == 0}
+        <div class="text-gray-500 text-sm mt-2">
+          No evals were run, because everything was already up to date!
+        </div>
+      {/if}
+    {:else if eval_state === "complete_with_errors"}
+      <div class="font-medium">Eval Complete with Errors</div>
+    {:else if eval_state === "running"}
+      <div class="loading loading-spinner loading-lg text-success"></div>
+      <div class="font-medium mt-4">Running...</div>
+    {/if}
+    <div class="text-sm font-light min-w-[120px]">
+      {#if eval_total_count > 0}
+        <div>
+          {eval_complete_count + eval_error_count} of {eval_total_count}
+        </div>
+      {/if}
+      {#if eval_error_count > 0}
+        <div class="text-error font-light text-xs">
+          {eval_error_count} error{eval_error_count === 1 ? "" : "s"}
+        </div>
+      {/if}
+      {#if eval_run_error}
+        <div class="text-error font-light text-xs mt-2">
+          {eval_run_error.getMessage() || "An unknown error occurred"}
+        </div>
+      {/if}
+    </div>
+  </div>
+</Dialog>
+
+<Dialog
   bind:this={run_dialog}
   title="Run Eval"
   action_buttons={[
@@ -545,12 +663,19 @@
       isCancel: true,
     },
     {
-      label: "Run",
+      label: "Run Eval",
       action: run_eval,
+      isPrimary: true,
     },
   ]}
 >
-  <div>
-    <div>Run Eval</div>
+  <div class="flex flex-col gap-2 font-light mt-4">
+    <div>Run this eval on the selected eval configuration?</div>
+    <div>Don't close this page if you want to monitor progress.</div>
+    <Warning
+      warning_color="warning"
+      warning_message="This may use considerable compute/credits."
+      tight={true}
+    />
   </div>
 </Dialog>

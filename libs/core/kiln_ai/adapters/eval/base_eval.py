@@ -48,8 +48,13 @@ class BaseEval:
             base_adapter_config=AdapterConfig(allow_saving=False),
         )
 
+        # Parse stuctured input if needed
+        parsed_input = input
+        if self.target_task.output_json_schema is not None:
+            parsed_input = json.loads(input)
+
         # we don't save by default here. We'll save manually after validating the output
-        run_output = await run_adapter.invoke(input)
+        run_output = await run_adapter.invoke(parsed_input)
 
         eval_output = await self.run_eval(run_output)
         validate_schema(eval_output, self.score_schema)
