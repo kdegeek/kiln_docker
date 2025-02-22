@@ -1,4 +1,5 @@
 import json
+import logging
 
 import pytest
 
@@ -32,6 +33,8 @@ from kiln_ai.datamodel import (
     TaskOutputRating,
     TaskRun,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def test_simple_prompt_builder(tmp_path):
@@ -269,7 +272,7 @@ def test_few_shot_prompt_builder(tmp_path):
                 rating=TaskOutputRating(value=4 + (i % 2), reason="Good joke"),
             ),
         )
-        print("RATING", "Joke Initial Output ", i + 1, " - RATED:", 4 + (i % 2), "\n")
+        logger.info("RATING: Joke Initial Output %s - RATED: %s", i + 1, 4 + (i % 2))
         if i < 2:
             run = run.model_copy(
                 update={
@@ -290,7 +293,7 @@ def test_few_shot_prompt_builder(tmp_path):
     prompt = prompt_builder.build_prompt(include_json_instructions=False)
     assert prompt.count("## Example") == 4
 
-    print("PROMPT", prompt)
+    logger.info("PROMPT: %s", prompt)
     # Verify the order of examples (2 repaired, then 2 highest-rated)
     assert "Repaired Joke 1" in prompt
     assert "Repaired Joke 2" in prompt
