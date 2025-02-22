@@ -23,6 +23,17 @@
     $ui_state.current_task_id,
   )
 
+  // Export the parsed model name and provider name
+  export let model_name: string | null = null
+  export let provider_name: string | null = null
+  $: get_model_provider(model)
+  function get_model_provider(model_provider: string) {
+    model_name = model_provider
+      ? model_provider.split("/").slice(1).join("/")
+      : null
+    provider_name = model_provider ? model_provider.split("/")[0] : null
+  }
+
   onMount(async () => {
     await load_available_models()
   })

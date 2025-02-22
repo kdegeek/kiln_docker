@@ -33,6 +33,7 @@ def test_eval_state_values():
 @pytest.fixture
 def valid_eval_config_data():
     return {
+        "name": "Test Eval Config",
         "config_type": EvalConfigType.g_eval,
         "properties": {"eval_steps": ["step1", "step2"]},
         "model": DataSource(
@@ -56,6 +57,7 @@ def valid_eval_config(valid_eval_config_data):
 
 
 def test_eval_config_valid(valid_eval_config):
+    assert valid_eval_config.name == "Test Eval Config"
     assert valid_eval_config.config_type == EvalConfigType.g_eval
     assert valid_eval_config.properties["eval_steps"] == ["step1", "step2"]
     assert valid_eval_config.model.type == DataSourceType.synthetic

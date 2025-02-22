@@ -172,6 +172,7 @@ class EvalConfig(KilnParentedModel, KilnParentModel, parent_of={"runs": EvalRun}
     A eval might have many configs, example running the same eval with 2 different models. Comparing eval results is only valid when the same eval is run with the same config.
     """
 
+    name: str = NAME_FIELD
     model: DataSource = Field(description="The model to use for this eval config.")
     config_type: EvalConfigType = Field(
         default=EvalConfigType.g_eval,

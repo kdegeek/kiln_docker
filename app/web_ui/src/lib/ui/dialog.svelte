@@ -9,6 +9,7 @@
     asyncAction?: () => Promise<boolean>
     action?: () => boolean
     isCancel?: boolean
+    isPrimary?: boolean
     disabled?: boolean
   }
   export let action_buttons: ActionButton[] = []
@@ -91,7 +92,9 @@
               </form>
             {:else}
               <button
-                class="btn btn-sm h-10 min-w-24 btn-secondary"
+                class="btn btn-sm h-10 min-w-24 {button.isPrimary
+                  ? 'btn-primary'
+                  : 'btn-secondary'}"
                 disabled={button.disabled}
                 on:click={() => perform_button_action(button)}
               >

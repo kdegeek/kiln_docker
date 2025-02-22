@@ -74,6 +74,7 @@ def mock_eval(mock_task):
 def mock_eval_config(mock_eval):
     eval_config = EvalConfig(
         id="eval_config1",
+        name="Test Eval Config",
         config_type=EvalConfigType.g_eval,
         properties={"eval_steps": ["step1", "step2"]},
         parent=mock_eval,
@@ -154,6 +155,7 @@ def valid_evaluator_request():
 @pytest.fixture
 def valid_eval_config_request():
     return CreateEvalConfigRequest(
+        name="Test Eval Config",
         type=EvalConfigType.g_eval,
         properties={"eval_steps": ["step1", "step2"]},
         model_name="gpt-4",
@@ -182,6 +184,41 @@ async def test_create_evaluator(
 
 
 @pytest.mark.asyncio
+async def test_create_task_run_config(client, mock_task_from_id, mock_task):
+    mock_task_from_id.return_value = mock_task
+
+    response = client.post(
+        "/api/projects/project1/tasks/task1/task_run_config",
+        json={
+            "name": "Test Task Run Config",
+            "description": "Test Description",
+            "model_name": "gpt-4o",
+            "model_provider_name": "openai",
+            "prompt_id": "simple_chain_of_thought_prompt_builder",
+        },
+    )
+
+    assert response.status_code == 200
+    result = response.json()
+    assert result["name"] == "Test Task Run Config"
+    assert result["description"] == "Test Description"
+    assert result["run_config_properties"]["model_name"] == "gpt-4o"
+    assert result["run_config_properties"]["model_provider_name"] == "openai"
+    assert (
+        result["run_config_properties"]["prompt_id"]
+        == "simple_chain_of_thought_prompt_builder"
+    )
+
+    # Fetch it from API
+    fetch_response = client.get("/api/projects/project1/tasks/task1/task_run_configs")
+    assert fetch_response.status_code == 200
+    configs = fetch_response.json()
+    assert len(configs) == 1
+    assert configs[0]["id"] == result["id"]
+    assert configs[0]["name"] == result["name"]
+
+
+@pytest.mark.asyncio
 async def test_create_eval_config(
     client, mock_task_from_id, valid_eval_config_request, mock_eval, mock_task
 ):
@@ -192,7 +229,6 @@ async def test_create_eval_config(
         patch(
             "app.desktop.studio_server.evals_api.prompt_builder_from_id"
         ) as mock_prompt_builder,
-        # patch.object(EvalConfig, "save_to_file") as mock_save,
     ):
         mock_eval_from_id.return_value = mock_eval
         mock_prompt_builder.return_value.build_base_prompt.return_value = "base prompt"
@@ -207,6 +243,7 @@ async def test_create_eval_config(
 
     assert response.status_code == 200
     result = response.json()
+    assert result["name"] == valid_eval_config_request.name
     assert result["config_type"] == valid_eval_config_request.type
     assert result["properties"] == valid_eval_config_request.properties
     assert result["model"]["type"] == DataSourceType.synthetic

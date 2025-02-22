@@ -180,6 +180,9 @@ class Task(
     def evals(self, readonly: bool = False) -> list[Eval]:
         return super().evals(readonly=readonly)  # type: ignore
 
+    def run_configs(self, readonly: bool = False) -> list[TaskRunConfig]:
+        return super().run_configs(readonly=readonly)  # type: ignore
+
     # Workaround to return typed parent without importing Task
     def parent_project(self) -> Union["Project", None]:
         if self.parent is None or self.parent.__class__.__name__ != "Project":

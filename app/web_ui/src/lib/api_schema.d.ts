@@ -674,6 +674,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/projects/{project_id}/tasks/{task_id}/task_run_configs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Task Run Configs */
+        get: operations["get_task_run_configs_api_projects__project_id__tasks__task_id__task_run_configs_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/projects/{project_id}/tasks/{task_id}/eval/{eval_id}": {
         parameters: {
             query?: never;
@@ -725,6 +742,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/projects/{project_id}/tasks/{task_id}/task_run_config": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Task Run Config */
+        post: operations["create_task_run_config_api_projects__project_id__tasks__task_id__task_run_config_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/projects/{project_id}/tasks/{task_id}/eval/{eval_id}/create_eval_config": {
         parameters: {
             query?: never;
@@ -736,6 +770,23 @@ export interface paths {
         put?: never;
         /** Create Eval Config */
         post: operations["create_eval_config_api_projects__project_id__tasks__task_id__eval__eval_id__create_eval_config_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/projects/{project_id}/tasks/{task_id}/eval/{eval_id}/eval_config/{eval_config_id}/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Run Eval Config */
+        get: operations["run_eval_config_api_projects__project_id__tasks__task_id__eval__eval_id__eval_config__eval_config_id__run_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -807,6 +858,8 @@ export interface components {
         };
         /** CreateEvalConfigRequest */
         CreateEvalConfigRequest: {
+            /** Name */
+            name?: string | null;
             type: components["schemas"]["EvalConfigType"];
             /** Properties */
             properties: Record<string, never>;
@@ -860,6 +913,18 @@ export interface components {
             /** Custom Thinking Instructions */
             custom_thinking_instructions?: string | null;
             data_strategy: components["schemas"]["FinetuneDataStrategy"];
+        };
+        /** CreateTaskRunConfigRequest */
+        CreateTaskRunConfigRequest: {
+            /** Name */
+            name?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Model Name */
+            model_name: string;
+            model_provider_name: components["schemas"]["ModelProviderName"];
+            /** Prompt Id */
+            prompt_id: string;
         };
         /** DataGenCategoriesApiInput */
         DataGenCategoriesApiInput: {
@@ -1156,6 +1221,11 @@ export interface components {
             created_at?: string;
             /** Created By */
             created_by?: string;
+            /**
+             * Name
+             * @description A name for this entity.
+             */
+            name: string;
             /** @description The model to use for this eval config. */
             model: components["schemas"]["DataSource"];
             /**
@@ -1677,6 +1747,30 @@ export interface components {
             /** @description The type of rating */
             type: components["schemas"]["TaskOutputRatingType"];
         };
+        /**
+         * RunConfigProperties
+         * @description A configuration for running a task.
+         *
+         *     This includes everything needed to run a task, except the input and task ID. Running the same RunConfig with the same input should make identical calls to the model (output may vary as models are non-deterministic).
+         */
+        RunConfigProperties: {
+            /**
+             * Model Name
+             * @description The model to use for this run config.
+             */
+            model_name: string;
+            /**
+             * Model Provider Name
+             * @description The provider to use for this run config.
+             */
+            model_provider_name: string;
+            /**
+             * Prompt Id
+             * @description The prompt to use for this run config. Defaults to building a simple prompt from the task if not provided.
+             * @default simple_prompt_builder
+             */
+            prompt_id: string;
+        };
         /** RunSummary */
         RunSummary: {
             /** Id */
@@ -2084,6 +2178,46 @@ export interface components {
              * @default []
              */
             tags: string[];
+            /** Model Type */
+            readonly model_type: string;
+        };
+        /**
+         * TaskRunConfig
+         * @description A Kiln model for persisting a run config in a Kiln Project, nested under a task.
+         *
+         *     Typically used to save a method of running a task for evaluation.
+         *
+         *     A run config includes everything needed to run a task, except the input. Running the same RunConfig with the same input should make identical calls to the model (output may vary as models are non-deterministic).
+         */
+        TaskRunConfig: {
+            /**
+             * V
+             * @default 1
+             */
+            v: number;
+            /** Id */
+            id?: string | null;
+            /** Path */
+            path?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at?: string;
+            /** Created By */
+            created_by?: string;
+            /**
+             * Name
+             * @description A name for this entity.
+             */
+            name: string;
+            /**
+             * Description
+             * @description The description of the task run config.
+             */
+            description?: string | null;
+            /** @description The run config properties to use for this task run. */
+            run_config_properties: components["schemas"]["RunConfigProperties"];
             /** Model Type */
             readonly model_type: string;
         };
@@ -3582,6 +3716,38 @@ export interface operations {
             };
         };
     };
+    get_task_run_configs_api_projects__project_id__tasks__task_id__task_run_configs_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskRunConfig"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_eval_api_projects__project_id__tasks__task_id__eval__eval_id__get: {
         parameters: {
             query?: never;
@@ -3680,6 +3846,42 @@ export interface operations {
             };
         };
     };
+    create_task_run_config_api_projects__project_id__tasks__task_id__task_run_config_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateTaskRunConfigRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskRunConfig"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     create_eval_config_api_projects__project_id__tasks__task_id__eval__eval_id__create_eval_config_post: {
         parameters: {
             query?: never;
@@ -3704,6 +3906,43 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EvalConfig"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    run_eval_config_api_projects__project_id__tasks__task_id__eval__eval_id__eval_config__eval_config_id__run_get: {
+        parameters: {
+            query?: {
+                run_config_ids?: string[];
+                all_run_configs?: boolean;
+            };
+            header?: never;
+            path: {
+                project_id: string;
+                task_id: string;
+                eval_id: string;
+                eval_config_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */

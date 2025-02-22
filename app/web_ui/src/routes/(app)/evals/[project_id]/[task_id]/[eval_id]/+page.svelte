@@ -1,13 +1,17 @@
 <script lang="ts">
   import AppPage from "../../../../app_page.svelte"
   import type { Eval } from "$lib/types"
-  import { client } from "$lib/api_client"
+  import { client, base_url } from "$lib/api_client"
   import { KilnError, createKilnError } from "$lib/utils/error_handlers"
   import { onMount, tick } from "svelte"
   import { page } from "$app/stores"
-  import { formatDate } from "$lib/utils/formatters"
   import FormElement from "$lib/utils/form_element.svelte"
-  import type { EvalConfig, EvalConfigType, ProviderModels } from "$lib/types"
+  import type {
+    EvalConfig,
+    EvalConfigType,
+    ProviderModels,
+    TaskRunConfig,
+  } from "$lib/types"
   import { goto } from "$app/navigation"
   import {
     model_info,
@@ -18,6 +22,9 @@
     load_available_prompts,
     load_available_models,
   } from "$lib/stores"
+  import Dialog from "$lib/ui/dialog.svelte"
+  import AvailableModelsDropdown from "../../../../run/available_models_dropdown.svelte"
+  import PromptTypeSelector from "../../../../run/prompt_type_selector.svelte"
 
   $: project_id = $page.params.project_id
   $: task_id = $page.params.task_id
@@ -32,19 +39,26 @@
   let eval_configs_loading = true
   let current_eval_config_id: string | null = null
 
-  $: loading = eval_loading || eval_configs_loading
-  $: error = eval_error || eval_configs_error
+  let task_run_configs: TaskRunConfig[] | null = null
+  let task_run_configs_error: KilnError | null = null
+  let task_run_configs_loading = true
+
+  $: loading = eval_loading || eval_configs_loading || task_run_configs_loading
+  $: error = eval_error || eval_configs_error || task_run_configs_error
 
   onMount(async () => {
-    // Wait for params to load
+    // Wait for page params to load
     await tick()
-    // Can actually do these in parallel
+    // Wait for these 3 to load, as they are needed for better labels. Usually already cached and instant.
+    await Promise.all([
+      load_model_info(),
+      load_available_prompts(),
+      load_available_models(),
+    ])
+    // Can load the actual data in parallel
     get_eval()
     get_eval_configs()
-    // These are all just needed for better labels
-    load_model_info()
-    load_available_prompts()
-    load_available_models()
+    get_task_run_configs()
   })
 
   async function get_eval() {
@@ -110,9 +124,34 @@
     }
   }
 
-  $: add_eval_config(current_eval_config_id)
+  async function get_task_run_configs() {
+    try {
+      task_run_configs_loading = true
+      const { data, error } = await client.GET(
+        "/api/projects/{project_id}/tasks/{task_id}/task_run_configs",
+        {
+          params: {
+            path: {
+              project_id,
+              task_id,
+            },
+          },
+        },
+      )
+      if (error) {
+        throw error
+      }
+      task_run_configs = data
+    } catch (error) {
+      task_run_configs_error = createKilnError(error)
+    } finally {
+      task_run_configs_loading = false
+    }
+  }
 
-  function add_eval_config(selected_id: string | null) {
+  $: check_add_eval_config(current_eval_config_id)
+
+  function check_add_eval_config(selected_id: string | null) {
     if (selected_id === "add_config") {
       goto(`/evals/${project_id}/${task_id}/${eval_id}/create_eval_config`)
     }
@@ -132,17 +171,19 @@
     )
   }
 
+  // A name for the eval config that is human readable
+  // Combine's it's memorable name with it's properties
   function get_eval_config_name(
     eval_config: EvalConfig,
     model_info: ProviderModels | null,
   ): string {
-    let name = eval_config_to_ui_name(eval_config.config_type)
     let parts = []
+    parts.push(eval_config_to_ui_name(eval_config.config_type))
     parts.push(
       model_name(eval_config.model.properties["model_name"], model_info),
     )
-    parts.push(eval_config.prompt.name)
-    return name + " (" + parts.join(", ") + ")"
+    parts.push(prompt_name_from_id(eval_config.prompt.name))
+    return eval_config.name + " — " + parts.join(", ")
   }
 
   function get_eval_properties(evaluator: Eval): UiProperty[] {
@@ -162,22 +203,25 @@
         value: evaluator.description,
       })
     }
-    if (evaluator.created_at) {
-      properties.push({
-        name: "Created At",
-        value: formatDate(evaluator.created_at),
-      })
-    }
     let outputs = []
     for (const output of evaluator.output_scores) {
       outputs.push(output.name + " (" + output.type + ")")
     }
     if (outputs.length > 0) {
       properties.push({
-        name: "Outputs",
+        name: "Output Scores",
         value: outputs.join(", "),
       })
     }
+    // TODO nicer labels here
+    properties.push({
+      name: "Eval Set",
+      value: evaluator.eval_set_filter_id,
+    })
+    properties.push({
+      name: "Config Eval Set",
+      value: evaluator.eval_configs_filter_id,
+    })
     return properties
   }
   function get_eval_config_properties(
@@ -231,14 +275,123 @@
 
     const results: [string, [unknown, string][]][] = []
     if (configs_options.length > 0) {
-      results.push(["Eval Configs", configs_options])
+      results.push(["Select Eval Config", configs_options])
     }
-    results.push(["Manage", [["add_config", "Add Config"]]])
+    results.push(["Manage Eval Configs", [["add_config", "Add Eval Config"]]])
     return results
+  }
+
+  let run_dialog: Dialog | null = null
+
+  let eval_running = false
+  let eval_run_error: KilnError | null = null
+  let progress = "not_started"
+  function run_eval(): boolean {
+    progress = "starting"
+    if (!current_eval_config_id) {
+      throw new Error("No eval config selected")
+    }
+
+    eval_running = true
+    const eventSource = new EventSource(
+      `${base_url}/api/projects/${project_id}/tasks/${task_id}/eval/${eval_id}/eval_config/${current_eval_config_id}/run?all_run_configs=true`,
+    )
+
+    eventSource.onmessage = (event) => {
+      try {
+        if (event.data === "complete") {
+          progress = "complete"
+          eventSource.close()
+          eval_running = false
+        } else {
+          const data = JSON.parse(event.data)
+          progress = data.progress
+        }
+      } catch (error) {
+        console.error("Error parsing SSE data:", error)
+      }
+    }
+
+    // Don't restart on an error
+    eventSource.onerror = (error) => {
+      console.error("SSE error:", error)
+      eventSource.close()
+      progress = "error"
+      eval_running = false
+      eval_run_error = createKilnError(error)
+    }
+
+    return true
+  }
+
+  let task_run_config_model_name = ""
+  let task_run_config_provider_name = ""
+  let task_run_config_prompt_method = "simple_prompt_builder"
+
+  let add_task_config_dialog: Dialog | null = null
+  let add_task_config_error: KilnError | null = null
+  async function add_task_config(): Promise<boolean> {
+    if (
+      !task_run_config_model_name ||
+      !task_run_config_provider_name ||
+      !task_run_config_prompt_method
+    ) {
+      add_task_config_error = new KilnError("Missing required fields", null)
+      return false
+    }
+
+    try {
+      const { error } = await client.POST(
+        "/api/projects/{project_id}/tasks/{task_id}/task_run_config",
+        {
+          params: {
+            path: {
+              project_id,
+              task_id,
+            },
+          },
+          body: {
+            model_name: task_run_config_model_name,
+            // @ts-expect-error not checking values
+            model_provider_name: task_run_config_provider_name,
+            prompt_id: task_run_config_prompt_method,
+          },
+        },
+      )
+      if (error) {
+        throw error
+      }
+      // Load the updated list of task run configs
+      get_task_run_configs()
+    } catch (error) {
+      add_task_config_error = createKilnError(error)
+      return false
+    }
+    return true
   }
 </script>
 
-<AppPage title="Evaluator" sub_subtitle={evaluator?.name}>
+<AppPage
+  title="Evaluator"
+  subtitle={evaluator?.name}
+  sub_subtitle={`${progress} ${base_url}`}
+  action_buttons={[
+    {
+      label: "Add Run Config",
+      handler: () => {
+        add_task_config_dialog?.show()
+      },
+      primary: true,
+    },
+    {
+      label: "Run Evals",
+      handler: () => {
+        run_dialog?.show()
+      },
+      primary: true,
+    },
+  ]}
+>
   {#if loading}
     <div class="w-full min-h-[50vh] flex justify-center items-center">
       <div class="loading loading-spinner loading-lg"></div>
@@ -269,9 +422,11 @@
       </div>
       <div class="grow basis-1/2 flex flex-col gap-4">
         <div>
-          <div class="text-xl font-bold">Eval Config</div>
+          <div class="text-xl font-bold">Config</div>
           <div class="text-xs text-gray-500">
-            How this evaluator will be run.
+            <a href="TODO" class="link"
+              >Find optimal config for running this eval</a
+            >
           </div>
           <FormElement
             hide_label={true}
@@ -296,5 +451,103 @@
         </div>
       </div>
     </div>
+    <div>
+      <div class="text-xl font-bold">Results</div>
+      <div class="overflow-x-auto rounded-lg border">
+        <table class="table">
+          <thead>
+            <tr>
+              <th> Name </th>
+              <th> Prompt </th>
+              <th> Model </th>
+              <th> Provider </th>
+            </tr>
+          </thead>
+          <tbody>
+            {#each task_run_configs || [] as task_run_config}
+              <tr
+                class="hover cursor-pointer"
+                on:click={() => {
+                  console.log("TODO: link")
+                }}
+              >
+                <td> {task_run_config.name} </td>
+                <td>
+                  {model_name(
+                    task_run_config?.run_config_properties?.model_name,
+                    $model_info,
+                  )}
+                </td>
+                <td>
+                  {provider_name_from_id(
+                    task_run_config?.run_config_properties?.model_provider_name,
+                  )}
+                </td>
+                <td>
+                  {prompt_name_from_id(
+                    task_run_config?.run_config_properties?.prompt_id,
+                  )}
+                </td>
+              </tr>
+            {/each}
+          </tbody>
+        </table>
+      </div>
+    </div>
   {/if}
 </AppPage>
+
+<Dialog
+  bind:this={add_task_config_dialog}
+  title="Add a Task Config"
+  action_buttons={[
+    {
+      label: "Cancel",
+      isCancel: true,
+    },
+    {
+      label: "Create",
+      isPrimary: true,
+      asyncAction: add_task_config,
+    },
+  ]}
+>
+  <h4 class="text-sm text-gray-500">
+    Create a task config, defining how to run this task (model+prompt).
+  </h4>
+  <h4 class="text-sm text-gray-500 mt-1">
+    Your evaluator can compare multiple task configs to find the best one for
+    running this task.
+  </h4>
+  <div class="flex flex-col gap-2 pt-6">
+    <AvailableModelsDropdown
+      bind:model_name={task_run_config_model_name}
+      bind:provider_name={task_run_config_provider_name}
+    />
+    <PromptTypeSelector bind:prompt_method={task_run_config_prompt_method} />
+    {#if add_task_config_error}
+      <div class="text-error text-sm">
+        {add_task_config_error.getMessage() || "An unknown error occurred"}
+      </div>
+    {/if}
+  </div>
+</Dialog>
+
+<Dialog
+  bind:this={run_dialog}
+  title="Run Eval"
+  action_buttons={[
+    {
+      label: "Cancel",
+      isCancel: true,
+    },
+    {
+      label: "Run",
+      action: run_eval,
+    },
+  ]}
+>
+  <div>
+    <div>Run Eval</div>
+  </div>
+</Dialog>
