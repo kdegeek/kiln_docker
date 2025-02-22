@@ -229,6 +229,29 @@ export function provider_name_from_id(provider_id: string): string {
   return provider?.provider_name || provider_id
 }
 
+export function prompt_name_from_id(prompt_id: string): string {
+  // Attempt to lookup a nice name for the prompt. First from named prompts, then from generators
+  // Special case for fine-tuned prompts
+  let prompt_name: string | undefined = undefined
+  if (prompt_id && prompt_id.startsWith("fine_tune_prompt::")) {
+    prompt_name = "Fine-Tune Prompt"
+  }
+  if (!prompt_name) {
+    prompt_name = get(current_task_prompts)?.prompts.find(
+      (prompt) => "id::" + prompt.id === prompt_id,
+    )?.name
+  }
+  if (!prompt_name) {
+    prompt_name = get(current_task_prompts)?.generators.find(
+      (generator) => generator.id === prompt_id,
+    )?.name
+  }
+  if (!prompt_name) {
+    prompt_name = prompt_id
+  }
+  return prompt_name
+}
+
 // Available prompts for the current
 export async function load_available_prompts() {
   const project = get(current_project)

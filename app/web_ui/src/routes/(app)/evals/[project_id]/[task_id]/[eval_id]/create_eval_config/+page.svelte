@@ -207,9 +207,9 @@
         throw error
       }
       complete = true
-      // TODO better link here using the eval config id
-      console.log("Created eval config", data.id, data.path)
-      goto(`/evals/${$page.params.project_id}/${$page.params.task_id}`)
+      goto(
+        `/evals/${$page.params.project_id}/${$page.params.task_id}/${$page.params.eval_id}?selected_eval_config=${data.id}`,
+      )
     } catch (e) {
       create_evaluator_error = createKilnError(e)
     } finally {
