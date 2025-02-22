@@ -1,5 +1,5 @@
 import json
-from typing import Any, Dict
+from typing import Any, Dict, Set
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import StreamingResponse
@@ -11,8 +11,9 @@ from kiln_ai.datamodel import (
     DataSource,
     DataSourceType,
     PromptId,
+    Task,
 )
-from kiln_ai.datamodel.dataset_filters import DatasetFilterId
+from kiln_ai.datamodel.dataset_filters import DatasetFilterId, dataset_filter_from_id
 from kiln_ai.datamodel.eval import (
     Eval,
     EvalConfig,
@@ -103,6 +104,14 @@ class ScoreSummary(BaseModel):
 class EvalResultSummary(BaseModel):
     # run_config_id -> output_score_id -> ScoreSummary
     results: Dict[str, Dict[str, ScoreSummary]]
+    # run_config_id -> percent of the dataset that has been processed
+    run_config_percent_complete: Dict[str, float]
+
+
+def dataset_ids_in_filter(task: Task, filter_id: DatasetFilterId) -> Set[str]:
+    # Fetch all the dataset items IDs in a filter
+    filter = dataset_filter_from_id(filter_id)
+    return {run.dataset_id for run in task.runs() if filter(run)}
 
 
 def connect_evals_api(app: FastAPI):
@@ -271,21 +280,50 @@ def connect_evals_api(app: FastAPI):
         eval_id: str,
         eval_config_id: str,
     ) -> EvalResultSummary:
+        task = task_from_id(project_id, task_id)
         eval = eval_from_id(project_id, task_id, eval_id)
         eval_config = eval_config_from_id(project_id, task_id, eval_id, eval_config_id)
+        task_runs_configs = task.run_configs()
+
+        # Build a set of all the dataset items IDs we expect to have scores for
+        expected_dataset_ids = dataset_ids_in_filter(task, eval.eval_set_filter_id)
+        if len(expected_dataset_ids) == 0:
+            raise HTTPException(
+                status_code=400,
+                detail="No dataset ids in eval set filter. Cannot compute score summary.",
+            )
+
+        # save a copy of the expected dataset ids for each run config, we'll update each as we process each eval run
+        remaining_expected_dataset_ids: Dict[str, Set[str]] = {
+            str(run_config.id): set(expected_dataset_ids)
+            for run_config in task_runs_configs
+        }
+        # Track how often we are missing scores in a eval_config. Should be 0 for a complete eval_config
+        partial_incomplete_counts: Dict[str, int] = {
+            str(run_config.id): 0 for run_config in task_runs_configs
+        }
 
         # task_run_config_id -> output_score_id -> score/total
         total_scores: Dict[str, Dict[str, float]] = {}
         score_counts: Dict[str, Dict[str, int]] = {}
 
-        # TODO: is the dataset item still in the dataset? They can add/remove tags
-        # TODO: is the score for each run_config complete
-
         # important: readonly makes this much faster
         for eval_run in eval_config.runs(readonly=True):
+            run_config_id = str(eval_run.task_run_config_id)
+
+            # Check if we should count this eval_run. Not every eval_run has to go into the stats:
+            # - a dataset_id can be removed from the dataset filter (removed a tag)
+            # - this dataset_id was already counted (okay there are dupes, but shouldn't be double counted)
+            if eval_run.dataset_id not in remaining_expected_dataset_ids[run_config_id]:
+                continue
+            else:
+                remaining_expected_dataset_ids[run_config_id].remove(
+                    eval_run.dataset_id
+                )
+
+            incomplete = False
             for output_score in eval.output_scores:
                 score_key = output_score.json_key()
-                run_config_id = str(eval_run.task_run_config_id)
                 if run_config_id not in total_scores:
                     total_scores[run_config_id] = {}
                     score_counts[run_config_id] = {}
@@ -295,9 +333,12 @@ def connect_evals_api(app: FastAPI):
                 if score_key in eval_run.scores:
                     total_scores[run_config_id][score_key] += eval_run.scores[score_key]
                     score_counts[run_config_id][score_key] += 1
-                    print(
-                        f"adding score to {run_config_id} {score_key} = {eval_run.scores[score_key]}"
-                    )
+                else:
+                    # We're missing a required score, so this eval_run is incomplete
+                    incomplete = True
+
+            if incomplete:
+                partial_incomplete_counts[run_config_id] += 1
 
         # Convert to score summaries
         results: Dict[str, Dict[str, ScoreSummary]] = {}
@@ -309,6 +350,18 @@ def connect_evals_api(app: FastAPI):
                         mean_score=score / score_counts[run_config_id][output_score_id]
                     )
 
+        # Calculate the percent of the dataset that has been processed
+        run_config_percent_complete: Dict[str, float] = {}
+        for run_config in task_runs_configs:
+            run_config_id = str(run_config.id)
+            # Partial incomplete (missing scores), and fully incomplete (no eval_run)
+            incomplete_count = partial_incomplete_counts[run_config_id] + len(
+                remaining_expected_dataset_ids[run_config_id]
+            )
+            percent_incomplete = incomplete_count / len(expected_dataset_ids)
+            run_config_percent_complete[str(run_config.id)] = 1 - percent_incomplete
+
         return EvalResultSummary(
             results=results,
+            run_config_percent_complete=run_config_percent_complete,
         )

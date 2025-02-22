@@ -444,6 +444,7 @@ def mock_eval_for_score_summary():
             name="relevance", description="Test relevance", type="pass_fail"
         ),
     ]
+    eval.eval_set_filter_id = "tag::eval_set"
     return eval
 
 
@@ -451,21 +452,26 @@ def mock_eval_for_score_summary():
 def mock_eval_config_for_score_summary():
     config = Mock(spec=EvalConfig)
 
-    scores: Tuple[str, Dict[str, float]] = [
+    scores: Tuple[str, str, Dict[str, float]] = [
         # Run 1 - normal
-        ("run1", {"accuracy": 0.8, "relevance": 0.9}),
-        ("run1", {"accuracy": 0.6, "relevance": 0.7}),
-        # Run 2 - only 1 score
-        ("run2", {"accuracy": 0.9, "relevance": 0.85}),
-        # Run 3 - no valid scores
-        ("run3", {"other": 0.5}),
-        # Run 4 - ensure no divide by zero
-        ("run4", {"accuracy": 0.5}),
+        ("run1", "dataset_id_1", {"accuracy": 0.8, "relevance": 0.9}),
+        ("run1", "dataset_id_2", {"accuracy": 0.6, "relevance": 0.7}),
+        # Run 2 - only 1 score, should be 0.5 complete
+        ("run2", "dataset_id_1", {"accuracy": 0.9, "relevance": 0.85}),
+        # Run 3 - no valid scores, 0.0 complete
+        ("run3", "dataset_id_1", {"other": 0.5}),
+        # Run 4 - Partial incomplete doesn't divide by zero, still 0.0 complete
+        ("run4", "dataset_id_1", {"accuracy": 0.5}),
+        # Run 5 - duplicate dataset_id not double counted, item not in dataset filter ignored
+        ("run5", "dataset_id_1", {"accuracy": 0.8, "relevance": 0.9}),
+        ("run5", "dataset_id_1", {"accuracy": 0.8, "relevance": 0.9}),
+        ("run5", "dataset_id_2", {"accuracy": 0.6, "relevance": 0.7}),
+        ("run5", "not_in_filter", {"accuracy": 0.1, "relevance": 0.1}),
     ]
     runs = []
 
     id = 0
-    for run_id, score in scores:
+    for run_id, dataset_id, score in scores:
         id += 1
         runs.append(
             EvalRun(
@@ -473,7 +479,7 @@ def mock_eval_config_for_score_summary():
                 scores=score,
                 input="input",
                 output="output",
-                dataset_id=f"dataset_id_{id}",
+                dataset_id=dataset_id,
             )
         )
 
@@ -488,11 +494,29 @@ async def test_get_eval_config_score_summary(
     with (
         patch("app.desktop.studio_server.eval_api.eval_from_id") as mock_eval_from_id,
         patch(
+            "app.desktop.studio_server.eval_api.dataset_ids_in_filter"
+        ) as mock_dataset_ids_in_filter,
+        patch(
             "app.desktop.studio_server.eval_api.eval_config_from_id"
         ) as mock_eval_config_from_id,
+        patch("app.desktop.studio_server.eval_api.task_from_id") as mock_task_from_id,
     ):
         mock_eval_from_id.return_value = mock_eval_for_score_summary
         mock_eval_config_from_id.return_value = mock_eval_config_for_score_summary
+        mock_dataset_ids_in_filter.return_value = {
+            "dataset_id_1",
+            "dataset_id_2",
+        }
+
+        mock_task = Mock(spec=Task)
+        mock_task.run_configs.return_value = [
+            Mock(spec=TaskRunConfig, id="run1"),
+            Mock(spec=TaskRunConfig, id="run2"),
+            Mock(spec=TaskRunConfig, id="run3"),
+            Mock(spec=TaskRunConfig, id="run4"),
+            Mock(spec=TaskRunConfig, id="run5"),
+        ]
+        mock_task_from_id.return_value = mock_task
 
         response = client.get(
             "/api/projects/project1/tasks/task1/eval/eval1/eval_config/eval_config1/score_summary"
@@ -504,21 +528,32 @@ async def test_get_eval_config_score_summary(
         # Verify the structure of the response
         assert "results" in top_level_result
         results = top_level_result["results"]
+        assert "run_config_percent_complete" in top_level_result
+        run_config_percent_complete = top_level_result["run_config_percent_complete"]
 
         # Check average scores for run1
         assert results["run1"]["accuracy"]["mean_score"] == 0.7  # (0.8 + 0.6) / 2
         assert results["run1"]["relevance"]["mean_score"] == 0.8  # Only one valid score
+        assert run_config_percent_complete["run1"] == 1.0
 
         # Check average scores for run2
         assert results["run2"]["accuracy"]["mean_score"] == 0.9
         assert results["run2"]["relevance"]["mean_score"] == 0.85
+        assert run_config_percent_complete["run2"] == 0.5
 
         # run 3 has non valid scores
         assert results["run3"] == {}
+        assert run_config_percent_complete["run3"] == 0.0
 
         # run 4 has no scores
         assert results["run4"]["accuracy"]["mean_score"] == 0.5
         assert "relevance" not in results["run4"]
+        assert run_config_percent_complete["run4"] == 0.0
+
+        # Check average scores for run5 - duplicate dataset_id not double counted
+        assert results["run5"]["accuracy"]["mean_score"] == 0.7  # (0.8 + 0.6) / 2
+        assert results["run5"]["relevance"]["mean_score"] == 0.8  # Only one valid score
+        assert run_config_percent_complete["run5"] == 1.0
 
         # Verify the mocks were called correctly
         mock_eval_from_id.assert_called_once_with("project1", "task1", "eval1")
@@ -526,3 +561,4 @@ async def test_get_eval_config_score_summary(
             "project1", "task1", "eval1", "eval_config1"
         )
         mock_eval_config_for_score_summary.runs.assert_called_once_with(readonly=True)
+        mock_dataset_ids_in_filter.assert_called_once_with(mock_task, "tag::eval_set")
