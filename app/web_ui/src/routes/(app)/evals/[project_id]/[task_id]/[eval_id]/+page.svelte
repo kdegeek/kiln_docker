@@ -50,17 +50,14 @@
   onMount(async () => {
     // Wait for page params to load
     await tick()
-    // Load the selected eval config from the query params if it exists
-    current_eval_config_id =
-      $page.url.searchParams.get("selected_eval_config") || null
     // Wait for these 3 to load, as they are needed for better labels. Usually already cached and instant.
     await Promise.all([
       load_model_info(),
       load_available_prompts(),
       load_available_models(),
     ])
-    // Can load the actual data in parallel
-    get_eval()
+    // Get the eval first (want it to set the current config id), then the rest in parallel
+    await get_eval()
     get_eval_configs()
     get_task_run_configs()
   })
@@ -84,10 +81,11 @@
         throw error
       }
       evaluator = data
-      // Use the eval's default, unless we already have a selected eval config (eg from query params)
-      if (evaluator.current_config_id && !current_eval_config_id) {
-        current_eval_config_id = evaluator.current_config_id
-      }
+      // Set the selected eval config: prefer query params, then eval's default, then
+      current_eval_config_id =
+        $page.url.searchParams.get("selected_eval_config") ||
+        evaluator.current_config_id ||
+        null
     } catch (error) {
       eval_error = createKilnError(error)
     } finally {
@@ -114,7 +112,7 @@
         throw error
       }
       eval_configs = data
-      // This may be already set by evaluator.current_config_id, if so we prioritize that
+      // This may be already set by evaluator loading, if so we prioritize that, but fallback to first
       if (
         !current_eval_config_id &&
         eval_configs.length > 0 &&
@@ -154,8 +152,8 @@
     }
   }
 
+  // Watches the current eval config id, and if it's "add_config" then navigates to the create eval config page
   $: check_add_eval_config(current_eval_config_id)
-
   function check_add_eval_config(selected_id: string | null) {
     if (selected_id === "add_config") {
       goto(`/evals/${project_id}/${task_id}/${eval_id}/create_eval_config`)
@@ -176,7 +174,7 @@
     )
   }
 
-  // A name for the eval config that is human readable
+  // A name for the eval config that is human readable and helpful
   // Combine's it's memorable name with it's properties
   function get_eval_config_name(
     eval_config: EvalConfig,
@@ -198,10 +196,6 @@
       name: "Name",
       value: evaluator.name,
     })
-    properties.push({
-      name: "ID",
-      value: evaluator.id || "unknown",
-    })
     if (evaluator.description) {
       properties.push({
         name: "Description",
@@ -218,7 +212,6 @@
         value: outputs.join(", "),
       })
     }
-    // TODO nicer labels here
     properties.push({
       name: "Eval Set",
       value: evaluator.eval_set_filter_id,
@@ -229,19 +222,23 @@
     })
     return properties
   }
+
   function get_eval_config_properties(
     eval_config_id: string | null,
     model_info: ProviderModels | null,
   ): UiProperty[] {
-    if (!eval_config_id) {
-      return []
-    }
     const eval_config = eval_configs?.find(
       (config) => config.id === eval_config_id,
     )
     if (!eval_config) {
-      return []
+      return [
+        {
+          name: "No Config Selected",
+          value: "Select a config from dropdown above",
+        },
+      ]
     }
+
     const properties: UiProperty[] = []
 
     properties.push({
@@ -261,6 +258,7 @@
         eval_config.model.properties["model_provider"] + "",
       ),
     })
+    // TODO remove this once we consolidate prompts
     properties.push({
       name: "Prompt",
       value: prompt_name_from_id(eval_config.prompt.name + ""),
@@ -303,7 +301,7 @@
     if (!current_eval_config_id) {
       eval_run_error = new KilnError("No eval config selected", null)
       eval_state = "complete_with_errors"
-      // True to close the dialog, and show the error in the progress dialog
+      // True to close the run dialog, and then show the error in the progress dialog
       running_progress_dialog?.show()
       return true
     }
@@ -320,6 +318,7 @@
     eventSource.onmessage = (event) => {
       try {
         if (event.data === "complete") {
+          // Special end message
           eventSource.close()
           eval_state =
             eval_error_count > 0 ? "complete_with_errors" : "complete"
@@ -336,14 +335,14 @@
       }
     }
 
-    // Don't restart on an error
+    // Don't restart on an error (default SSE behavior)
     eventSource.onerror = (error) => {
       eventSource.close()
       eval_state = "complete_with_errors"
       eval_run_error = createKilnError(error)
     }
 
-    // Switch over to the progress dialog
+    // Switch over to the progress dialog, closing the run dialog
     running_progress_dialog?.show()
     return true
   }
@@ -376,7 +375,7 @@
           },
           body: {
             model_name: task_run_config_model_name,
-            // @ts-expect-error not checking values
+            // @ts-expect-error not checking types here, server will check them
             model_provider_name: task_run_config_provider_name,
             prompt_id: task_run_config_prompt_method,
           },
@@ -385,7 +384,7 @@
       if (error) {
         throw error
       }
-      // Load the updated list of task run configs
+      // Load the updated list of task run configs after success
       get_task_run_configs()
     } catch (error) {
       add_task_config_error = createKilnError(error)
@@ -413,7 +412,7 @@
     <div
       class="w-full min-h-[50vh] flex flex-col justify-center items-center gap-2"
     >
-      <div class="font-medium">Error Loading Evaluators</div>
+      <div class="font-medium">Error Loading Evaluator</div>
       <div class="text-error text-sm">
         {error.getMessage() || "An unknown error occurred"}
       </div>
@@ -464,13 +463,13 @@
         </div>
       </div>
     </div>
-    <div class="mt-2">
+    <div class="mt-16">
       {#if task_run_configs?.length}
-        <div class="flex flex-col lg:flex-row gap-8 xl:gap-16 mb-6">
+        <div class="flex flex-col lg:flex-row gap-4 lg:gap-8 mb-6">
           <div class="grow">
             <div class="text-xl font-bold">Results</div>
             <div class="text-xs text-gray-500">
-              Filtered by the selected eval config and grouped by task run
+              Filtered by the selected eval config. Rows are grouped by task run
               config.
             </div>
           </div>
@@ -576,7 +575,7 @@
 
 <Dialog
   bind:this={add_task_config_dialog}
-  title="Add a Task Config"
+  title="Add a Task Run Config"
   action_buttons={[
     {
       label: "Cancel",
@@ -590,10 +589,10 @@
   ]}
 >
   <h4 class="text-sm text-gray-500">
-    Create a task config, defining how to run this task (model+prompt).
+    Create a task run config, defining a way to run this task (model+prompt).
   </h4>
   <h4 class="text-sm text-gray-500 mt-1">
-    Your evaluator can compare multiple task configs to find the best one for
+    Your evaluator can compare multiple run configs to find the best one for
     running this task.
   </h4>
   <div class="flex flex-col gap-2 pt-6">
@@ -676,7 +675,7 @@
   ]}
 >
   <div class="flex flex-col gap-2 font-light mt-4">
-    <div>Run this eval on the selected eval configuration?</div>
+    <div>Run this eval with the selected configuration?</div>
     <div>Don't close this page if you want to monitor progress.</div>
     <Warning
       warning_color="warning"
