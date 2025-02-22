@@ -11,6 +11,7 @@
     EvalConfigType,
     ProviderModels,
     TaskRunConfig,
+    EvalResultSummary,
   } from "$lib/types"
   import { goto } from "$app/navigation"
   import {
@@ -26,6 +27,7 @@
   import AvailableModelsDropdown from "../../../../run/available_models_dropdown.svelte"
   import PromptTypeSelector from "../../../../run/prompt_type_selector.svelte"
   import Warning from "$lib/ui/warning.svelte"
+  import { title_to_name } from "$lib/utils/json_schema_editor/json_schema_templates"
 
   $: project_id = $page.params.project_id
   $: task_id = $page.params.task_id
@@ -44,8 +46,17 @@
   let task_run_configs_error: KilnError | null = null
   let task_run_configs_loading = true
 
-  $: loading = eval_loading || eval_configs_loading || task_run_configs_loading
+  let score_summary: EvalResultSummary | null = null
+  let score_summary_error: KilnError | null = null
+  let score_summary_loading = false
+
+  $: loading =
+    eval_loading ||
+    eval_configs_loading ||
+    task_run_configs_loading ||
+    score_summary_loading
   $: error = eval_error || eval_configs_error || task_run_configs_error
+  // Note: not including score_summary_error, because it's not a critical error we should block the UI for
 
   onMount(async () => {
     // Wait for page params to load
@@ -58,8 +69,10 @@
     ])
     // Get the eval first (want it to set the current config id), then the rest in parallel
     await get_eval()
-    get_eval_configs()
-    get_task_run_configs()
+    // These two can be parallel
+    await Promise.all([get_eval_configs(), get_task_run_configs()])
+    // This needs the selected eval config id
+    get_score_summary()
   })
 
   async function get_eval() {
@@ -152,11 +165,49 @@
     }
   }
 
-  // Watches the current eval config id, and if it's "add_config" then navigates to the create eval config page
-  $: check_add_eval_config(current_eval_config_id)
-  function check_add_eval_config(selected_id: string | null) {
+  async function get_score_summary() {
+    if (!current_eval_config_id) {
+      score_summary_error = new KilnError("No eval config selected", null)
+      return
+    }
+    try {
+      score_summary_loading = true
+      const { data, error } = await client.GET(
+        "/api/projects/{project_id}/tasks/{task_id}/eval/{eval_id}/eval_config/{eval_config_id}/score_summary",
+        {
+          params: {
+            path: {
+              project_id,
+              task_id,
+              eval_id,
+              eval_config_id: current_eval_config_id,
+            },
+          },
+        },
+      )
+      if (error) {
+        throw error
+      }
+      score_summary = data
+    } catch (error) {
+      score_summary_error = createKilnError(error)
+    } finally {
+      score_summary_loading = false
+    }
+  }
+
+  // Watches the current eval config id
+  $: watch_selected_eval_config(current_eval_config_id)
+  function watch_selected_eval_config(selected_id: string | null) {
     if (selected_id === "add_config") {
+      // if it's "add_config" then navigates to the create eval config page
       goto(`/evals/${project_id}/${task_id}/${eval_id}/create_eval_config`)
+      return
+    }
+    // If the selected id is not null, then get the score summary
+    score_summary = null
+    if (selected_id) {
+      get_score_summary()
     }
   }
 
@@ -306,6 +357,7 @@
       return true
     }
 
+    score_summary = null
     eval_state = "running"
     eval_complete_count = 0
     eval_total_count = 0
@@ -322,6 +374,7 @@
           eventSource.close()
           eval_state =
             eval_error_count > 0 ? "complete_with_errors" : "complete"
+          get_score_summary()
         } else {
           const data = JSON.parse(event.data)
           eval_complete_count = data.progress
@@ -332,6 +385,7 @@
       } catch (error) {
         eval_run_error = createKilnError(error)
         eval_state = "complete_with_errors"
+        get_score_summary()
       }
     }
 
@@ -340,6 +394,7 @@
       eventSource.close()
       eval_state = "complete_with_errors"
       eval_run_error = createKilnError(error)
+      get_score_summary()
     }
 
     // Switch over to the progress dialog, closing the run dialog
@@ -472,6 +527,12 @@
               Filtered by the selected eval config. Rows are grouped by task run
               config.
             </div>
+            {#if score_summary_error}
+              <div class="text-error text-sm">
+                {score_summary_error.getMessage() ||
+                  "An unknown error occurred fetching scores."}
+              </div>
+            {/if}
           </div>
           <div>
             {#if eval_state === "not_started"}
@@ -516,6 +577,20 @@
                 <th> Task Model </th>
                 <th> Task Provider </th>
                 <th> Task Prompt </th>
+                {#each evaluator.output_scores as output_score}
+                  <th>
+                    {output_score.name}
+                    {#if output_score.type === "five_star"}
+                      (1 to 5)
+                    {:else if output_score.type === "pass_fail"}
+                      (0 to 1)
+                    {:else if output_score.type === "pass_fail_critical"}
+                      (-1 to 1)
+                    {:else}
+                      ({output_score.type})
+                    {/if}
+                  </th>
+                {/each}
               </tr>
             </thead>
             <tbody>
@@ -544,6 +619,15 @@
                       task_run_config?.run_config_properties?.prompt_id,
                     )}
                   </td>
+                  {#each evaluator.output_scores as output_score}
+                    {@const score =
+                      score_summary?.results?.["" + task_run_config.id]?.[
+                        title_to_name(output_score.name)
+                      ]?.mean_score}
+                    <td>
+                      {score != null ? score.toFixed(2) : "unknown"}
+                    </td>
+                  {/each}
                 </tr>
               {/each}
             </tbody>

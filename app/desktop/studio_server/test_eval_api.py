@@ -1,4 +1,5 @@
 import json
+from typing import Dict, Tuple
 from unittest.mock import Mock, patch
 
 import pytest
@@ -18,6 +19,7 @@ from kiln_ai.datamodel.eval import (
     EvalConfig,
     EvalConfigType,
     EvalOutputScore,
+    EvalRun,
     EvalTemplate,
 )
 from kiln_ai.datamodel.task import RunConfigProperties, TaskRunConfig
@@ -431,3 +433,96 @@ async def test_task_run_config_from_id(
         HTTPException, match="Task run config not found. ID: non_existent"
     ):
         task_run_config_from_id("project1", "task1", "non_existent")
+
+
+@pytest.fixture
+def mock_eval_for_score_summary():
+    eval = Mock(spec=Eval)
+    eval.output_scores = [
+        EvalOutputScore(name="accuracy", description="Test accuracy", type="pass_fail"),
+        EvalOutputScore(
+            name="relevance", description="Test relevance", type="pass_fail"
+        ),
+    ]
+    return eval
+
+
+@pytest.fixture
+def mock_eval_config_for_score_summary():
+    config = Mock(spec=EvalConfig)
+
+    scores: Tuple[str, Dict[str, float]] = [
+        # Run 1 - normal
+        ("run1", {"accuracy": 0.8, "relevance": 0.9}),
+        ("run1", {"accuracy": 0.6, "relevance": 0.7}),
+        # Run 2 - only 1 score
+        ("run2", {"accuracy": 0.9, "relevance": 0.85}),
+        # Run 3 - no valid scores
+        ("run3", {"other": 0.5}),
+        # Run 4 - ensure no divide by zero
+        ("run4", {"accuracy": 0.5}),
+    ]
+    runs = []
+
+    id = 0
+    for run_id, score in scores:
+        id += 1
+        runs.append(
+            EvalRun(
+                task_run_config_id=run_id,
+                scores=score,
+                input="input",
+                output="output",
+                dataset_id=f"dataset_id_{id}",
+            )
+        )
+
+    config.runs.return_value = runs
+    return config
+
+
+@pytest.mark.asyncio
+async def test_get_eval_config_score_summary(
+    client, mock_eval_for_score_summary, mock_eval_config_for_score_summary
+):
+    with (
+        patch("app.desktop.studio_server.eval_api.eval_from_id") as mock_eval_from_id,
+        patch(
+            "app.desktop.studio_server.eval_api.eval_config_from_id"
+        ) as mock_eval_config_from_id,
+    ):
+        mock_eval_from_id.return_value = mock_eval_for_score_summary
+        mock_eval_config_from_id.return_value = mock_eval_config_for_score_summary
+
+        response = client.get(
+            "/api/projects/project1/tasks/task1/eval/eval1/eval_config/eval_config1/score_summary"
+        )
+
+        assert response.status_code == 200
+        top_level_result = response.json()
+
+        # Verify the structure of the response
+        assert "results" in top_level_result
+        results = top_level_result["results"]
+
+        # Check average scores for run1
+        assert results["run1"]["accuracy"]["mean_score"] == 0.7  # (0.8 + 0.6) / 2
+        assert results["run1"]["relevance"]["mean_score"] == 0.8  # Only one valid score
+
+        # Check average scores for run2
+        assert results["run2"]["accuracy"]["mean_score"] == 0.9
+        assert results["run2"]["relevance"]["mean_score"] == 0.85
+
+        # run 3 has non valid scores
+        assert results["run3"] == {}
+
+        # run 4 has no scores
+        assert results["run4"]["accuracy"]["mean_score"] == 0.5
+        assert "relevance" not in results["run4"]
+
+        # Verify the mocks were called correctly
+        mock_eval_from_id.assert_called_once_with("project1", "task1", "eval1")
+        mock_eval_config_from_id.assert_called_once_with(
+            "project1", "task1", "eval1", "eval_config1"
+        )
+        mock_eval_config_for_score_summary.runs.assert_called_once_with(readonly=True)

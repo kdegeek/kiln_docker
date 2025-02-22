@@ -1,5 +1,5 @@
 import json
-from typing import Any
+from typing import Any, Dict
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import StreamingResponse
@@ -94,6 +94,15 @@ class CreateTaskRunConfigRequest(BaseModel):
 
 class RunEvalConfigRequest(BaseModel):
     run_config_ids: list[str]
+
+
+class ScoreSummary(BaseModel):
+    mean_score: float
+
+
+class EvalResultSummary(BaseModel):
+    # run_config_id -> output_score_id -> ScoreSummary
+    results: Dict[str, Dict[str, ScoreSummary]]
 
 
 def connect_evals_api(app: FastAPI):
@@ -251,4 +260,55 @@ def connect_evals_api(app: FastAPI):
         return StreamingResponse(
             content=event_generator(),
             media_type="text/event-stream",
+        )
+
+    @app.get(
+        "/api/projects/{project_id}/tasks/{task_id}/eval/{eval_id}/eval_config/{eval_config_id}/score_summary"
+    )
+    async def get_eval_config_score_summary(
+        project_id: str,
+        task_id: str,
+        eval_id: str,
+        eval_config_id: str,
+    ) -> EvalResultSummary:
+        eval = eval_from_id(project_id, task_id, eval_id)
+        eval_config = eval_config_from_id(project_id, task_id, eval_id, eval_config_id)
+
+        # task_run_config_id -> output_score_id -> score/total
+        total_scores: Dict[str, Dict[str, float]] = {}
+        score_counts: Dict[str, Dict[str, int]] = {}
+
+        # TODO: is the dataset item still in the dataset? They can add/remove tags
+        # TODO: is the score for each run_config complete
+
+        # important: readonly makes this much faster
+        for eval_run in eval_config.runs(readonly=True):
+            for output_score in eval.output_scores:
+                score_key = output_score.json_key()
+                run_config_id = str(eval_run.task_run_config_id)
+                if run_config_id not in total_scores:
+                    total_scores[run_config_id] = {}
+                    score_counts[run_config_id] = {}
+                if score_key not in total_scores[run_config_id]:
+                    total_scores[run_config_id][score_key] = 0
+                    score_counts[run_config_id][score_key] = 0
+                if score_key in eval_run.scores:
+                    total_scores[run_config_id][score_key] += eval_run.scores[score_key]
+                    score_counts[run_config_id][score_key] += 1
+                    print(
+                        f"adding score to {run_config_id} {score_key} = {eval_run.scores[score_key]}"
+                    )
+
+        # Convert to score summaries
+        results: Dict[str, Dict[str, ScoreSummary]] = {}
+        for run_config_id, output_scores in total_scores.items():
+            results[run_config_id] = {}
+            for output_score_id, score in output_scores.items():
+                if score_counts[run_config_id][output_score_id] > 0:
+                    results[run_config_id][output_score_id] = ScoreSummary(
+                        mean_score=score / score_counts[run_config_id][output_score_id]
+                    )
+
+        return EvalResultSummary(
+            results=results,
         )

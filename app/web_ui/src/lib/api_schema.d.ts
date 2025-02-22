@@ -793,6 +793,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/projects/{project_id}/tasks/{task_id}/eval/{eval_id}/eval_config/{eval_config_id}/score_summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Build Score Summary */
+        get: operations["build_score_summary_api_projects__project_id__tasks__task_id__eval__eval_id__eval_config__eval_config_id__score_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1268,6 +1285,15 @@ export interface components {
             instruction?: string | null;
             /** @description The type of rating to use ('five_star', 'pass_fail', 'pass_fail_critical'). */
             type: components["schemas"]["TaskOutputRatingType"];
+        };
+        /** EvalResultSummary */
+        EvalResultSummary: {
+            /** Results */
+            results: {
+                [key: string]: {
+                    [key: string]: components["schemas"]["ScoreSummary"];
+                };
+            };
         };
         /**
          * EvalState
@@ -1808,6 +1834,11 @@ export interface components {
             ui_prompt_method?: string | null;
             /** Tags */
             tags?: string[] | null;
+        };
+        /** ScoreSummary */
+        ScoreSummary: {
+            /** Mean Score */
+            mean_score: number;
         };
         /**
          * StructuredOutputMode
@@ -3943,6 +3974,40 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    build_score_summary_api_projects__project_id__tasks__task_id__eval__eval_id__eval_config__eval_config_id__score_summary_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                task_id: string;
+                eval_id: string;
+                eval_config_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EvalResultSummary"];
                 };
             };
             /** @description Validation Error */
