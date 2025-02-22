@@ -213,8 +213,6 @@ def connect_evals_api(app: FastAPI):
         run_config_ids: list[str] = Query([]),
         all_run_configs: bool = Query(False),
     ) -> StreamingResponse:
-        # TODO a lock by eval_id -> error if one is already running
-
         eval_config = eval_config_from_id(project_id, task_id, eval_id, eval_config_id)
 
         # Load the list of run configs to use. Two options:

@@ -26,6 +26,8 @@ from app.desktop.studio_server.eval_api import (
     CreateEvalConfigRequest,
     CreateEvaluatorRequest,
     connect_evals_api,
+    eval_config_from_id,
+    task_run_config_from_id,
 )
 
 
@@ -394,3 +396,38 @@ async def test_run_eval_config_no_run_configs_error(
             response.json()["detail"]
             == "No run config ids provided. At least one run config id is required."
         )
+
+
+@pytest.mark.asyncio
+async def test_eval_config_from_id(
+    client, mock_task_from_id, mock_task, mock_eval, mock_eval_config
+):
+    mock_task_from_id.return_value = mock_task
+
+    eval_config = eval_config_from_id("project1", "task1", "eval1", "eval_config1")
+
+    assert eval_config.id == "eval_config1"
+    assert eval_config.name == "Test Eval Config"
+    assert eval_config.config_type == EvalConfigType.g_eval
+    assert eval_config.properties == {"eval_steps": ["step1", "step2"]}
+
+    with pytest.raises(HTTPException, match="Eval config not found. ID: non_existent"):
+        eval_config_from_id("project1", "task1", "eval1", "non_existent")
+
+
+@pytest.mark.asyncio
+async def test_task_run_config_from_id(
+    client, mock_task_from_id, mock_task, mock_run_config
+):
+    mock_task_from_id.return_value = mock_task
+
+    run_config = task_run_config_from_id("project1", "task1", "run_config1")
+
+    assert run_config.id == "run_config1"
+    assert run_config.name == "Test Run Config"
+    assert run_config.description == "Test Description"
+
+    with pytest.raises(
+        HTTPException, match="Task run config not found. ID: non_existent"
+    ):
+        task_run_config_from_id("project1", "task1", "non_existent")
