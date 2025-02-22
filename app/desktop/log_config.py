@@ -16,7 +16,7 @@ def get_default_project_path() -> str:
 
 
 def get_log_level() -> str:
-    return os.getenv("KILN_LOG_LEVEL", "INFO")
+    return os.getenv("KILN_LOG_LEVEL", "ERROR")
 
 
 def get_log_file_path() -> str:
@@ -68,9 +68,11 @@ def log_config():
         "version": 1,
         "disable_existing_loggers": False,
         "formatters": {
+            # uvicorn expects a "default" formatter
             "default": {
                 "format": get_default_formatter(),
             },
+            # uvicorn expects an "access" formatter
             "access": {
                 "format": get_default_formatter(),
             },
