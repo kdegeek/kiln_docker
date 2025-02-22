@@ -50,7 +50,7 @@ def get_max_backup_count() -> int:
 
 
 def get_default_formatter() -> str:
-    return "%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s"
+    return "%(asctime)s.%(msecs)03d - %(levelname)s - %(name)s - %(message)s"
 
 
 def get_handlers() -> List[str]:
