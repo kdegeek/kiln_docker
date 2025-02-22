@@ -22,7 +22,7 @@ from kiln_ai.datamodel.eval import (
 )
 from kiln_ai.datamodel.task import RunConfigProperties, TaskRunConfig
 
-from app.desktop.studio_server.evals_api import (
+from app.desktop.studio_server.eval_api import (
     CreateEvalConfigRequest,
     CreateEvaluatorRequest,
     connect_evals_api,
@@ -118,7 +118,7 @@ def mock_run_config(mock_task):
 
 @pytest.fixture
 def mock_task_from_id(mock_task):
-    with patch("app.desktop.studio_server.evals_api.task_from_id") as mock:
+    with patch("app.desktop.studio_server.eval_api.task_from_id") as mock:
         mock.return_value = mock_task
         yield mock
 
@@ -244,9 +244,9 @@ async def test_create_eval_config(
     mock_task_from_id.return_value = mock_task
 
     with (
-        patch("app.desktop.studio_server.evals_api.eval_from_id") as mock_eval_from_id,
+        patch("app.desktop.studio_server.eval_api.eval_from_id") as mock_eval_from_id,
         patch(
-            "app.desktop.studio_server.evals_api.prompt_builder_from_id"
+            "app.desktop.studio_server.eval_api.prompt_builder_from_id"
         ) as mock_prompt_builder,
     ):
         mock_eval_from_id.return_value = mock_eval
@@ -298,7 +298,7 @@ def test_get_eval_configs(
 ):
     mock_task_from_id.return_value = mock_task
 
-    with patch("app.desktop.studio_server.evals_api.eval_from_id") as mock_eval_from_id:
+    with patch("app.desktop.studio_server.eval_api.eval_from_id") as mock_eval_from_id:
         mock_eval_from_id.return_value = mock_eval
         response = client.get(
             "/api/projects/project1/tasks/task1/eval/eval1/eval_configs"
@@ -338,9 +338,9 @@ async def test_run_eval_config(
 
     with (
         patch(
-            "app.desktop.studio_server.evals_api.task_run_config_from_id"
+            "app.desktop.studio_server.eval_api.task_run_config_from_id"
         ) as mock_run_config_from_id,
-        patch("app.desktop.studio_server.evals_api.EvalRunner") as MockEvalRunner,
+        patch("app.desktop.studio_server.eval_api.EvalRunner") as MockEvalRunner,
     ):
         mock_run_config_from_id.return_value = mock_run_config
         mock_eval_runner = Mock()
@@ -380,7 +380,7 @@ async def test_run_eval_config_no_run_configs_error(
     mock_task_from_id.return_value = mock_task
 
     with patch(
-        "app.desktop.studio_server.evals_api.eval_config_from_id"
+        "app.desktop.studio_server.eval_api.eval_config_from_id"
     ) as mock_eval_config_from_id:
         mock_eval_config_from_id.return_value = mock_eval_config
 

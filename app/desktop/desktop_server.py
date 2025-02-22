@@ -9,7 +9,7 @@ import uvicorn
 from fastapi import FastAPI
 
 from app.desktop.studio_server.data_gen_api import connect_data_gen_api
-from app.desktop.studio_server.evals_api import connect_evals_api
+from app.desktop.studio_server.eval_api import connect_evals_api
 from app.desktop.studio_server.finetune_api import connect_fine_tune_api
 from app.desktop.studio_server.prompt_api import connect_prompt_api
 from app.desktop.studio_server.provider_api import connect_provider_api
