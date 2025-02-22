@@ -394,7 +394,7 @@
   subtitle={evaluator?.name}
   action_buttons={[
     {
-      label: "Evaluate Eval Configs",
+      label: "Evaluate Eval Quality",
       href: `/evals/${project_id}/${task_id}/${eval_id}/TODO`,
     },
   ]}
