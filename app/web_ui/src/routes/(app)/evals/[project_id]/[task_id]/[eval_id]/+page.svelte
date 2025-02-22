@@ -50,6 +50,9 @@
   onMount(async () => {
     // Wait for page params to load
     await tick()
+    // Load the selected eval config from the query params if it exists
+    current_eval_config_id =
+      $page.url.searchParams.get("selected_eval_config") || null
     // Wait for these 3 to load, as they are needed for better labels. Usually already cached and instant.
     await Promise.all([
       load_model_info(),
@@ -81,7 +84,8 @@
         throw error
       }
       evaluator = data
-      if (evaluator.current_config_id) {
+      // Use the eval's default, unless we already have a selected eval config (eg from query params)
+      if (evaluator.current_config_id && !current_eval_config_id) {
         current_eval_config_id = evaluator.current_config_id
       }
     } catch (error) {
@@ -299,7 +303,9 @@
     if (!current_eval_config_id) {
       eval_run_error = new KilnError("No eval config selected", null)
       eval_state = "complete_with_errors"
-      return false
+      // True to close the dialog, and show the error in the progress dialog
+      running_progress_dialog?.show()
+      return true
     }
 
     eval_state = "running"

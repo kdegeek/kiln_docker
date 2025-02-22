@@ -180,7 +180,7 @@
       }
       create_evaluator_loading = true
 
-      const { error } = await client.POST(
+      const { data, error } = await client.POST(
         "/api/projects/{project_id}/tasks/{task_id}/eval/{eval_id}/create_eval_config",
         {
           params: {
@@ -208,7 +208,7 @@
       }
       complete = true
       goto(
-        `/evals/${$page.params.project_id}/${$page.params.task_id}/${$page.params.eval_id}`,
+        `/evals/${$page.params.project_id}/${$page.params.task_id}/${$page.params.eval_id}?selected_eval_config=${data.id}`,
       )
     } catch (e) {
       create_evaluator_error = createKilnError(e)

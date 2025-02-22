@@ -86,8 +86,8 @@
       <table class="table">
         <thead>
           <tr>
-            <th> ID </th>
             <th> Name </th>
+            <th> Description </th>
           </tr>
         </thead>
         <tbody>
@@ -98,8 +98,8 @@
                 goto(`/evals/${project_id}/${task_id}/${evaluator.id}`)
               }}
             >
-              <td> {evaluator.id} </td>
               <td> {evaluator.name} </td>
+              <td> {evaluator.description} </td>
             </tr>
           {/each}
         </tbody>
