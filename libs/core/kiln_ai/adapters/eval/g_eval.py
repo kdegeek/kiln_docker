@@ -4,7 +4,7 @@ from typing import Dict, List, Tuple
 from kiln_ai.adapters.adapter_registry import adapter_for_task
 from kiln_ai.adapters.eval.base_eval import BaseEval
 from kiln_ai.adapters.model_adapters.base_adapter import AdapterConfig, RunOutput
-from kiln_ai.adapters.prompt_builders import PromptGenerators
+from kiln_ai.adapters.prompt_builders import PromptGenerators, prompt_builder_from_id
 from kiln_ai.datamodel import Project, Task, TaskRun
 from kiln_ai.datamodel.eval import Eval, EvalConfig, EvalConfigType, EvalScores
 from kiln_ai.datamodel.task import RunConfig
@@ -30,15 +30,25 @@ class GEvalTask(Task, parent_of={}):
     Note G-Eval implements both G-Eval and LLM as Judge as they are very similar.
     """
 
-    def __init__(self, eval_config: EvalConfig):
+    def __init__(self, eval_config: EvalConfig, run_config: RunConfig):
         tmp_project = Project(name="GEval")
+
+        eval = eval_config.parent_eval()
+        if not eval:
+            raise ValueError("Eval config must have a parent eval")
+        task = eval.parent_task()
+        if not task:
+            raise ValueError("Eval must have a parent task")
+
+        prompt_builder = prompt_builder_from_id(run_config.prompt_id, task)
+        base_prompt = prompt_builder.build_base_prompt()
 
         system_instruction = f"""
 Your job to evaluate a model's performance on a task. Blocks will be marked with <eval_data> tags.
         
 The task the model was given is as follows:
 <eval_data>
-{eval_config.prompt.prompt}
+{base_prompt}
 </eval_data>
 """
 
@@ -88,7 +98,7 @@ class GEval(BaseEval):
 
         super().__init__(eval_config, run_config)
 
-        self.geval_task = GEvalTask(eval_config)
+        self.geval_task = GEvalTask(eval_config, run_config)
 
     async def run_eval(self, task_run: TaskRun) -> EvalScores:
         """

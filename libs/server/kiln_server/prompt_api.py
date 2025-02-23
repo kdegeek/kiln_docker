@@ -1,8 +1,17 @@
+from datetime import datetime
+
 from fastapi import FastAPI
-from kiln_ai.datamodel import Prompt
+from kiln_ai.datamodel import BasePrompt, Prompt, PromptId
 from pydantic import BaseModel
 
 from kiln_server.task_api import task_from_id
+
+
+# This is a wrapper around the Prompt datamodel that adds an id field which represents the PromptID and not the data model ID.
+class ApiPrompt(BasePrompt):
+    id: PromptId
+    created_at: datetime | None = None
+    created_by: str | None = None
 
 
 class PromptCreateRequest(BaseModel):
@@ -21,7 +30,7 @@ class PromptGenerator(BaseModel):
 
 class PromptResponse(BaseModel):
     generators: list[PromptGenerator]
-    prompts: list[Prompt]
+    prompts: list[ApiPrompt]
 
 
 def connect_prompt_api(app: FastAPI):
@@ -43,9 +52,26 @@ def connect_prompt_api(app: FastAPI):
     async def get_prompts(project_id: str, task_id: str) -> PromptResponse:
         parent_task = task_from_id(project_id, task_id)
 
+        prompts: list[ApiPrompt] = []
+        for prompt in parent_task.prompts():
+            properties = prompt.model_dump(exclude={"id"})
+            prompts.append(ApiPrompt(id=f"id::{prompt.id}", **properties))
+
+        # Add any task run config prompts to the list
+        task_run_configs = parent_task.run_configs()
+        for task_run_config in task_run_configs:
+            if task_run_config.prompt:
+                properties = task_run_config.prompt.model_dump(exclude={"id"})
+                prompts.append(
+                    ApiPrompt(
+                        id=f"task_run_config::{project_id}::{task_id}::{task_run_config.id}",
+                        **properties,
+                    )
+                )
+
         return PromptResponse(
             generators=_prompt_generators,
-            prompts=parent_task.prompts(),
+            prompts=prompts,
         )
 
 

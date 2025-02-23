@@ -5,6 +5,7 @@ from kiln_ai.datamodel import (
     PromptGenerators,
     PromptId,
 )
+from kiln_ai.datamodel.prompt_id import is_frozen_prompt
 
 
 # Test model to validate the PromptId type
@@ -90,10 +91,10 @@ def test_prompt_generator_case_sensitivity():
 @pytest.mark.parametrize(
     "valid_id",
     [
-        "eval_prompt::project_123::task_456::eval_789::config_012",  # Valid eval prompt ID
+        "task_run_config::project_123::task_456::config_123",  # Valid task run config prompt ID
     ],
 )
-def test_valid_eval_prompt_id(valid_id):
+def test_valid_task_run_config_prompt_id(valid_id):
     """Test that valid eval prompt IDs are accepted"""
     model = ModelTester(prompt_id=valid_id)
     assert model.prompt_id == valid_id
@@ -102,13 +103,27 @@ def test_valid_eval_prompt_id(valid_id):
 @pytest.mark.parametrize(
     "invalid_id,expected_error",
     [
-        ("eval_prompt::", "Invalid eval prompt ID"),
-        ("eval_prompt::p1::t1", "Invalid eval prompt ID"),
-        ("eval_prompt::p1::t1::e1", "Invalid eval prompt ID"),
-        ("eval_prompt::p1::t1::e1::c1::extra", "Invalid eval prompt ID"),
+        ("task_run_config::", "Invalid task run config prompt ID"),
+        ("task_run_config::p1", "Invalid task run config prompt ID"),
+        ("task_run_config::p1::t1", "Invalid task run config prompt ID"),
+        ("task_run_config::p1::t1::c1::extra", "Invalid task run config prompt ID"),
     ],
 )
 def test_invalid_eval_prompt_id_format(invalid_id, expected_error):
     """Test that invalid eval prompt ID formats are rejected"""
     with pytest.raises(ValidationError, match=expected_error):
         ModelTester(prompt_id=invalid_id)
+
+
+@pytest.mark.parametrize(
+    "id,should_be_frozen",
+    [
+        ("simple_prompt_builder", False),
+        ("id::prompt_123", True),
+        ("task_run_config::p1::t1", True),
+        ("fine_tune_prompt::ft_123", True),
+    ],
+)
+def test_is_frozen_prompt(id, should_be_frozen):
+    """Test that the is_frozen_prompt function works"""
+    assert is_frozen_prompt(id) == should_be_frozen

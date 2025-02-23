@@ -89,7 +89,10 @@ def mock_run_config(
         run_config_properties=RunConfigProperties(
             model_name="gpt-4",
             model_provider_name="openai",
-            prompt_id="simple_prompt_builder",
+            prompt=BasePrompt(
+                name="test",
+                prompt="test",
+            ),
         ),
         parent=mock_task,
     )
@@ -234,7 +237,10 @@ def test_collect_tasks_multiple_run_configs(
         run_config_properties=RunConfigProperties(
             model_name="gpt-3.5",
             model_provider_name="openai",
-            prompt_id="simple_prompt_builder",
+            prompt=BasePrompt(
+                name="test",
+                prompt="test",
+            ),
         ),
         parent=mock_task,
     )

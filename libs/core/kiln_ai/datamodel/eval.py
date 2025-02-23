@@ -14,7 +14,6 @@ from kiln_ai.datamodel.basemodel import (
 from kiln_ai.datamodel.datamodel_enums import TaskOutputRatingType
 from kiln_ai.datamodel.dataset_filters import DatasetFilterId
 from kiln_ai.datamodel.json_schema import string_to_json_key
-from kiln_ai.datamodel.prompt import BasePrompt
 from kiln_ai.datamodel.task_output import DataSource, DataSourceType
 from kiln_ai.utils.exhaustive_error import raise_exhaustive_enum_error
 
@@ -181,9 +180,6 @@ class EvalConfig(KilnParentedModel, KilnParentModel, parent_of={"runs": EvalRun}
     properties: dict[str, Any] = Field(
         default={},
         description="Properties to be used to execute the eval config. This is config_type specific and should serialize to a json dict.",
-    )
-    prompt: BasePrompt = Field(
-        description="The prompt to use for this eval config. Both when running the task to generate outputs to evaluate and when explaining to the eval model what the goal of the task was. This is a frozen prompt, so this eval config is consistent over time (for example, if the user selects multi-shot prompting, this saves that dynamic prompt at the point the eval config is created). Freezing the prompt ensures consistent evals."
     )
 
     def parent_eval(self) -> Union["Eval", None]:

@@ -82,11 +82,6 @@ def test_eval_config(test_task):
                 "adapter_name": "openai_compatible",
             },
         ),
-        prompt=BasePrompt(
-            # TODO ensure it's called with the frozen prompt
-            name="Joke Generator Frozen Prompt",
-            prompt=test_task.instruction,
-        ),
         properties={
             "eval_steps": [
                 "Is the joke funny?",
@@ -106,8 +101,11 @@ def test_run_config(test_task):
     return RunConfig(
         model_name="llama_3_1_8b",
         model_provider_name="groq",
-        prompt_id="simple_prompt_builder",
         task=test_task,
+        prompt=BasePrompt(
+            name="test",
+            prompt="test",
+        ),
     )
 
 
