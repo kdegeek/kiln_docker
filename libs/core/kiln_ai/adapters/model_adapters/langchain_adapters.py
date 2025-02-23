@@ -84,10 +84,8 @@ class LangchainAdapter(BaseAdapter):
             task=kiln_task,
             model_name=model_name,
             model_provider_name=provider,
+            prompt_id=prompt_id or datamodel.PromptGenerators.SIMPLE,
         )
-
-        if prompt_id is not None:
-            run_config.prompt_id = prompt_id
 
         super().__init__(
             run_config=run_config,

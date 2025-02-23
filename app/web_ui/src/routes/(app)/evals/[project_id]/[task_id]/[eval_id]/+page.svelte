@@ -237,7 +237,6 @@
     parts.push(
       model_name(eval_config.model.properties["model_name"], model_info),
     )
-    parts.push(prompt_name_from_id(eval_config.prompt.name))
     return eval_config.name + " — " + parts.join(", ")
   }
 
@@ -316,11 +315,6 @@
       value: provider_name_from_id(
         eval_config.model.properties["model_provider"] + "",
       ),
-    })
-    // TODO remove this once we consolidate prompts
-    properties.push({
-      name: "Prompt",
-      value: prompt_name_from_id(eval_config.prompt.name + ""),
     })
     return properties
   }
@@ -658,9 +652,12 @@
                       )}
                     </div>
                     <div class="text-sm text-gray-500">
-                      {prompt_name_from_id(
-                        task_run_config?.run_config_properties?.prompt_id,
-                      )}
+                      Prompt:
+                      {task_run_config.prompt?.long_name ||
+                        task_run_config.prompt?.name ||
+                        prompt_name_from_id(
+                          task_run_config?.run_config_properties?.prompt_id,
+                        )}
                     </div>
                     {#if percent_complete}
                       <div

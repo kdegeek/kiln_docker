@@ -16,7 +16,7 @@ from kiln_ai.datamodel.datamodel_enums import Priority, TaskOutputRatingType
 from kiln_ai.datamodel.dataset_split import DatasetSplit
 from kiln_ai.datamodel.eval import Eval
 from kiln_ai.datamodel.json_schema import JsonObjectSchema, schema_from_json_str
-from kiln_ai.datamodel.prompt import Prompt
+from kiln_ai.datamodel.prompt import BasePrompt, Prompt
 from kiln_ai.datamodel.prompt_id import PromptGenerators, PromptId
 from kiln_ai.datamodel.task_run import TaskRun
 
@@ -53,7 +53,6 @@ class RunConfigProperties(BaseModel):
     )
     prompt_id: PromptId = Field(
         description="The prompt to use for this run config. Defaults to building a simple prompt from the task if not provided.",
-        default=PromptGenerators.SIMPLE,
     )
 
 
@@ -84,6 +83,13 @@ class TaskRunConfig(KilnParentedModel):
     )
     run_config_properties: RunConfigProperties = Field(
         description="The run config properties to use for this task run."
+    )
+    # The prompt_id in the run_config_properties is the prompt ID to use for this task run.
+    # However, we want the prompt to be perfectly consistent, and some prompt_ids are dynamic.
+    # If we need to "freeze" a prompt, we can do so here (then point the prompt_id to this frozen prompt).
+    prompt: BasePrompt | None = Field(
+        default=None,
+        description="A prompt to use for run config.",
     )
 
     # Workaround to return typed parent without importing Task

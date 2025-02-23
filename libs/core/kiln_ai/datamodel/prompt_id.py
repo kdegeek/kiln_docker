@@ -48,12 +48,12 @@ def _check_prompt_id(id: str) -> str:
             )
         return id
 
-    if id.startswith("eval_prompt::"):
-        # check it had a eval_id after the :: -- 'project_id::task_id::eval_id::eval_config_id'
+    if id.startswith("task_run_config::"):
+        # check it had a eval_id after the :: -- 'project_id::task_id::task_run_config_id'
         parts = id.split("::")
-        if len(parts) != 5:
+        if len(parts) != 4:
             raise ValueError(
-                f"Invalid eval prompt ID: {id}. Expected format: 'eval_prompt::[project_id]::[task_id]::[eval_id]'."
+                f"Invalid task run config prompt ID: {id}. Expected format: 'task_run_config::[project_id]::[task_id]::[task_run_config_id]'."
             )
         return id
 
@@ -67,3 +67,16 @@ def _check_prompt_id(id: str) -> str:
         return id
 
     raise ValueError(f"Invalid prompt ID: {id}")
+
+
+def is_frozen_prompt(id: PromptId) -> bool:
+    """
+    Check if the prompt ID is a frozen prompt.
+    """
+    if id.startswith("id::"):
+        return True
+    if id.startswith("task_run_config::"):
+        return True
+    if id.startswith("fine_tune_prompt::"):
+        return True
+    return False

@@ -814,6 +814,40 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** ApiPrompt */
+        ApiPrompt: {
+            /**
+             * Name
+             * @description A name for this entity.
+             */
+            name: string;
+            /**
+             * Long Name
+             * @description A more detailed name for the prompt, usually incorporating the source of the prompt.
+             */
+            long_name?: string | null;
+            /**
+             * Generator Id
+             * @description The id of the generator that created this prompt.
+             */
+            generator_id?: string | null;
+            /**
+             * Prompt
+             * @description The prompt for the task.
+             */
+            prompt: string;
+            /**
+             * Chain Of Thought Instructions
+             * @description Instructions for the model 'thinking' about the requirement prior to answering. Used for chain of thought style prompting. COT will not be used unless this is provided.
+             */
+            chain_of_thought_instructions?: string | null;
+            /** Id */
+            id: string;
+            /** Created At */
+            created_at?: string | null;
+            /** Created By */
+            created_by?: string | null;
+        };
         /** AvailableModels */
         AvailableModels: {
             /** Provider Name */
@@ -835,6 +869,11 @@ export interface components {
              * @description A name for this entity.
              */
             name: string;
+            /**
+             * Long Name
+             * @description A more detailed name for the prompt, usually incorporating the source of the prompt.
+             */
+            long_name?: string | null;
             /**
              * Generator Id
              * @description The id of the generator that created this prompt.
@@ -1256,8 +1295,6 @@ export interface components {
              * @default {}
              */
             properties: Record<string, never>;
-            /** @description The prompt to use for this eval config. Both when running the task to generate outputs to evaluate and when explaining to the eval model what the goal of the task was. This is a frozen prompt, so this eval config is consistent over time (for example, if the user selects multi-shot prompting, this saves that dynamic prompt at the point the eval config is created). Freezing the prompt ensures consistent evals. */
-            prompt: components["schemas"]["BasePrompt"];
             /** Model Type */
             readonly model_type: string;
         };
@@ -1659,6 +1696,11 @@ export interface components {
              */
             name: string;
             /**
+             * Long Name
+             * @description A more detailed name for the prompt, usually incorporating the source of the prompt.
+             */
+            long_name?: string | null;
+            /**
              * Generator Id
              * @description The id of the generator that created this prompt.
              */
@@ -1726,7 +1768,7 @@ export interface components {
             /** Generators */
             generators: components["schemas"]["PromptGenerator"][];
             /** Prompts */
-            prompts: components["schemas"]["Prompt"][];
+            prompts: components["schemas"]["ApiPrompt"][];
         };
         /** ProviderModel */
         ProviderModel: {
@@ -2255,6 +2297,8 @@ export interface components {
             description?: string | null;
             /** @description The run config properties to use for this task run. */
             run_config_properties: components["schemas"]["RunConfigProperties"];
+            /** @description A prompt to use for run config. */
+            prompt?: components["schemas"]["BasePrompt"] | null;
             /** Model Type */
             readonly model_type: string;
         };

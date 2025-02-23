@@ -1,14 +1,12 @@
 import json
 
 import pytest
-from pydantic import BaseModel, ValidationError
 
 from kiln_ai.adapters.model_adapters.base_adapter import BaseAdapter
 from kiln_ai.adapters.model_adapters.test_structured_output import (
     build_structured_output_test_task,
 )
 from kiln_ai.adapters.prompt_builders import (
-    EvalPromptBuilder,
     FewShotChainOfThoughtPromptBuilder,
     FewShotPromptBuilder,
     FineTunePromptBuilder,
@@ -18,6 +16,7 @@ from kiln_ai.adapters.prompt_builders import (
     SavedPromptBuilder,
     SimpleChainOfThoughtPromptBuilder,
     SimplePromptBuilder,
+    TaskRunConfigPromptBuilder,
     chain_of_thought_prompt,
     prompt_builder_from_id,
 )
@@ -29,14 +28,12 @@ from kiln_ai.datamodel import (
     FinetuneDataStrategy,
     Project,
     Prompt,
-    PromptGenerators,
-    PromptId,
     Task,
     TaskOutput,
     TaskOutputRating,
     TaskRun,
 )
-from kiln_ai.datamodel.eval import Eval, EvalConfig, EvalConfigType, EvalOutputScore
+from kiln_ai.datamodel.task import RunConfigProperties, TaskRunConfig
 
 
 def test_simple_prompt_builder(tmp_path):
@@ -589,107 +586,62 @@ def test_build_prompt_with_json_instructions(tmp_path):
         assert requirement.instruction in prompt_with_json
 
 
-@pytest.fixture
-def valid_eval_config_datasource():
-    return DataSource(
-        type=DataSourceType.synthetic,
-        properties={
-            "model_name": "gpt-4",
-            "model_provider": "openai",
-            "adapter_name": "openai_compatible",
-        },
-    )
-
-
-def test_eval_prompt_builder(tmp_path, valid_eval_config_datasource):
+def test_task_run_config_prompt_builder(tmp_path):
     task = build_test_task(tmp_path)
 
-    # Create an eval and eval config
-    eval = Eval(
-        name="test_eval",
+    run_config = TaskRunConfig(
+        name="test_run_config",
         parent=task,
-        eval_set_filter_id="tag::tag1",
-        eval_configs_filter_id="tag::tag2",
-        output_scores=[
-            EvalOutputScore(
-                name="accuracy",
-                type="five_star",
-            ),
-        ],
-    )
-    eval.save_to_file()
-
-    eval_config = EvalConfig(
-        name="test_eval_config",
-        parent=eval,
-        config_type=EvalConfigType.g_eval,
-        model=valid_eval_config_datasource,
-        prompt=Prompt(
-            name="test_prompt",
-            prompt="test_eval_prompt",
-            chain_of_thought_instructions="Think carefully",
+        run_config_properties=RunConfigProperties(
+            model_name="gpt-4",
+            model_provider_name="openai",
+            prompt_id="simple_prompt_builder",
         ),
-        properties={"eval_steps": ["step1", "step2"]},
+        prompt=Prompt(
+            name="test prompt name",
+            prompt="test prompt content",
+            chain_of_thought_instructions="test step by step",
+        ),
     )
-    eval_config.save_to_file()
+    run_config.save_to_file()
 
     # Construct the eval prompt ID
-    eval_prompt_id = (
-        f"eval_prompt::{task.parent.id}::{task.id}::{eval.id}::{eval_config.id}"
+    run_config_prompt_id = (
+        f"task_run_config::{task.parent.id}::{task.id}::{run_config.id}"
     )
 
-    # Test successful creation, constructor and ID creation
+    # Test successful creation 2 ways: constructor and ID creation
     builders = [
-        EvalPromptBuilder(task=task, eval_config_prompt_id=eval_prompt_id),
-        prompt_builder_from_id(eval_prompt_id, task),
+        TaskRunConfigPromptBuilder(
+            task=task, run_config_prompt_id=run_config_prompt_id
+        ),
+        prompt_builder_from_id(run_config_prompt_id, task),
     ]
 
     for builder in builders:
         assert (
-            builder.build_prompt(include_json_instructions=False) == "test_eval_prompt"
+            builder.build_prompt(include_json_instructions=False)
+            == "test prompt content"
         )
-        assert builder.chain_of_thought_prompt() == "Think carefully"
-        assert builder.prompt_id() == eval_prompt_id
-
-    # test accessor
+        assert builder.chain_of_thought_prompt() == "test step by step"
+        assert builder.prompt_id() == run_config_prompt_id
 
 
-def test_eval_prompt_builder_validation_errors(tmp_path):
+def test_task_run_config_prompt_builder_validation_errors(tmp_path):
     task = build_test_task(tmp_path)
 
     # Test invalid format
-    with pytest.raises(ValueError, match="Invalid eval prompt ID"):
-        EvalPromptBuilder(task=task, eval_config_prompt_id="eval_prompt::wrong::format")
+    with pytest.raises(ValueError, match="Invalid task run config prompt ID"):
+        TaskRunConfigPromptBuilder(
+            task=task, run_config_prompt_id="task_run_config::wrong::format"
+        )
 
     # Test task ID mismatch
-    wrong_task_id = f"eval_prompt::{task.parent.id}::wrong_task_id::eval_id::config_id"
+    wrong_task_id = f"task_run_config::{task.parent.id}::wrong_task_id::config_id"
     with pytest.raises(ValueError, match="Task ID mismatch"):
-        EvalPromptBuilder(task=task, eval_config_prompt_id=wrong_task_id)
+        TaskRunConfigPromptBuilder(task=task, run_config_prompt_id=wrong_task_id)
 
     # Test eval not found
-    nonexistent_eval = (
-        f"eval_prompt::{task.parent.id}::{task.id}::nonexistent_eval::config_id"
-    )
-    with pytest.raises(ValueError, match="Eval ID not found"):
-        EvalPromptBuilder(task=task, eval_config_prompt_id=nonexistent_eval)
-
-    # Create eval but test config not found
-    eval = Eval(
-        name="test_eval",
-        parent=task,
-        eval_set_filter_id="tag::tag1",
-        eval_configs_filter_id="tag::tag2",
-        output_scores=[
-            EvalOutputScore(
-                name="accuracy",
-                type="five_star",
-            ),
-        ],
-    )
-    eval.save_to_file()
-
-    nonexistent_config = (
-        f"eval_prompt::{task.parent.id}::{task.id}::{eval.id}::nonexistent_config"
-    )
-    with pytest.raises(ValueError, match="Eval config ID not found"):
-        EvalPromptBuilder(task=task, eval_config_prompt_id=nonexistent_config)
+    nonexistent_eval = f"task_run_config::{task.parent.id}::{task.id}::nonexistent_id"
+    with pytest.raises(ValueError, match="Task run config ID not found"):
+        TaskRunConfigPromptBuilder(task=task, run_config_prompt_id=nonexistent_eval)

@@ -238,7 +238,7 @@ export function prompt_name_from_id(prompt_id: string): string {
   }
   if (!prompt_name) {
     prompt_name = get(current_task_prompts)?.prompts.find(
-      (prompt) => "id::" + prompt.id === prompt_id,
+      (prompt) => prompt.id === prompt_id,
     )?.name
   }
   if (!prompt_name) {

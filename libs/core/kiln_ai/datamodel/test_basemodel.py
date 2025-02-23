@@ -501,6 +501,7 @@ def adapter(base_task):
             task=base_task,
             model_name="test_model",
             model_provider_name="test_provider",
+            prompt_id="simple_prompt_builder",
         ),
     )
 

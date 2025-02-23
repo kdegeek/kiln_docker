@@ -1,9 +1,6 @@
 import json
 from abc import ABCMeta, abstractmethod
-from enum import Enum
-from typing import Annotated, Dict
-
-from pydantic import AfterValidator
+from typing import Dict
 
 from kiln_ai.datamodel import PromptGenerators, PromptId, Task, TaskRun
 from kiln_ai.utils.exhaustive_error import raise_exhaustive_enum_error
@@ -292,48 +289,44 @@ class SavedPromptBuilder(BasePromptBuilder):
         return self.prompt_model.chain_of_thought_instructions
 
 
-class EvalPromptBuilder(BasePromptBuilder):
-    """A prompt builder that looks up a static prompt in an eval config."""
+class TaskRunConfigPromptBuilder(BasePromptBuilder):
+    """A prompt builder that looks up a static prompt in a task run config."""
 
-    def __init__(self, task: Task, eval_config_prompt_id: str):
-        parts = eval_config_prompt_id.split("::")
-        if len(parts) != 5:
+    def __init__(self, task: Task, run_config_prompt_id: str):
+        parts = run_config_prompt_id.split("::")
+        if len(parts) != 4:
             raise ValueError(
-                f"Invalid eval prompt ID: {eval_config_prompt_id}. Expected format: 'eval_prompt::[project_id]::[task_id]::[eval_id]::[eval_config_id]'."
+                f"Invalid task run config prompt ID: {run_config_prompt_id}. Expected format: 'task_run_config::[project_id]::[task_id]::[run_config_id]'."
             )
 
         task_id = parts[2]
         if task_id != task.id:
             raise ValueError(
-                f"Eval prompt ID: {eval_config_prompt_id}. Task ID mismatch. Expected: {task.id}, got: {task_id}."
+                f"Task run config prompt ID: {run_config_prompt_id}. Task ID mismatch. Expected: {task.id}, got: {task_id}."
             )
 
-        eval_id = parts[3]
-        eval = next(
-            (eval for eval in task.evals(readonly=True) if eval.id == eval_id),
-            None,
-        )
-        if not eval:
-            raise ValueError(
-                f"Eval ID not found: {eval_id} for prompt id {eval_config_prompt_id}"
-            )
-
-        eval_config_id = parts[4]
-        eval_config = next(
+        run_config_id = parts[3]
+        run_config = next(
             (
-                eval_config
-                for eval_config in eval.configs(readonly=True)
-                if eval_config.id == eval_config_id
+                run_config
+                for run_config in task.run_configs(readonly=True)
+                if run_config.id == run_config_id
             ),
             None,
         )
-        if not eval_config:
+        if not run_config:
             raise ValueError(
-                f"Eval config ID not found: {eval_config_id} for prompt id {eval_config_prompt_id}"
+                f"Task run config ID not found: {run_config_id} for prompt id {run_config_prompt_id}"
+            )
+        if run_config.prompt is None:
+            raise ValueError(
+                f"Task run config ID {run_config_id} does not have a stored prompt. Used as prompt id {run_config_prompt_id}"
             )
 
-        self.prompt_model = eval_config.prompt
-        self.id = eval_config_prompt_id
+        # Load the prompt from the model
+        self.prompt = run_config.prompt.prompt
+        self.cot_prompt = run_config.prompt.chain_of_thought_instructions
+        self.id = run_config_prompt_id
 
         super().__init__(task)
 
@@ -341,10 +334,10 @@ class EvalPromptBuilder(BasePromptBuilder):
         return self.id
 
     def build_base_prompt(self) -> str:
-        return self.prompt_model.prompt
+        return self.prompt
 
     def chain_of_thought_prompt(self) -> str | None:
-        return self.prompt_model.chain_of_thought_instructions
+        return self.cot_prompt
 
 
 class FineTunePromptBuilder(BasePromptBuilder):
@@ -403,9 +396,10 @@ def prompt_builder_from_id(prompt_id: PromptId, task: Task) -> BasePromptBuilder
         prompt_id = prompt_id[4:]
         return SavedPromptBuilder(task, prompt_id)
 
-    # Eval prompts are prefixed with "eval_prompt::"
-    if prompt_id.startswith("eval_prompt::"):
-        return EvalPromptBuilder(task, prompt_id)
+    # Task run config prompts are prefixed with "task_run_config::"
+    # task_run_config::[project_id]::[task_id]::[run_config_id]
+    if prompt_id.startswith("task_run_config::"):
+        return TaskRunConfigPromptBuilder(task, prompt_id)
 
     # Fine-tune prompts are prefixed with "fine_tune_prompt::"
     if prompt_id.startswith("fine_tune_prompt::"):

@@ -10,6 +10,7 @@ from kiln_ai.datamodel import (
     BasePrompt,
     DataSource,
     DataSourceType,
+    Project,
     PromptId,
     Task,
 )
@@ -47,12 +48,19 @@ def client(app):
 
 @pytest.fixture
 def mock_task(tmp_path):
+    project = Project(
+        id="project1",
+        name="Test Project",
+        path=tmp_path / "project.kiln",
+    )
+    project.save_to_file()
     task = Task(
         id="task1",
         name="Test Task",
         description="Test Description",
         instruction="Test Instructions",
         path=tmp_path / "task.kiln",
+        parent=project,
     )
     task.save_to_file()
     return task
@@ -207,19 +215,28 @@ async def test_create_evaluator(
 
 
 @pytest.mark.asyncio
-async def test_create_task_run_config(client, mock_task_from_id, mock_task):
+async def test_create_task_run_config_with_freezing(
+    client, mock_task_from_id, mock_task
+):
     mock_task_from_id.return_value = mock_task
 
-    response = client.post(
-        "/api/projects/project1/tasks/task1/task_run_config",
-        json={
-            "name": "Test Task Run Config",
-            "description": "Test Description",
-            "model_name": "gpt-4o",
-            "model_provider_name": "openai",
-            "prompt_id": "simple_chain_of_thought_prompt_builder",
-        },
-    )
+    with (
+        patch(
+            "app.desktop.studio_server.eval_api.generate_memorable_name"
+        ) as mock_generate_memorable_name,
+    ):
+        mock_generate_memorable_name.return_value = "Custom Name"
+
+        response = client.post(
+            "/api/projects/project1/tasks/task1/task_run_config",
+            json={
+                "name": "Test Task Run Config",
+                "description": "Test Description",
+                "model_name": "gpt-4o",
+                "model_provider_name": "openai",
+                "prompt_id": "simple_chain_of_thought_prompt_builder",
+            },
+        )
 
     assert response.status_code == 200
     result = response.json()
@@ -229,9 +246,13 @@ async def test_create_task_run_config(client, mock_task_from_id, mock_task):
     assert result["run_config_properties"]["model_provider_name"] == "openai"
     assert (
         result["run_config_properties"]["prompt_id"]
-        == "simple_chain_of_thought_prompt_builder"
+        == "task_run_config::project1::task1::" + result["id"]
     )
-
+    assert result["prompt"]["name"] == "Custom Name"
+    assert (
+        result["prompt"]["long_name"]
+        == "Custom Name (frozen prompt from 'simple_chain_of_thought_prompt_builder')"
+    )
     # Fetch it from API
     fetch_response = client.get("/api/projects/project1/tasks/task1/task_run_configs")
     assert fetch_response.status_code == 200
@@ -239,6 +260,47 @@ async def test_create_task_run_config(client, mock_task_from_id, mock_task):
     assert len(configs) == 1
     assert configs[0]["id"] == result["id"]
     assert configs[0]["name"] == result["name"]
+    assert configs[0]["prompt"]["name"] == "Custom Name"
+    assert configs[0]["prompt"]["long_name"] == (
+        "Custom Name (frozen prompt from 'simple_chain_of_thought_prompt_builder')"
+    )
+    assert configs[0]["run_config_properties"]["prompt_id"] == (
+        "task_run_config::project1::task1::" + result["id"]
+    )
+
+
+@pytest.mark.asyncio
+async def test_create_task_run_config_without_freezing(
+    client, mock_task_from_id, mock_task
+):
+    mock_task_from_id.return_value = mock_task
+
+    with (
+        patch(
+            "app.desktop.studio_server.eval_api.generate_memorable_name"
+        ) as mock_generate_memorable_name,
+    ):
+        mock_generate_memorable_name.return_value = "Custom Name"
+
+        response = client.post(
+            "/api/projects/project1/tasks/task1/task_run_config",
+            json={
+                "name": "Test Task Run Config",
+                "description": "Test Description",
+                "model_name": "gpt-4o",
+                "model_provider_name": "openai",
+                "prompt_id": "id::prompt_123",
+            },
+        )
+
+    assert response.status_code == 200
+    result = response.json()
+    assert result["name"] == "Test Task Run Config"
+    assert result["description"] == "Test Description"
+    assert result["run_config_properties"]["model_name"] == "gpt-4o"
+    assert result["run_config_properties"]["model_provider_name"] == "openai"
+    assert result["run_config_properties"]["prompt_id"] == "id::prompt_123"
+    assert result["prompt"] is None
 
 
 @pytest.mark.asyncio
@@ -249,15 +311,8 @@ async def test_create_eval_config(
 
     with (
         patch("app.desktop.studio_server.eval_api.eval_from_id") as mock_eval_from_id,
-        patch(
-            "app.desktop.studio_server.eval_api.prompt_builder_from_id"
-        ) as mock_prompt_builder,
     ):
         mock_eval_from_id.return_value = mock_eval
-        mock_prompt_builder.return_value.build_base_prompt.return_value = "base prompt"
-        mock_prompt_builder.return_value.chain_of_thought_prompt.return_value = (
-            "cot prompt"
-        )
 
         response = client.post(
             "/api/projects/project1/tasks/task1/eval/eval1/create_eval_config",
@@ -278,8 +333,6 @@ async def test_create_eval_config(
         result["model"]["properties"]["model_provider"]
         == valid_eval_config_request.provider
     )
-    assert isinstance(result["prompt"], dict)
-    # mock_save.assert_called_once()
 
     # Fetch disk
     assert len(mock_eval.configs()) == 1
@@ -291,8 +344,6 @@ async def test_create_eval_config(
     assert (
         config.model.properties["model_provider"] == valid_eval_config_request.provider
     )
-    assert config.prompt.prompt == "base prompt"
-    assert config.prompt.chain_of_thought_instructions == "cot prompt"
     assert config.properties["eval_steps"][0] == "step1"
     assert config.properties["eval_steps"][1] == "step2"
 
@@ -317,7 +368,6 @@ def test_get_eval_configs(
     assert config["config_type"] == mock_eval_config.config_type
     assert config["properties"] == mock_eval_config.properties
     assert config["model"]["type"] == mock_eval_config.model.type
-    assert isinstance(config["prompt"], dict)
 
     mock_eval_from_id.assert_called_once_with("project1", "task1", "eval1")
 

@@ -22,6 +22,7 @@ from kiln_ai.datamodel.eval import (
     EvalOutputScore,
     EvalTemplate,
 )
+from kiln_ai.datamodel.prompt_id import is_frozen_prompt
 from kiln_ai.datamodel.task import RunConfigProperties, TaskRunConfig
 from kiln_ai.utils.name_generator import generate_memorable_name
 from kiln_server.task_api import task_from_id
@@ -168,6 +169,31 @@ def connect_evals_api(app: FastAPI):
     ) -> TaskRunConfig:
         task = task_from_id(project_id, task_id)
         name = request.name or generate_memorable_name()
+
+        parent_project = task.parent_project()
+        if parent_project is None:
+            raise HTTPException(
+                status_code=400,
+                detail="Task must have a parent project.",
+            )
+
+        frozen_prompt: BasePrompt | None = None
+        if not is_frozen_prompt(request.prompt_id):
+            # For dynamic prompts, we "freeze" a copy of this prompt into the task run config so we don't accidentially invalidate evals if the user changes something that impacts the prompt (example: chanding data for multi-shot, or chanding task for basic-prompt)
+            # We then point the task_run_config.run_properties.prompt_id to this new frozen prompt
+            prompt_builder = prompt_builder_from_id(request.prompt_id, task)
+            prompt_name = generate_memorable_name()
+            frozen_prompt = BasePrompt(
+                name=prompt_name,
+                long_name=prompt_name
+                + " (frozen prompt from '"
+                + request.prompt_id
+                + "')",
+                generator_id=request.prompt_id,
+                prompt=prompt_builder.build_base_prompt(),
+                chain_of_thought_instructions=prompt_builder.chain_of_thought_prompt(),
+            )
+
         task_run_config = TaskRunConfig(
             parent=task,
             name=name,
@@ -177,7 +203,13 @@ def connect_evals_api(app: FastAPI):
                 model_provider_name=request.model_provider_name,
                 prompt_id=request.prompt_id,
             ),
+            prompt=frozen_prompt,
         )
+        if frozen_prompt is not None:
+            # Set after, because the ID isn't known until the TaskRunConfig is created
+            task_run_config.run_config_properties.prompt_id = (
+                f"task_run_config::{parent_project.id}::{task.id}::{task_run_config.id}"
+            )
         task_run_config.save_to_file()
         return task_run_config
 
@@ -190,18 +222,8 @@ def connect_evals_api(app: FastAPI):
         eval_id: str,
         request: CreateEvalConfigRequest,
     ) -> EvalConfig:
-        task = task_from_id(project_id, task_id)
         eval = eval_from_id(project_id, task_id, eval_id)
         name = request.name or generate_memorable_name()
-
-        # Create a prompt instance to save to the eval config
-        prompt_builder = prompt_builder_from_id(request.prompt_id, task)
-        prompt = BasePrompt(
-            name=request.prompt_id,
-            generator_id=request.prompt_id,
-            prompt=prompt_builder.build_base_prompt(),
-            chain_of_thought_instructions=prompt_builder.chain_of_thought_prompt(),
-        )
 
         eval_config = EvalConfig(
             name=name,
@@ -215,7 +237,6 @@ def connect_evals_api(app: FastAPI):
                     "adapter_name": "kiln_eval",
                 },
             ),
-            prompt=prompt,
             parent=eval,
         )
         eval_config.save_to_file()

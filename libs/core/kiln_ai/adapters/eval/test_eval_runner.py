@@ -67,10 +67,6 @@ def mock_eval_config(mock_eval, data_source):
         name="test",
         model=data_source,
         parent=mock_eval,
-        prompt=BasePrompt(
-            name="test",
-            prompt="test",
-        ),
         properties={
             "eval_steps": ["step1", "step2", "step3"],
         },
