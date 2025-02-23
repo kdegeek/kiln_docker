@@ -212,8 +212,7 @@ def connect_evals_api(app: FastAPI):
                 properties={
                     "model_name": request.model_name,
                     "model_provider": request.provider,
-                    # TODO remove this
-                    "adapter_name": "eval",
+                    "adapter_name": "kiln_eval",
                 },
             ),
             prompt=prompt,
