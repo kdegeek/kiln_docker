@@ -11,6 +11,7 @@
     EvalConfigType,
     ProviderModels,
     TaskRunConfig,
+    EvalResultSummary,
   } from "$lib/types"
   import { goto } from "$app/navigation"
   import {
@@ -26,6 +27,7 @@
   import AvailableModelsDropdown from "../../../../run/available_models_dropdown.svelte"
   import PromptTypeSelector from "../../../../run/prompt_type_selector.svelte"
   import Warning from "$lib/ui/warning.svelte"
+  import { string_to_json_key } from "$lib/utils/json_schema_editor/json_schema_templates"
 
   $: project_id = $page.params.project_id
   $: task_id = $page.params.task_id
@@ -44,8 +46,17 @@
   let task_run_configs_error: KilnError | null = null
   let task_run_configs_loading = true
 
-  $: loading = eval_loading || eval_configs_loading || task_run_configs_loading
+  let score_summary: EvalResultSummary | null = null
+  let score_summary_error: KilnError | null = null
+  let score_summary_loading = false
+
+  $: loading =
+    eval_loading ||
+    eval_configs_loading ||
+    task_run_configs_loading ||
+    score_summary_loading
   $: error = eval_error || eval_configs_error || task_run_configs_error
+  // Note: not including score_summary_error, because it's not a critical error we should block the UI for
 
   onMount(async () => {
     // Wait for page params to load
@@ -58,8 +69,10 @@
     ])
     // Get the eval first (want it to set the current config id), then the rest in parallel
     await get_eval()
-    get_eval_configs()
-    get_task_run_configs()
+    // These two can be parallel
+    await Promise.all([get_eval_configs(), get_task_run_configs()])
+    // This needs the selected eval config id
+    get_score_summary()
   })
 
   async function get_eval() {
@@ -152,11 +165,50 @@
     }
   }
 
-  // Watches the current eval config id, and if it's "add_config" then navigates to the create eval config page
-  $: check_add_eval_config(current_eval_config_id)
-  function check_add_eval_config(selected_id: string | null) {
+  async function get_score_summary() {
+    score_summary = null
+    if (!current_eval_config_id) {
+      score_summary_error = new KilnError("No eval config selected", null)
+      return
+    }
+    try {
+      score_summary_loading = true
+      const { data, error } = await client.GET(
+        "/api/projects/{project_id}/tasks/{task_id}/eval/{eval_id}/eval_config/{eval_config_id}/score_summary",
+        {
+          params: {
+            path: {
+              project_id,
+              task_id,
+              eval_id,
+              eval_config_id: current_eval_config_id,
+            },
+          },
+        },
+      )
+      if (error) {
+        throw error
+      }
+      score_summary = data
+    } catch (error) {
+      score_summary_error = createKilnError(error)
+    } finally {
+      score_summary_loading = false
+    }
+  }
+
+  // Watches the current eval config id
+  $: watch_selected_eval_config(current_eval_config_id)
+  function watch_selected_eval_config(selected_id: string | null) {
     if (selected_id === "add_config") {
+      // if it's "add_config" then navigates to the create eval config page
       goto(`/evals/${project_id}/${task_id}/${eval_id}/create_eval_config`)
+      return
+    }
+    // If the selected id is not null, then get the score summary
+    score_summary = null
+    if (selected_id) {
+      get_score_summary()
     }
   }
 
@@ -189,7 +241,10 @@
     return eval_config.name + " — " + parts.join(", ")
   }
 
-  function get_eval_properties(evaluator: Eval): UiProperty[] {
+  function get_eval_properties(
+    evaluator: Eval,
+    score_summary: EvalResultSummary | null,
+  ): UiProperty[] {
     const properties: UiProperty[] = []
 
     properties.push({
@@ -212,9 +267,13 @@
         value: outputs.join(", "),
       })
     }
+    let eval_set_size = ""
+    if (score_summary) {
+      eval_set_size = " (" + score_summary.dataset_size + " items)"
+    }
     properties.push({
       name: "Eval Set",
-      value: evaluator.eval_set_filter_id,
+      value: evaluator.eval_set_filter_id + eval_set_size,
     })
     properties.push({
       name: "Config Eval Set",
@@ -306,6 +365,7 @@
       return true
     }
 
+    score_summary = null
     eval_state = "running"
     eval_complete_count = 0
     eval_total_count = 0
@@ -322,6 +382,7 @@
           eventSource.close()
           eval_state =
             eval_error_count > 0 ? "complete_with_errors" : "complete"
+          get_score_summary()
         } else {
           const data = JSON.parse(event.data)
           eval_complete_count = data.progress
@@ -332,6 +393,7 @@
       } catch (error) {
         eval_run_error = createKilnError(error)
         eval_state = "complete_with_errors"
+        get_score_summary()
       }
     }
 
@@ -340,6 +402,7 @@
       eventSource.close()
       eval_state = "complete_with_errors"
       eval_run_error = createKilnError(error)
+      get_score_summary()
     }
 
     // Switch over to the progress dialog, closing the run dialog
@@ -392,6 +455,21 @@
     }
     return true
   }
+
+  function show_incomplete_warning(
+    score_summary: EvalResultSummary | null,
+  ): boolean {
+    if (!score_summary?.run_config_percent_complete) {
+      return false
+    }
+
+    const values = Object.values(score_summary.run_config_percent_complete)
+    const minComplete =
+      values.length > 0
+        ? values.reduce((min, val) => Math.min(min, val), 1.0)
+        : 1.0
+    return minComplete < 1.0
+  }
 </script>
 
 <AppPage
@@ -424,7 +502,7 @@
         <div
           class="grid grid-cols-[auto,1fr] gap-y-2 gap-x-4 text-sm 2xl:text-base"
         >
-          {#each get_eval_properties(evaluator) as property}
+          {#each get_eval_properties(evaluator, score_summary) as property}
             <div class="flex items-center">{property.name}</div>
             <div class="flex items-center text-gray-500 overflow-x-hidden">
               {property.value}
@@ -472,6 +550,12 @@
               Filtered by the selected eval config. Rows are grouped by task run
               config.
             </div>
+            {#if score_summary_error}
+              <div class="text-error text-sm">
+                {score_summary_error.getMessage() ||
+                  "An unknown error occurred fetching scores."}
+              </div>
+            {/if}
           </div>
           <div>
             {#if eval_state === "not_started"}
@@ -508,42 +592,98 @@
             {/if}
           </div>
         </div>
+
+        <!-- Warn the user if some evals are incomplete -->
+        {#if show_incomplete_warning(score_summary)}
+          <div class="mt-6 mb-4">
+            <button
+              class="tooltip tooltip-top cursor-pointer"
+              data-tip="Running evals will update any missing dataset items, without re-running complete items. If some evals consistently fail, check the logs; it is likely that the model is failing on the task or the eval."
+            >
+              <Warning
+                warning_message={`Some evals are incomplete and should be excluded from analysis. Run evals to complete their dataset.`}
+                tight={true}
+              />
+            </button>
+          </div>
+        {/if}
+
         <div class="overflow-x-auto rounded-lg border">
           <table class="table">
             <thead>
               <tr>
-                <th> Run Config Name </th>
-                <th> Task Model </th>
-                <th> Task Provider </th>
-                <th> Task Prompt </th>
+                <th> Run Config </th>
+                {#each evaluator.output_scores as output_score}
+                  <th class="text-center">
+                    {output_score.name}
+                    {#if output_score.type === "five_star"}
+                      (1 to 5)
+                    {:else if output_score.type === "pass_fail"}
+                      (0 to 1)
+                    {:else if output_score.type === "pass_fail_critical"}
+                      (-1 to 1)
+                    {:else}
+                      ({output_score.type})
+                    {/if}
+                  </th>
+                {/each}
               </tr>
             </thead>
             <tbody>
               {#each task_run_configs || [] as task_run_config}
+                {@const percent_complete =
+                  score_summary?.run_config_percent_complete?.[
+                    "" + task_run_config.id
+                  ]}
                 <tr
                   class="hover cursor-pointer"
                   on:click={() => {
                     console.log("TODO: link")
                   }}
                 >
-                  <td> {task_run_config.name} </td>
                   <td>
-                    {model_name(
-                      task_run_config?.run_config_properties?.model_name,
-                      $model_info,
-                    )}
+                    <div class="font-medium">
+                      {task_run_config.name}
+                    </div>
+                    <div class="text-sm text-gray-500">
+                      {model_name(
+                        task_run_config?.run_config_properties?.model_name,
+                        $model_info,
+                      )}
+                    </div>
+                    <div class="text-sm text-gray-500">
+                      {provider_name_from_id(
+                        task_run_config?.run_config_properties
+                          ?.model_provider_name,
+                      )}
+                    </div>
+                    <div class="text-sm text-gray-500">
+                      {prompt_name_from_id(
+                        task_run_config?.run_config_properties?.prompt_id,
+                      )}
+                    </div>
+                    {#if percent_complete}
+                      <div
+                        class="text-sm {percent_complete < 1.0
+                          ? 'text-error'
+                          : 'text-gray-500'}"
+                      >
+                        Eval {(percent_complete * 100.0).toFixed(1)}% complete
+                      </div>
+                    {:else if score_summary}
+                      <!-- We have results, but not for this run config -->
+                      <div class="text-sm text-error">Eval 0% complete</div>
+                    {/if}
                   </td>
-                  <td>
-                    {provider_name_from_id(
-                      task_run_config?.run_config_properties
-                        ?.model_provider_name,
-                    )}
-                  </td>
-                  <td>
-                    {prompt_name_from_id(
-                      task_run_config?.run_config_properties?.prompt_id,
-                    )}
-                  </td>
+                  {#each evaluator.output_scores as output_score}
+                    {@const score =
+                      score_summary?.results?.["" + task_run_config.id]?.[
+                        string_to_json_key(output_score.name)
+                      ]?.mean_score}
+                    <td class="text-center">
+                      {score != null ? score.toFixed(2) : "unknown"}
+                    </td>
+                  {/each}
                 </tr>
               {/each}
             </tbody>
