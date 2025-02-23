@@ -7,6 +7,7 @@
   import { onMount, tick } from "svelte"
   import { goto } from "$app/navigation"
   import { page } from "$app/stores"
+  import { formatDate } from "$lib/utils/formatters"
 
   $: project_id = $page.params.project_id
   $: task_id = $page.params.task_id
@@ -86,8 +87,9 @@
       <table class="table">
         <thead>
           <tr>
-            <th> Name </th>
-            <th> Description </th>
+            <th>Eval Name</th>
+            <th>Description</th>
+            <th>Created</th>
           </tr>
         </thead>
         <tbody>
@@ -100,6 +102,7 @@
             >
               <td> {evaluator.name} </td>
               <td> {evaluator.description} </td>
+              <td> {formatDate(evaluator.created_at)} </td>
             </tr>
           {/each}
         </tbody>
