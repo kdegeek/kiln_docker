@@ -3,7 +3,7 @@
   import FormContainer from "$lib/utils/form_container.svelte"
   import FormElement from "$lib/utils/form_element.svelte"
   import { page } from "$app/stores"
-  import { client } from "$lib/api_client"
+  import { client, base_url } from "$lib/api_client"
   import { KilnError, createKilnError } from "$lib/utils/error_handlers"
   import { onMount } from "svelte"
   import { formatDate } from "$lib/utils/formatters"
@@ -473,9 +473,7 @@
       .map(([key, value]) => `${key}=${encodeURIComponent(value || "")}`)
       .join("&")
 
-    window.open(
-      "http://localhost:8757/api/download_dataset_jsonl?" + query_string,
-    )
+    window.open(base_url + "/api/download_dataset_jsonl?" + query_string)
   }
 </script>
 
