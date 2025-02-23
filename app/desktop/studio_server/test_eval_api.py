@@ -530,6 +530,8 @@ async def test_get_eval_config_score_summary(
         results = top_level_result["results"]
         assert "run_config_percent_complete" in top_level_result
         run_config_percent_complete = top_level_result["run_config_percent_complete"]
+        assert "dataset_size" in top_level_result
+        assert top_level_result["dataset_size"] == 2
 
         # Check average scores for run1
         assert results["run1"]["accuracy"]["mean_score"] == 0.7  # (0.8 + 0.6) / 2

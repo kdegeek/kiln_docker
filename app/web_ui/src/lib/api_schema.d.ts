@@ -1298,6 +1298,8 @@ export interface components {
             run_config_percent_complete: {
                 [key: string]: number;
             };
+            /** Dataset Size */
+            dataset_size: number;
         };
         /**
          * EvalState

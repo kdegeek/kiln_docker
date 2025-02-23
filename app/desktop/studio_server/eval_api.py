@@ -107,6 +107,8 @@ class EvalResultSummary(BaseModel):
     results: Dict[str, Dict[str, ScoreSummary]]
     # run_config_id -> percent of the dataset that has been processed
     run_config_percent_complete: Dict[str, float]
+    # The total size of the dataset used for the eval
+    dataset_size: int
 
 
 def dataset_ids_in_filter(task: Task, filter_id: DatasetFilterId) -> Set[ID_TYPE]:
@@ -291,7 +293,7 @@ def connect_evals_api(app: FastAPI):
         if len(expected_dataset_ids) == 0:
             raise HTTPException(
                 status_code=400,
-                detail="No dataset ids in eval set filter. Cannot compute score summary.",
+                detail="No dataset ids in eval set filter. Add items to your dataset matching the eval set filter.",
             )
 
         # save a copy of the expected dataset ids for each run config, we'll update each as we process each eval run
@@ -365,4 +367,5 @@ def connect_evals_api(app: FastAPI):
         return EvalResultSummary(
             results=results,
             run_config_percent_complete=run_config_percent_complete,
+            dataset_size=len(expected_dataset_ids),
         )

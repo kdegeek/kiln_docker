@@ -240,7 +240,10 @@
     return eval_config.name + " — " + parts.join(", ")
   }
 
-  function get_eval_properties(evaluator: Eval): UiProperty[] {
+  function get_eval_properties(
+    evaluator: Eval,
+    score_summary: EvalResultSummary | null,
+  ): UiProperty[] {
     const properties: UiProperty[] = []
 
     properties.push({
@@ -263,9 +266,13 @@
         value: outputs.join(", "),
       })
     }
+    let eval_set_size = ""
+    if (score_summary) {
+      eval_set_size = " (" + score_summary.dataset_size + " items)"
+    }
     properties.push({
       name: "Eval Set",
-      value: evaluator.eval_set_filter_id,
+      value: evaluator.eval_set_filter_id + eval_set_size,
     })
     properties.push({
       name: "Config Eval Set",
@@ -494,7 +501,7 @@
         <div
           class="grid grid-cols-[auto,1fr] gap-y-2 gap-x-4 text-sm 2xl:text-base"
         >
-          {#each get_eval_properties(evaluator) as property}
+          {#each get_eval_properties(evaluator, score_summary) as property}
             <div class="flex items-center">{property.name}</div>
             <div class="flex items-center text-gray-500 overflow-x-hidden">
               {property.value}
