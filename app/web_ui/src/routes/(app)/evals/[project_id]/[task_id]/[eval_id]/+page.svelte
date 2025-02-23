@@ -447,6 +447,21 @@
     }
     return true
   }
+
+  function show_incomplete_warning(
+    score_summary: EvalResultSummary | null,
+  ): boolean {
+    if (!score_summary?.run_config_percent_complete) {
+      return false
+    }
+
+    const values = Object.values(score_summary.run_config_percent_complete)
+    const minComplete =
+      values.length > 0
+        ? values.reduce((min, val) => Math.min(min, val), 1.0)
+        : 1.0
+    return minComplete < 1.0
+  }
 </script>
 
 <AppPage
@@ -569,16 +584,29 @@
             {/if}
           </div>
         </div>
+
+        <!-- Warn the user if some evals are incomplete -->
+        {#if show_incomplete_warning(score_summary)}
+          <div class="mt-6 mb-4">
+            <button
+              class="tooltip tooltip-top cursor-pointer"
+              data-tip="Running evals will update any missing dataset items, without re-running complete items. If some evals consistently fail, check the logs; tt's possible the model is failing on the task, or the eval."
+            >
+              <Warning
+                warning_message={`Some evals are incomplete and should be excluded from analysis. Run evals to complete their dataset.`}
+                tight={true}
+              />
+            </button>
+          </div>
+        {/if}
+
         <div class="overflow-x-auto rounded-lg border">
           <table class="table">
             <thead>
               <tr>
-                <th> Run Config Name </th>
-                <th> Task Model </th>
-                <th> Task Provider </th>
-                <th> Task Prompt </th>
+                <th> Run Config </th>
                 {#each evaluator.output_scores as output_score}
-                  <th>
+                  <th class="text-center">
                     {output_score.name}
                     {#if output_score.type === "five_star"}
                       (1 to 5)
@@ -595,36 +623,56 @@
             </thead>
             <tbody>
               {#each task_run_configs || [] as task_run_config}
+                {@const percent_complete =
+                  score_summary?.run_config_percent_complete?.[
+                    "" + task_run_config.id
+                  ]}
                 <tr
                   class="hover cursor-pointer"
                   on:click={() => {
                     console.log("TODO: link")
                   }}
                 >
-                  <td> {task_run_config.name} </td>
                   <td>
-                    {model_name(
-                      task_run_config?.run_config_properties?.model_name,
-                      $model_info,
-                    )}
-                  </td>
-                  <td>
-                    {provider_name_from_id(
-                      task_run_config?.run_config_properties
-                        ?.model_provider_name,
-                    )}
-                  </td>
-                  <td>
-                    {prompt_name_from_id(
-                      task_run_config?.run_config_properties?.prompt_id,
-                    )}
+                    <div class="font-medium">
+                      {task_run_config.name}
+                    </div>
+                    <div class="text-sm text-gray-500">
+                      {model_name(
+                        task_run_config?.run_config_properties?.model_name,
+                        $model_info,
+                      )}
+                    </div>
+                    <div class="text-sm text-gray-500">
+                      {provider_name_from_id(
+                        task_run_config?.run_config_properties
+                          ?.model_provider_name,
+                      )}
+                    </div>
+                    <div class="text-sm text-gray-500">
+                      {prompt_name_from_id(
+                        task_run_config?.run_config_properties?.prompt_id,
+                      )}
+                    </div>
+                    {#if percent_complete}
+                      <div
+                        class="text-sm {percent_complete < 1.0
+                          ? 'text-error'
+                          : 'text-gray-500'}"
+                      >
+                        Eval {(percent_complete * 100.0).toFixed(1)}% complete
+                      </div>
+                    {:else if score_summary}
+                      <!-- We have results, but not for this run config -->
+                      <div class="text-sm text-error">Eval 0% complete</div>
+                    {/if}
                   </td>
                   {#each evaluator.output_scores as output_score}
                     {@const score =
                       score_summary?.results?.["" + task_run_config.id]?.[
                         title_to_name(output_score.name)
                       ]?.mean_score}
-                    <td>
+                    <td class="text-center">
                       {score != null ? score.toFixed(2) : "unknown"}
                     </td>
                   {/each}

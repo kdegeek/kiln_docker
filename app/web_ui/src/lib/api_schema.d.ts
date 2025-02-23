@@ -800,8 +800,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Build Score Summary */
-        get: operations["build_score_summary_api_projects__project_id__tasks__task_id__eval__eval_id__eval_config__eval_config_id__score_summary_get"];
+        /** Get Eval Config Score Summary */
+        get: operations["get_eval_config_score_summary_api_projects__project_id__tasks__task_id__eval__eval_id__eval_config__eval_config_id__score_summary_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1293,6 +1293,10 @@ export interface components {
                 [key: string]: {
                     [key: string]: components["schemas"]["ScoreSummary"];
                 };
+            };
+            /** Run Config Percent Complete */
+            run_config_percent_complete: {
+                [key: string]: number;
             };
         };
         /**
@@ -3987,7 +3991,7 @@ export interface operations {
             };
         };
     };
-    build_score_summary_api_projects__project_id__tasks__task_id__eval__eval_id__eval_config__eval_config_id__score_summary_get: {
+    get_eval_config_score_summary_api_projects__project_id__tasks__task_id__eval__eval_id__eval_config__eval_config_id__score_summary_get: {
         parameters: {
             query?: never;
             header?: never;

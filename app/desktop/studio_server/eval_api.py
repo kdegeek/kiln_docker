@@ -13,6 +13,7 @@ from kiln_ai.datamodel import (
     PromptId,
     Task,
 )
+from kiln_ai.datamodel.basemodel import ID_TYPE
 from kiln_ai.datamodel.dataset_filters import DatasetFilterId, dataset_filter_from_id
 from kiln_ai.datamodel.eval import (
     Eval,
@@ -108,10 +109,10 @@ class EvalResultSummary(BaseModel):
     run_config_percent_complete: Dict[str, float]
 
 
-def dataset_ids_in_filter(task: Task, filter_id: DatasetFilterId) -> Set[str]:
+def dataset_ids_in_filter(task: Task, filter_id: DatasetFilterId) -> Set[ID_TYPE]:
     # Fetch all the dataset items IDs in a filter
     filter = dataset_filter_from_id(filter_id)
-    return {run.dataset_id for run in task.runs() if filter(run)}
+    return {run.id for run in task.runs() if filter(run)}
 
 
 def connect_evals_api(app: FastAPI):
@@ -294,7 +295,7 @@ def connect_evals_api(app: FastAPI):
             )
 
         # save a copy of the expected dataset ids for each run config, we'll update each as we process each eval run
-        remaining_expected_dataset_ids: Dict[str, Set[str]] = {
+        remaining_expected_dataset_ids: Dict[str, Set[ID_TYPE]] = {
             str(run_config.id): set(expected_dataset_ids)
             for run_config in task_runs_configs
         }
