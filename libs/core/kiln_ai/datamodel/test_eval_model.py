@@ -69,6 +69,14 @@ def test_eval_config_missing_eval_steps(valid_eval_config):
         valid_eval_config.properties = {}
 
 
+def test_eval_config_missing_task_description(valid_eval_config):
+    with pytest.raises(
+        ValueError,
+        match="task_description is optional, but if provided must be a string",
+    ):
+        valid_eval_config.properties = {"task_description": 123, "eval_steps": []}
+
+
 def test_eval_config_invalid_json(valid_eval_config):
     class InvalidClass:
         pass

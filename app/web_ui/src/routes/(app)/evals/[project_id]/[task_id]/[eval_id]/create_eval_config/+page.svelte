@@ -8,15 +8,14 @@
   import { KilnError, createKilnError } from "$lib/utils/error_handlers"
   import { onMount } from "svelte"
   import Warning from "$lib/ui/warning.svelte"
-  import PromptTypeSelector from "../../../../../run/prompt_type_selector.svelte"
   import AvailableModelsDropdown from "../../../../../run/available_models_dropdown.svelte"
   import type { Eval, EvalTemplate, Task, EvalConfigType } from "$lib/types"
   import { tick } from "svelte"
   import { load_task } from "$lib/stores"
   import { goto } from "$app/navigation"
 
-  let prompt_method = "simple_prompt_builder"
   let model: string | undefined = undefined
+  let task_description: string = ""
   let eval_steps: string[] = []
 
   type EvalTemplateWithoutKiln = Exclude<EvalTemplate, "kiln_requirements">
@@ -175,9 +174,6 @@
       if (!model_name || !provider) {
         throw new Error("No model selected")
       }
-      if (!prompt_method) {
-        throw new Error("No prompt method selected")
-      }
       create_evaluator_loading = true
 
       const { data, error } = await client.POST(
@@ -195,10 +191,11 @@
             model_name: model_name,
             // @ts-expect-error provider is not typed, but server will validate
             provider: provider,
-            prompt_id: prompt_method,
             properties: {
-              // @ts-expect-error eval_steps is not typed, but server will validate
+              // @ts-expect-error properties are not typed, but server will validate
               eval_steps: eval_steps,
+              // @ts-expect-error properties are not typed, but server will validate
+              task_description: task_description,
             },
           },
         },
@@ -238,7 +235,7 @@
       </div>
     {:else}
       <FormContainer
-        submit_visible={!!(selected_algo && model && prompt_method)}
+        submit_visible={!!(selected_algo && model)}
         submit_label="Create Eval Config"
         on:submit={create_evaluator}
         bind:error={create_evaluator_error}
@@ -285,14 +282,13 @@
         {#if selected_algo}
           <div class="text-sm font-medium text-left pt-6 flex flex-col gap-1">
             <div class="text-xl font-bold" id="requirements_part">
-              Part 2: Select Prompt and Model
+              Step 2: Select Eval Model
             </div>
             <div class="text-xs text-gray-500">
-              Specify which prompt and model will be used to run the eval.
+              Specify which model will be used to evaluate the results. This is
+              not necessarily the model that will be used to run the task.
             </div>
           </div>
-
-          <PromptTypeSelector bind:prompt_method />
 
           <AvailableModelsDropdown
             bind:model
@@ -301,10 +297,29 @@
           />
         {/if}
 
-        {#if selected_algo && model && prompt_method}
+        {#if selected_algo && model}
           <div class="text-sm font-medium text-left pt-6 flex flex-col gap-1">
             <div class="text-xl font-bold" id="requirements_part">
-              Part 3: Evaluation Instructions
+              Step 3: Task Description
+            </div>
+            <div class="text-xs text-gray-500">
+              <div>
+                Include a short description of what this task does for the
+                evaluator to use as context.
+              </div>
+            </div>
+          </div>
+          <FormElement
+            label=""
+            inputType="textarea"
+            id="task_description"
+            optional={true}
+            bind:value={task_description}
+          />
+
+          <div class="text-sm font-medium text-left pt-6 flex flex-col gap-1">
+            <div class="text-xl font-bold" id="requirements_part">
+              Step 4: Evaluation Instructions
             </div>
             <div class="text-xs text-gray-500">
               This is a list of instructions to be used by the evaluator's

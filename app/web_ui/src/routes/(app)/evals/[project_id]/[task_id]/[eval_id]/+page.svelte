@@ -316,6 +316,13 @@
         eval_config.model.properties["model_provider"] + "",
       ),
     })
+    const task_description = eval_config.properties["task_description"]
+    if (task_description) {
+      properties.push({
+        name: "Task Description",
+        value: task_description,
+      })
+    }
     return properties
   }
 

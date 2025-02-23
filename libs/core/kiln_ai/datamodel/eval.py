@@ -200,6 +200,12 @@ class EvalConfig(KilnParentedModel, KilnParentModel, parent_of={"runs": EvalRun}
                 self.properties["eval_steps"], list
             ):
                 raise ValueError("eval_steps is required and must be a list for g_eval")
+            if "task_description" in self.properties and not isinstance(
+                self.properties["task_description"], str
+            ):
+                raise ValueError(
+                    "task_description is optional, but if provided must be a string"
+                )
             return self
         else:
             raise ValueError(f"Invalid eval config type: {self.config_type}")

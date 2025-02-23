@@ -30,31 +30,19 @@ class GEvalTask(Task, parent_of={}):
     Note G-Eval implements both G-Eval and LLM as Judge as they are very similar.
     """
 
-    def __init__(self, eval_config: EvalConfig, run_config: RunConfig):
+    def __init__(self, eval_config: EvalConfig):
         tmp_project = Project(name="GEval")
 
-        eval = eval_config.parent_eval()
-        if not eval:
-            raise ValueError("Eval config must have a parent eval")
-        task = eval.parent_task()
-        if not task:
-            raise ValueError("Eval must have a parent task")
-
-        prompt_builder = prompt_builder_from_id(run_config.prompt_id, task)
-        base_prompt = prompt_builder.build_base_prompt()
-
-        system_instruction = f"""
-Your job to evaluate a model's performance on a task. Blocks will be marked with <eval_data> tags.
-        
-The task the model was given is as follows:
-<eval_data>
-{base_prompt}
-</eval_data>
-"""
+        # Build a simple LLM as Judge system instruction
+        system_instruction = f"Your job to evaluate a model's performance on a task. Blocks will be marked with <eval_data> tags.\n"
+        # Optionally add a short task description
+        task_description = eval_config.properties.get("task_description", None)
+        if task_description:
+            system_instruction += f"\nThe task the model was given is as follows:\n<eval_data>\n{task_description}\n</eval_data>\n"
 
         # Build the COT eval instructions
         cot_instructions = "First, think step by step about the model's performance following these evaluation steps:\n\n"
-        steps = eval_config.properties["eval_steps"]
+        steps = eval_config.properties.get("eval_steps", None)
         if not steps or not isinstance(steps, list):
             raise ValueError("eval_steps must be a list")
         for i, step in enumerate(steps):
@@ -98,7 +86,7 @@ class GEval(BaseEval):
 
         super().__init__(eval_config, run_config)
 
-        self.geval_task = GEvalTask(eval_config, run_config)
+        self.geval_task = GEvalTask(eval_config)
 
     async def run_eval(self, task_run: TaskRun) -> EvalScores:
         """
