@@ -37,6 +37,7 @@ def adapter(base_task):
             task=base_task,
             model_name="test_model",
             model_provider_name="test_provider",
+            prompt_id="simple_prompt_builder",
         ),
     )
 
@@ -84,7 +85,10 @@ async def test_model_provider_missing_names(base_task):
     # Test with missing model name
     adapter = MockAdapter(
         run_config=RunConfig(
-            task=base_task, model_name="", model_provider_name="test_provider"
+            task=base_task,
+            model_name="",
+            model_provider_name="",
+            prompt_id="simple_prompt_builder",
         ),
     )
     with pytest.raises(
@@ -95,7 +99,10 @@ async def test_model_provider_missing_names(base_task):
     # Test with missing provider name
     adapter = MockAdapter(
         run_config=RunConfig(
-            task=base_task, model_name="test_model", model_provider_name=""
+            task=base_task,
+            model_name="test_model",
+            model_provider_name="",
+            prompt_id="simple_prompt_builder",
         ),
     )
     with pytest.raises(

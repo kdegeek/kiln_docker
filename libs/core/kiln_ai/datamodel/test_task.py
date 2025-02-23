@@ -8,7 +8,12 @@ from kiln_ai.datamodel.task import RunConfig, RunConfigProperties, Task, TaskRun
 def test_runconfig_valid_creation():
     task = Task(id="task1", name="Test Task", instruction="Do something")
 
-    config = RunConfig(task=task, model_name="gpt-4", model_provider_name="openai")
+    config = RunConfig(
+        task=task,
+        model_name="gpt-4",
+        model_provider_name="openai",
+        prompt_id=PromptGenerators.SIMPLE,
+    )
 
     assert config.task == task
     assert config.model_name == "gpt-4"
@@ -21,10 +26,13 @@ def test_runconfig_missing_required_fields():
         RunConfig()
 
     errors = exc_info.value.errors()
-    assert len(errors) == 3  # task, model_name, and model_provider_name are required
+    assert (
+        len(errors) == 4
+    )  # task, model_name, model_provider_name, and prompt_id are required
     assert any(error["loc"][0] == "task" for error in errors)
     assert any(error["loc"][0] == "model_name" for error in errors)
     assert any(error["loc"][0] == "model_provider_name" for error in errors)
+    assert any(error["loc"][0] == "prompt_id" for error in errors)
 
 
 def test_runconfig_custom_prompt_id():
@@ -47,7 +55,11 @@ def sample_task():
 
 @pytest.fixture
 def sample_run_config_props(sample_task):
-    return RunConfigProperties(model_name="gpt-4", model_provider_name="openai")
+    return RunConfigProperties(
+        model_name="gpt-4",
+        model_provider_name="openai",
+        prompt_id=PromptGenerators.SIMPLE,
+    )
 
 
 def test_task_run_config_valid_creation(sample_task, sample_run_config_props):

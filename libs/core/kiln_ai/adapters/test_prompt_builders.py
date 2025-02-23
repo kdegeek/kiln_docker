@@ -28,14 +28,12 @@ from kiln_ai.datamodel import (
     FinetuneDataStrategy,
     Project,
     Prompt,
-    PromptGenerators,
-    PromptId,
     Task,
     TaskOutput,
     TaskOutputRating,
     TaskRun,
 )
-from kiln_ai.datamodel.task import RunConfigProperties, Task, TaskRunConfig
+from kiln_ai.datamodel.task import RunConfigProperties, TaskRunConfig
 
 
 def test_simple_prompt_builder(tmp_path):

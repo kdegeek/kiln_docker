@@ -20,7 +20,7 @@ from kiln_ai.adapters.model_adapters.openai_compatible_config import (
     OpenAICompatibleConfig,
 )
 from kiln_ai.adapters.parsers.json_parser import parse_json_string
-from kiln_ai.datamodel import PromptId
+from kiln_ai.datamodel import PromptGenerators, PromptId
 from kiln_ai.datamodel.task import RunConfig
 from kiln_ai.utils.exhaustive_error import raise_exhaustive_enum_error
 
@@ -45,10 +45,8 @@ class OpenAICompatibleAdapter(BaseAdapter):
             task=kiln_task,
             model_name=config.model_name,
             model_provider_name=config.provider_name,
+            prompt_id=prompt_id or PromptGenerators.SIMPLE,
         )
-
-        if prompt_id is not None:
-            run_config.prompt_id = prompt_id
 
         super().__init__(
             run_config=run_config,

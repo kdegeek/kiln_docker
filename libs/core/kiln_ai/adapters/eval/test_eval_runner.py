@@ -67,10 +67,6 @@ def mock_eval_config(mock_eval, data_source):
         name="test",
         model=data_source,
         parent=mock_eval,
-        prompt=BasePrompt(
-            name="test",
-            prompt="test",
-        ),
         properties={
             "eval_steps": ["step1", "step2", "step3"],
         },
@@ -89,10 +85,7 @@ def mock_run_config(
         run_config_properties=RunConfigProperties(
             model_name="gpt-4",
             model_provider_name="openai",
-            prompt=BasePrompt(
-                name="test",
-                prompt="test",
-            ),
+            prompt_id="simple_prompt_builder",
         ),
         parent=mock_task,
     )
@@ -237,10 +230,7 @@ def test_collect_tasks_multiple_run_configs(
         run_config_properties=RunConfigProperties(
             model_name="gpt-3.5",
             model_provider_name="openai",
-            prompt=BasePrompt(
-                name="test",
-                prompt="test",
-            ),
+            prompt_id="simple_prompt_builder",
         ),
         parent=mock_task,
     )

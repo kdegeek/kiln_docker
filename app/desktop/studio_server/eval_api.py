@@ -177,15 +177,13 @@ def connect_evals_api(app: FastAPI):
                 detail="Task must have a parent project.",
             )
 
-        froze_prompt = False
-        prompt: BasePrompt | None = None
+        frozen_prompt: BasePrompt | None = None
         if not is_frozen_prompt(request.prompt_id):
             # For dynamic prompts, we "freeze" a copy of this prompt into the task run config so we don't accidentially invalidate evals if the user changes something that impacts the prompt (example: chanding data for multi-shot, or chanding task for basic-prompt)
             # We then point the task_run_config.run_properties.prompt_id to this new frozen prompt
-            froze_prompt = True
             prompt_builder = prompt_builder_from_id(request.prompt_id, task)
             prompt_name = generate_memorable_name()
-            prompt = BasePrompt(
+            frozen_prompt = BasePrompt(
                 name=prompt_name,
                 long_name=prompt_name
                 + " (frozen prompt from '"
@@ -205,9 +203,9 @@ def connect_evals_api(app: FastAPI):
                 model_provider_name=request.model_provider_name,
                 prompt_id=request.prompt_id,
             ),
-            prompt=prompt,
+            prompt=frozen_prompt,
         )
-        if froze_prompt:
+        if frozen_prompt is not None:
             # Set after, because the ID isn't known until the TaskRunConfig is created
             task_run_config.run_config_properties.prompt_id = (
                 f"task_run_config::{parent_project.id}::{task.id}::{task_run_config.id}"

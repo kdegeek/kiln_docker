@@ -215,7 +215,9 @@ async def test_create_evaluator(
 
 
 @pytest.mark.asyncio
-async def test_create_task_run_config(client, mock_task_from_id, mock_task):
+async def test_create_task_run_config_with_freezing(
+    client, mock_task_from_id, mock_task
+):
     mock_task_from_id.return_value = mock_task
 
     with (

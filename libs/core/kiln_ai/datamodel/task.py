@@ -53,7 +53,6 @@ class RunConfigProperties(BaseModel):
     )
     prompt_id: PromptId = Field(
         description="The prompt to use for this run config. Defaults to building a simple prompt from the task if not provided.",
-        default=PromptGenerators.SIMPLE,
     )
 
 

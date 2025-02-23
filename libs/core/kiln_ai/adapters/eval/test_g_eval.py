@@ -102,10 +102,7 @@ def test_run_config(test_task):
         model_name="llama_3_1_8b",
         model_provider_name="groq",
         task=test_task,
-        prompt=BasePrompt(
-            name="test",
-            prompt="test",
-        ),
+        prompt_id="simple_prompt_builder",
     )
 
 
