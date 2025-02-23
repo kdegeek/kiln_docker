@@ -84,9 +84,9 @@ class TaskRunConfig(KilnParentedModel):
     run_config_properties: RunConfigProperties = Field(
         description="The run config properties to use for this task run."
     )
-    # We usually want to persist the exact prompt, not just a prompt ID.
-    # We want the prompt to be perfectly consistent, and some prompt_ids are dynamic.
-    # The prompt ID in the run_config_properties likely points to this (although it's not required).
+    # The prompt_id in the run_config_properties is the prompt ID to use for this task run.
+    # However, we want the prompt to be perfectly consistent, and some prompt_ids are dynamic.
+    # If we need to "freeze" a prompt, we can do so here (then point the prompt_id to this frozen prompt).
     prompt: BasePrompt | None = Field(
         default=None,
         description="A prompt to use for run config.",
