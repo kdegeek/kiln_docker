@@ -27,7 +27,7 @@
   import AvailableModelsDropdown from "../../../../run/available_models_dropdown.svelte"
   import PromptTypeSelector from "../../../../run/prompt_type_selector.svelte"
   import Warning from "$lib/ui/warning.svelte"
-  import { title_to_name } from "$lib/utils/json_schema_editor/json_schema_templates"
+  import { string_to_json_key } from "$lib/utils/json_schema_editor/json_schema_templates"
 
   $: project_id = $page.params.project_id
   $: task_id = $page.params.task_id
@@ -166,6 +166,7 @@
   }
 
   async function get_score_summary() {
+    score_summary = null
     if (!current_eval_config_id) {
       score_summary_error = new KilnError("No eval config selected", null)
       return
@@ -597,7 +598,7 @@
           <div class="mt-6 mb-4">
             <button
               class="tooltip tooltip-top cursor-pointer"
-              data-tip="Running evals will update any missing dataset items, without re-running complete items. If some evals consistently fail, check the logs; tt's possible the model is failing on the task, or the eval."
+              data-tip="Running evals will update any missing dataset items, without re-running complete items. If some evals consistently fail, check the logs; it is likely that the model is failing on the task or the eval."
             >
               <Warning
                 warning_message={`Some evals are incomplete and should be excluded from analysis. Run evals to complete their dataset.`}
@@ -677,7 +678,7 @@
                   {#each evaluator.output_scores as output_score}
                     {@const score =
                       score_summary?.results?.["" + task_run_config.id]?.[
-                        title_to_name(output_score.name)
+                        string_to_json_key(output_score.name)
                       ]?.mean_score}
                     <td class="text-center">
                       {score != null ? score.toFixed(2) : "unknown"}
