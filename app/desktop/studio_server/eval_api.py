@@ -84,7 +84,6 @@ class CreateEvalConfigRequest(BaseModel):
     properties: dict[str, Any]
     model_name: str
     provider: ModelProviderName
-    prompt_id: PromptId
 
 
 class CreateTaskRunConfigRequest(BaseModel):

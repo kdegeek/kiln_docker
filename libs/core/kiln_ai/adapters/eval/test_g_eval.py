@@ -2,7 +2,7 @@ import math
 import pickle
 
 import pytest
-from kiln_ai.adapters.eval.g_eval import TOKEN_TO_SCORE_MAP, GEval
+from kiln_ai.adapters.eval.g_eval import TOKEN_TO_SCORE_MAP, GEval, GEvalTask
 from kiln_ai.adapters.eval.test_g_eval_data import serialized_run_output
 from kiln_ai.adapters.model_adapters.base_adapter import RunOutput
 from kiln_ai.datamodel import (
@@ -402,3 +402,46 @@ def test_rating_token_to_score(test_eval_config, test_run_config):
     token_logprob = MockTokenLogprob("5", [])
     with pytest.raises(RuntimeError, match="No valid scoring tokens found"):
         g_eval.rating_token_to_score(token_logprob)
+
+
+def test_g_eval_system_instruction():
+    eval = Eval(
+        name="Test Eval",
+        eval_set_filter_id="tag::tag1",
+        eval_configs_filter_id="tag::tag2",
+        output_scores=[
+            EvalOutputScore(name="overall_rating", type=TaskOutputRatingType.five_star),
+        ],
+    )
+    eval_config = EvalConfig(
+        parent=eval,
+        name="Test Eval",
+        model=DataSource(
+            type=DataSourceType.synthetic,
+            properties={
+                "model_name": "gpt_4o_mini",
+                "model_provider": "openai",
+                "adapter_name": "openai_compatible",
+            },
+        ),
+        config_type=EvalConfigType.g_eval,
+        properties={
+            "task_description": "Test task description",
+            "eval_steps": ["Step 1", "Step 2"],
+        },
+    )
+    g_eval_task = GEvalTask(eval_config)
+    assert g_eval_task.instruction == (
+        "Your job to evaluate a model's performance on a task. Blocks will be marked with <eval_data> tags.\n\n"
+        "The task the model was given is as follows:\n<eval_data>\n"
+        "Test task description\n"
+        "</eval_data>\n"
+    )
+
+    # Test without task description
+    eval_config.properties = {"eval_steps": ["Step 1", "Step 2"]}
+    g_eval_task = GEvalTask(eval_config)
+    assert (
+        g_eval_task.instruction
+        == "Your job to evaluate a model's performance on a task. Blocks will be marked with <eval_data> tags.\n"
+    )
