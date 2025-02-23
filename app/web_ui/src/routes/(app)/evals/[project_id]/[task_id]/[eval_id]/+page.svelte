@@ -28,6 +28,7 @@
   import PromptTypeSelector from "../../../../run/prompt_type_selector.svelte"
   import Warning from "$lib/ui/warning.svelte"
   import { string_to_json_key } from "$lib/utils/json_schema_editor/json_schema_templates"
+  import InfoTooltip from "$lib/ui/info_tooltip.svelte"
 
   $: project_id = $page.params.project_id
   $: task_id = $page.params.task_id
@@ -617,15 +618,30 @@
                 {#each evaluator.output_scores as output_score}
                   <th class="text-center">
                     {output_score.name}
-                    {#if output_score.type === "five_star"}
-                      (1 to 5)
-                    {:else if output_score.type === "pass_fail"}
-                      (0 to 1)
-                    {:else if output_score.type === "pass_fail_critical"}
-                      (-1 to 1)
-                    {:else}
-                      ({output_score.type})
-                    {/if}
+                    <div>
+                      {#if output_score.type === "five_star"}
+                        1 to 5
+                        <span class="ml-[-5px]">
+                          <InfoTooltip
+                            tooltip_text="1 to 5 stars, where 5 is best"
+                          />
+                        </span>
+                      {:else if output_score.type === "pass_fail"}
+                        pass/fail
+                        <span class="ml-[-5px]">
+                          <InfoTooltip tooltip_text="0 is fail and 1 is pass" />
+                        </span>
+                      {:else if output_score.type === "pass_fail_critical"}
+                        pass/fail/critical
+                        <span class="ml-[-5px]">
+                          <InfoTooltip
+                            tooltip_text="-1 is critical failure, 0 is fail, and 1 is pass"
+                          />
+                        </span>
+                      {:else}
+                        ({output_score.type})
+                      {/if}
+                    </div>
                   </th>
                 {/each}
               </tr>
