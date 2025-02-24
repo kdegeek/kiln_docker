@@ -43,7 +43,7 @@ def config():
         api_key="test_key",
         base_url="https://api.test.com",
         model_name="test-model",
-        provider_name="test-provider",
+        provider_name="openrouter",
         default_headers={"X-Test": "test"},
     )
 
@@ -166,7 +166,32 @@ async def test_response_format_options_json_schema(config, mock_task):
         }
 
 
-def test_tool_call_params(config, mock_task):
+def test_tool_call_params_non_openai(config, mock_task):
+    adapter = OpenAICompatibleAdapter(config=config, kiln_task=mock_task)
+
+    params = adapter.tool_call_params()
+    expected_schema = mock_task.output_schema()
+    expected_schema["additionalProperties"] = False
+
+    assert params == {
+        "tools": [
+            {
+                "type": "function",
+                "function": {
+                    "name": "task_response",
+                    "parameters": expected_schema,
+                },
+            }
+        ],
+        "tool_choice": {
+            "type": "function",
+            "function": {"name": "task_response"},
+        },
+    }
+
+
+def test_tool_call_params_openai(config, mock_task):
+    config.provider_name = "openai"
     adapter = OpenAICompatibleAdapter(config=config, kiln_task=mock_task)
 
     params = adapter.tool_call_params()

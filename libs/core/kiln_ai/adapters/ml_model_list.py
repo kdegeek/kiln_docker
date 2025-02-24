@@ -245,6 +245,7 @@ built_in_models: List[KilnModel] = [
                 # No custom parser -- openrouter implemented it themselves
                 structured_output_mode=StructuredOutputMode.json_instructions,
                 reasoning_capable=True,
+                supports_logprobs=True,
             ),
             KilnModelProvider(
                 name=ModelProviderName.fireworks_ai,
@@ -393,6 +394,7 @@ built_in_models: List[KilnModel] = [
                 supports_data_gen=False,
                 structured_output_mode=StructuredOutputMode.function_calling,
                 provider_options={"model": "meta-llama/llama-3.1-70b-instruct"},
+                supports_logprobs=True,
             ),
             KilnModelProvider(
                 name=ModelProviderName.ollama,

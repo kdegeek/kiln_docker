@@ -4,7 +4,9 @@ import pickle
 import pytest
 from kiln_ai.adapters.eval.g_eval import TOKEN_TO_SCORE_MAP, GEval, GEvalTask
 from kiln_ai.adapters.eval.test_g_eval_data import serialized_run_output
+from kiln_ai.adapters.ml_model_list import built_in_models
 from kiln_ai.adapters.model_adapters.base_adapter import RunOutput
+from kiln_ai.adapters.test_prompt_adaptors import get_all_models_and_providers
 from kiln_ai.datamodel import (
     BasePrompt,
     DataSource,
@@ -130,15 +132,20 @@ def test_task_run(test_task):
     return task_run
 
 
-@pytest.mark.parametrize(
-    "config_type", [EvalConfigType.g_eval, EvalConfigType.llm_as_judge]
-)
-@pytest.mark.paid
-async def test_run_g_eval(
-    test_task, test_eval_config, test_task_run, config_type, test_run_config
+async def run_g_eval_test(
+    test_task,
+    test_eval_config,
+    test_task_run,
+    config_type,
+    test_run_config,
+    model_name: str | None = None,
+    provider_name: str | None = None,
 ):
     # Create G-Eval instance
     test_eval_config.config_type = config_type
+    if model_name is not None and provider_name is not None:
+        test_eval_config.model.properties["model_name"] = model_name
+        test_eval_config.model.properties["model_provider"] = provider_name
     g_eval = GEval(test_eval_config, test_run_config)
 
     # Run the evaluation
@@ -158,6 +165,18 @@ async def test_run_g_eval(
     overall = eval_result["overall_rating"]
     assert isinstance(overall, float)
     assert 1.0 <= overall <= 5.0
+
+
+@pytest.mark.parametrize(
+    "config_type", [EvalConfigType.g_eval, EvalConfigType.llm_as_judge]
+)
+@pytest.mark.paid
+async def test_run_g_eval(
+    test_task, test_eval_config, test_task_run, config_type, test_run_config
+):
+    await run_g_eval_test(
+        test_task, test_eval_config, test_task_run, config_type, test_run_config
+    )
 
 
 @pytest.mark.parametrize(
@@ -444,4 +463,42 @@ def test_g_eval_system_instruction():
     assert (
         g_eval_task.instruction
         == "Your job to evaluate a model's performance on a task. Blocks will be marked with <eval_data> tags.\n"
+    )
+
+
+def check_supports_logprobs(model_name: str, provider_name: str):
+    for model in built_in_models:
+        if model.name != model_name:
+            continue
+        for provider in model.providers:
+            if provider.name != provider_name:
+                continue
+            if not provider.supports_logprobs:
+                pytest.skip(
+                    f"Skipping {model.name} {provider.name} because it does not support logprobs"
+                )
+            return
+    raise RuntimeError(f"No model {model_name} {provider_name} found")
+
+
+@pytest.mark.paid
+@pytest.mark.ollama
+@pytest.mark.parametrize("model_name,provider_name", get_all_models_and_providers())
+async def test_all_built_in_models_logprobs_geval(
+    model_name,
+    provider_name,
+    test_task,
+    test_eval_config,
+    test_task_run,
+    test_run_config,
+):
+    check_supports_logprobs(model_name, provider_name)
+    await run_g_eval_test(
+        test_task,
+        test_eval_config,
+        test_task_run,
+        EvalConfigType.g_eval,
+        test_run_config,
+        model_name,
+        provider_name,
     )

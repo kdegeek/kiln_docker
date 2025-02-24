@@ -9,7 +9,7 @@ from openai.types.chat import (
 )
 
 import kiln_ai.datamodel as datamodel
-from kiln_ai.adapters.ml_model_list import StructuredOutputMode
+from kiln_ai.adapters.ml_model_list import ModelProviderName, StructuredOutputMode
 from kiln_ai.adapters.model_adapters.base_adapter import (
     COT_FINAL_ANSWER_PROMPT,
     AdapterConfig,
@@ -113,6 +113,12 @@ class OpenAICompatibleAdapter(BaseAdapter):
                 # Ugly to have these here, but big range of quality of R1 providers
                 "order": ["Fireworks", "Together"],
                 # fp8 quants are awful
+                "ignore": ["DeepInfra"],
+            }
+        elif self.model_provider().name == ModelProviderName.openrouter:
+            # OpenRouter specific options. Bit of a hack but really does improve usability.
+            extra_body["provider"] = {
+                "require_parameters": True,
                 "ignore": ["DeepInfra"],
             }
 
@@ -235,15 +241,19 @@ class OpenAICompatibleAdapter(BaseAdapter):
             )
         output_schema["additionalProperties"] = False
 
+        function_params = {
+            "name": "task_response",
+            "parameters": output_schema,
+        }
+        # This parameter is only reliable for OpenAI
+        if self.model_provider().name == ModelProviderName.openai:
+            function_params["strict"] = True
+
         return {
             "tools": [
                 {
                     "type": "function",
-                    "function": {
-                        "name": "task_response",
-                        "parameters": output_schema,
-                        "strict": True,
-                    },
+                    "function": function_params,
                 }
             ],
             "tool_choice": {
