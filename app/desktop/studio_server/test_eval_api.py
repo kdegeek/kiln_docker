@@ -614,3 +614,67 @@ async def test_get_eval_config_score_summary(
         )
         mock_eval_config_for_score_summary.runs.assert_called_once_with(readonly=True)
         mock_dataset_ids_in_filter.assert_called_once_with(mock_task, "tag::eval_set")
+
+
+@pytest.mark.asyncio
+async def test_get_eval_run_results(
+    client,
+    mock_task_from_id,
+    mock_task,
+    mock_eval,
+    mock_eval_config,
+    mock_run_config,
+):
+    mock_task_from_id.return_value = mock_task
+
+    eval_run = EvalRun(
+        task_run_config_id="run_config1",
+        scores={"score1": 3.0},
+        input="input",
+        output="output",
+        dataset_id="dataset_id1",
+        parent=mock_eval_config,
+    )
+    eval_run.save_to_file()
+
+    # Test successful retrieval
+    response = client.get(
+        f"/api/projects/project1/tasks/task1/eval/eval1"
+        f"/eval_config/eval_config1/run_config/run_config1/results"
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+
+    # Verify response structure
+    assert "results" in data
+    assert "eval" in data
+    assert "eval_config" in data
+    assert "run_config" in data
+
+    # Verify results content
+    assert len(data["results"]) == 1
+    assert data["results"][0]["id"] == eval_run.id
+    assert data["results"][0]["task_run_config_id"] == mock_run_config.id
+    assert data["results"][0]["scores"] == {"score1": 3.0}
+
+    # Test with invalid eval ID
+    response = client.get(
+        f"/api/projects/project1/tasks/task1/eval/invalid_eval"
+        f"/eval_config/eval_config1/run_config/run_config1/results"
+    )
+    assert response.status_code == 404
+
+    # Test with invalid eval config ID
+    response = client.get(
+        f"/api/projects/project1/tasks/task1/eval/eval1"
+        f"/eval_config/invalid_config/run_config/run_config1/results"
+    )
+    assert response.status_code == 404
+
+    # Test with invalid run config ID
+    response = client.get(
+        f"/api/projects/project1/tasks/task1/eval/eval1"
+        f"/eval_config/eval_config1/run_config/invalid_run_config/results"
+    )
+    assert response.status_code == 404

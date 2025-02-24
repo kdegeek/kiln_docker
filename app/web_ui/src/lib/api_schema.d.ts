@@ -793,6 +793,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/projects/{project_id}/tasks/{task_id}/eval/{eval_id}/eval_config/{eval_config_id}/run_config/{run_config_id}/results": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Eval Run Results */
+        get: operations["get_eval_run_results_api_projects__project_id__tasks__task_id__eval__eval_id__eval_config__eval_config_id__run_config__run_config_id__results_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/projects/{project_id}/tasks/{task_id}/eval/{eval_id}/eval_config/{eval_config_id}/score_summary": {
         parameters: {
             query?: never;
@@ -922,8 +939,6 @@ export interface components {
             /** Model Name */
             model_name: string;
             provider: components["schemas"]["ModelProviderName"];
-            /** Prompt Id */
-            prompt_id: string;
         };
         /** CreateEvaluatorRequest */
         CreateEvaluatorRequest: {
@@ -1339,6 +1354,65 @@ export interface components {
             dataset_size: number;
         };
         /**
+         * EvalRun
+         * @description The results of running an eval on a single dataset item, with a specific TaskRunConfig and EvalConfig.
+         */
+        EvalRun: {
+            /**
+             * V
+             * @default 1
+             */
+            v: number;
+            /** Id */
+            id?: string | null;
+            /** Path */
+            path?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at?: string;
+            /** Created By */
+            created_by?: string;
+            /**
+             * Dataset Id
+             * @description The ID of the dataset item that was used for this run (we only use it's input). Must belong to the same Task as this eval.
+             */
+            dataset_id: string | null;
+            /**
+             * Task Run Config Id
+             * @description The ID of the TaskRunConfig that was run. Must belong to the same Task as this eval.
+             */
+            task_run_config_id: string | null;
+            /**
+             * Input
+             * @description The input to the task. JSON formatted for structured input, plaintext for unstructured input.
+             */
+            input: string;
+            /**
+             * Output
+             * @description The output of the task. JSON formatted for structured output, plaintext for unstructured output.
+             */
+            output: string;
+            /**
+             * Scores
+             * @description The scores of the evaluator (specifically the EvalConfig this object is a child of).
+             */
+            scores: {
+                [key: string]: number;
+            };
+            /** Model Type */
+            readonly model_type: string;
+        };
+        /** EvalRunResult */
+        EvalRunResult: {
+            /** Results */
+            results: components["schemas"]["EvalRun"][];
+            eval: components["schemas"]["Eval"];
+            eval_config: components["schemas"]["EvalConfig"];
+            run_config: components["schemas"]["TaskRunConfig"];
+        };
+        /**
          * EvalState
          * @enum {string}
          */
@@ -1547,7 +1621,7 @@ export interface components {
          *         created_at (datetime): Timestamp when the model was created
          *         created_by (str): User ID of the creator
          */
-        KilnBaseModel: {
+        "KilnBaseModel-Input": {
             /**
              * V
              * @default 1
@@ -1564,6 +1638,37 @@ export interface components {
             created_at?: string;
             /** Created By */
             created_by?: string;
+        };
+        /**
+         * KilnBaseModel
+         * @description Base model for all Kiln data models with common functionality for persistence and versioning.
+         *
+         *     Attributes:
+         *         v (int): Schema version number for migration support
+         *         id (str): Unique identifier for the model instance
+         *         path (Path): File system path where the model is stored
+         *         created_at (datetime): Timestamp when the model was created
+         *         created_by (str): User ID of the creator
+         */
+        "KilnBaseModel-Output": {
+            /**
+             * V
+             * @default 1
+             */
+            v: number;
+            /** Id */
+            id?: string | null;
+            /** Path */
+            path?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at?: string;
+            /** Created By */
+            created_by?: string;
+            /** Model Type */
+            readonly model_type: string;
         };
         /** ModelDetails */
         ModelDetails: {
@@ -1841,7 +1946,6 @@ export interface components {
             /**
              * Prompt Id
              * @description The prompt to use for this run config. Defaults to building a simple prompt from the task if not provided.
-             * @default simple_prompt_builder
              */
             prompt_id: string;
         };
@@ -2173,7 +2277,7 @@ export interface components {
             created_at?: string;
             /** Created By */
             created_by?: string;
-            parent?: components["schemas"]["KilnBaseModel"] | null;
+            parent?: components["schemas"]["KilnBaseModel-Input"] | null;
             /**
              * Input
              * @description The inputs to the task. JSON formatted for structured input, plaintext for unstructured input.
@@ -4024,6 +4128,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_eval_run_results_api_projects__project_id__tasks__task_id__eval__eval_id__eval_config__eval_config_id__run_config__run_config_id__results_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                task_id: string;
+                eval_id: string;
+                eval_config_id: string;
+                run_config_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EvalRunResult"];
                 };
             };
             /** @description Validation Error */

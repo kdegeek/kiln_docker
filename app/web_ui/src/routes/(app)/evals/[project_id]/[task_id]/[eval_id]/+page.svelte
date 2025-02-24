@@ -282,6 +282,10 @@
     return properties
   }
 
+  $: current_eval_config = eval_configs?.find(
+    (config) => config.id === current_eval_config_id,
+  )
+
   function get_eval_config_properties(
     eval_config_id: string | null,
     model_info: ProviderModels | null,
@@ -500,7 +504,7 @@
   {:else if evaluator}
     <div class="flex flex-col xl:flex-row gap-8 xl:gap-16 mb-8">
       <div class="grow basis-1/2">
-        <div class="text-xl font-bold mb-4">Properties</div>
+        <div class="text-xl font-bold mb-4">Evaluator Properties</div>
         <div
           class="grid grid-cols-[auto,1fr] gap-y-2 gap-x-4 text-sm 2xl:text-base"
         >
@@ -514,7 +518,10 @@
       </div>
       <div class="grow basis-1/2 flex flex-col gap-4">
         <div>
-          <div class="text-xl font-bold mb-2">Config</div>
+          <div class="text-xl font-bold">Evaluator Config</div>
+          <div class="text-sm text-gray-500 mb-2">
+            How the task outputs will be evaluated.
+          </div>
 
           <FormElement
             hide_label={true}
@@ -536,7 +543,7 @@
               {property.value}
             </div>
           {/each}
-          <div class="flex items-center">Config Quality</div>
+          <div class="flex items-center">Quality</div>
           <div class="flex items-center text-gray-500 overflow-x-hidden">
             <a href="TODO" class="link"> Compare and optimize </a>
           </div>
@@ -547,10 +554,12 @@
       {#if task_run_configs?.length}
         <div class="flex flex-col lg:flex-row gap-4 lg:gap-8 mb-6">
           <div class="grow">
-            <div class="text-xl font-bold">Results</div>
+            <div class="text-xl font-bold">Results Summary</div>
             <div class="text-xs text-gray-500">
-              Filtered by the selected eval config. Rows are grouped by task run
-              config.
+              Overview of how various task run configs perform on the selected
+              evaluator{current_eval_config
+                ? ` (${current_eval_config.name})`
+                : ""}.
             </div>
             {#if score_summary_error}
               <div class="text-error text-sm">
@@ -614,11 +623,14 @@
           <table class="table">
             <thead>
               <tr>
-                <th> Run Config </th>
+                <th>
+                  <div>Run Config</div>
+                  <div class="font-normal">How task output is generated</div>
+                </th>
                 {#each evaluator.output_scores as output_score}
                   <th class="text-center">
                     {output_score.name}
-                    <div>
+                    <div class="font-normal">
                       {#if output_score.type === "five_star"}
                         1 to 5
                         <span class="ml-[-5px]">
@@ -639,7 +651,7 @@
                           />
                         </span>
                       {:else}
-                        ({output_score.type})
+                        {output_score.type}
                       {/if}
                     </div>
                   </th>
@@ -655,7 +667,9 @@
                 <tr
                   class="hover cursor-pointer"
                   on:click={() => {
-                    console.log("TODO: link")
+                    goto(
+                      `/evals/${project_id}/${task_id}/${eval_id}/${current_eval_config_id}/${task_run_config.id}/run_result`,
+                    )
                   }}
                 >
                   <td>

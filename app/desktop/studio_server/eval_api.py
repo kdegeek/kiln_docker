@@ -1,5 +1,5 @@
 import json
-from typing import Any, Dict, Set
+from typing import Any, Dict, List, Set
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import StreamingResponse
@@ -20,6 +20,7 @@ from kiln_ai.datamodel.eval import (
     EvalConfig,
     EvalConfigType,
     EvalOutputScore,
+    EvalRun,
     EvalTemplate,
 )
 from kiln_ai.datamodel.prompt_id import is_frozen_prompt
@@ -100,6 +101,13 @@ class RunEvalConfigRequest(BaseModel):
 
 class ScoreSummary(BaseModel):
     mean_score: float
+
+
+class EvalRunResult(BaseModel):
+    results: List[EvalRun]
+    eval: Eval
+    eval_config: EvalConfig
+    run_config: TaskRunConfig
 
 
 class EvalResultSummary(BaseModel):
@@ -291,6 +299,31 @@ def connect_evals_api(app: FastAPI):
         return StreamingResponse(
             content=event_generator(),
             media_type="text/event-stream",
+        )
+
+    @app.get(
+        "/api/projects/{project_id}/tasks/{task_id}/eval/{eval_id}/eval_config/{eval_config_id}/run_config/{run_config_id}/results"
+    )
+    async def get_eval_run_results(
+        project_id: str,
+        task_id: str,
+        eval_id: str,
+        eval_config_id: str,
+        run_config_id: str,
+    ) -> EvalRunResult:
+        eval = eval_from_id(project_id, task_id, eval_id)
+        eval_config = eval_config_from_id(project_id, task_id, eval_id, eval_config_id)
+        run_config = task_run_config_from_id(project_id, task_id, run_config_id)
+        results = [
+            run_result
+            for run_result in eval_config.runs(readonly=True)
+            if run_result.task_run_config_id == run_config_id
+        ]
+        return EvalRunResult(
+            results=results,
+            eval=eval,
+            eval_config=eval_config,
+            run_config=run_config,
         )
 
     @app.get(
