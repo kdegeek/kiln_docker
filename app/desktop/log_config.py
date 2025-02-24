@@ -1,7 +1,8 @@
 import os
 from enum import Enum
-from pathlib import Path
 from typing import List
+
+from kiln_ai.utils.config import Config
 
 
 class LogDestination(Enum):
@@ -10,25 +11,22 @@ class LogDestination(Enum):
     ALL = "all"
 
 
-# TODO: consolidate this with kiln_server.server.project_api.default_project_path
-def get_default_project_path() -> str:
-    return os.path.join(Path.home(), "Kiln Projects")
-
-
 def get_log_level() -> str:
-    return os.getenv("KILN_LOG_LEVEL", "ERROR")
+    return os.getenv("KILN_LOG_LEVEL", "WARNING")
 
 
 def get_log_file_path() -> str:
-    default_log_path = os.path.join(
-        get_default_project_path(), "logs", "kiln_desktop.log"
-    )
-    log_file_path = os.getenv("KILN_LOG_FILE", default_log_path)
+    """Get the path to the log file, using environment override if specified.
 
-    # Ensure the directory exists
-    os.makedirs(os.path.dirname(log_file_path), exist_ok=True)
+    Returns:
+        str: The path to the log file
+    """
+    log_path_default = os.path.join(Config.settings_dir(), "logs", "kiln_desktop.log")
+    log_path = os.getenv("KILN_LOG_FILE", log_path_default)
 
-    return log_file_path
+    # Ensure the log directory exists
+    os.makedirs(os.path.dirname(log_path), exist_ok=True)
+    return log_path
 
 
 def get_max_file_bytes() -> int:

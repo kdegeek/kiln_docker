@@ -272,7 +272,6 @@ def test_few_shot_prompt_builder(tmp_path):
                 rating=TaskOutputRating(value=4 + (i % 2), reason="Good joke"),
             ),
         )
-        logger.info("RATING: Joke Initial Output %s - RATED: %s", i + 1, 4 + (i % 2))
         if i < 2:
             run = run.model_copy(
                 update={
