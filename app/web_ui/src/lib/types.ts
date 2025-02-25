@@ -27,3 +27,5 @@ export type EvalConfig = components["schemas"]["EvalConfig"]
 export type TaskRunConfig = components["schemas"]["TaskRunConfig"]
 export type EvalResultSummary = components["schemas"]["EvalResultSummary"]
 export type EvalRunResult = components["schemas"]["EvalRunResult"]
+export type EvalConfigCompareSummary =
+  components["schemas"]["EvalConfigCompareSummary"]

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import AppPage from "../../../../app_page.svelte"
+  import AppPage from "../../../../../app_page.svelte"
   import type { Eval } from "$lib/types"
   import { client, base_url } from "$lib/api_client"
   import { KilnError, createKilnError } from "$lib/utils/error_handlers"
@@ -10,8 +10,7 @@
     EvalConfig,
     EvalConfigType,
     ProviderModels,
-    TaskRunConfig,
-    EvalResultSummary,
+    EvalConfigCompareSummary,
   } from "$lib/types"
   import { goto } from "$app/navigation"
   import {
@@ -24,15 +23,9 @@
     load_available_models,
   } from "$lib/stores"
   import Dialog from "$lib/ui/dialog.svelte"
-  import AvailableModelsDropdown from "../../../../run/available_models_dropdown.svelte"
-  import PromptTypeSelector from "../../../../run/prompt_type_selector.svelte"
   import Warning from "$lib/ui/warning.svelte"
   import { string_to_json_key } from "$lib/utils/json_schema_editor/json_schema_templates"
   import InfoTooltip from "$lib/ui/info_tooltip.svelte"
-
-  $: project_id = $page.params.project_id
-  $: task_id = $page.params.task_id
-  $: eval_id = $page.params.eval_id
 
   let evaluator: Eval | null = null
   let eval_error: KilnError | null = null
@@ -41,23 +34,13 @@
   let eval_configs: EvalConfig[] | null = null
   let eval_configs_error: KilnError | null = null
   let eval_configs_loading = true
-  let current_eval_config_id: string | null = null
 
-  let task_run_configs: TaskRunConfig[] | null = null
-  let task_run_configs_error: KilnError | null = null
-  let task_run_configs_loading = true
-
-  let score_summary: EvalResultSummary | null = null
+  let score_summary: EvalConfigCompareSummary | null = null
   let score_summary_error: KilnError | null = null
   let score_summary_loading = false
 
-  $: loading =
-    eval_loading ||
-    eval_configs_loading ||
-    task_run_configs_loading ||
-    score_summary_loading
-  $: error = eval_error || eval_configs_error || task_run_configs_error
-  // Note: not including score_summary_error, because it's not a critical error we should block the UI for
+  $: loading = eval_loading || eval_configs_loading || score_summary_loading
+  $: error = eval_error || eval_configs_error || score_summary_error
 
   onMount(async () => {
     // Wait for page params to load
@@ -68,11 +51,9 @@
       load_available_prompts(),
       load_available_models(),
     ])
-    // Get the eval first (want it to set the current config id), then the rest in parallel
-    await get_eval()
-    // These two can be parallel
-    await Promise.all([get_eval_configs(), get_task_run_configs()])
-    // This needs the selected eval config id
+    // These can be parallel
+    get_eval()
+    get_eval_config()
     get_score_summary()
   })
 
@@ -84,9 +65,9 @@
         {
           params: {
             path: {
-              project_id,
-              task_id,
-              eval_id,
+              project_id: $page.params.project_id,
+              task_id: $page.params.task_id,
+              eval_id: $page.params.eval_id,
             },
           },
         },
@@ -95,11 +76,6 @@
         throw error
       }
       evaluator = data
-      // Set the selected eval config: prefer query params, then eval's default, then
-      current_eval_config_id =
-        $page.url.searchParams.get("selected_eval_config") ||
-        evaluator.current_config_id ||
-        null
     } catch (error) {
       eval_error = createKilnError(error)
     } finally {
@@ -107,7 +83,7 @@
     }
   }
 
-  async function get_eval_configs() {
+  async function get_eval_config() {
     try {
       eval_configs_loading = true
       const { data, error } = await client.GET(
@@ -115,9 +91,9 @@
         {
           params: {
             path: {
-              project_id,
-              task_id,
-              eval_id,
+              project_id: $page.params.project_id,
+              task_id: $page.params.task_id,
+              eval_id: $page.params.eval_id,
             },
           },
         },
@@ -126,14 +102,6 @@
         throw error
       }
       eval_configs = data
-      // This may be already set by evaluator loading, if so we prioritize that, but fallback to first
-      if (
-        !current_eval_config_id &&
-        eval_configs.length > 0 &&
-        eval_configs[0].id
-      ) {
-        current_eval_config_id = eval_configs[0].id
-      }
     } catch (error) {
       eval_configs_error = createKilnError(error)
     } finally {
@@ -141,48 +109,18 @@
     }
   }
 
-  async function get_task_run_configs() {
-    try {
-      task_run_configs_loading = true
-      const { data, error } = await client.GET(
-        "/api/projects/{project_id}/tasks/{task_id}/task_run_configs",
-        {
-          params: {
-            path: {
-              project_id,
-              task_id,
-            },
-          },
-        },
-      )
-      if (error) {
-        throw error
-      }
-      task_run_configs = data
-    } catch (error) {
-      task_run_configs_error = createKilnError(error)
-    } finally {
-      task_run_configs_loading = false
-    }
-  }
-
   async function get_score_summary() {
     score_summary = null
-    if (!current_eval_config_id) {
-      score_summary_error = new KilnError("No eval config selected", null)
-      return
-    }
     try {
       score_summary_loading = true
       const { data, error } = await client.GET(
-        "/api/projects/{project_id}/tasks/{task_id}/eval/{eval_id}/eval_config/{eval_config_id}/score_summary",
+        "/api/projects/{project_id}/tasks/{task_id}/eval/{eval_id}/eval_configs_score_summary",
         {
           params: {
             path: {
-              project_id,
-              task_id,
-              eval_id,
-              eval_config_id: current_eval_config_id,
+              project_id: $page.params.project_id,
+              task_id: $page.params.task_id,
+              eval_id: $page.params.eval_id,
             },
           },
         },
@@ -198,57 +136,19 @@
     }
   }
 
-  // Watches the current eval config id
-  $: watch_selected_eval_config(current_eval_config_id)
-  function watch_selected_eval_config(selected_id: string | null) {
-    if (selected_id === "add_config") {
-      // if it's "add_config" then navigates to the create eval config page
-      goto(`/evals/${project_id}/${task_id}/${eval_id}/create_eval_config`)
-      return
-    }
-    // If the selected id is not null, then get the score summary
-    score_summary = null
-    if (selected_id) {
-      get_score_summary()
-    }
-  }
-
   type UiProperty = {
     name: string
     value: string
   }
 
-  function eval_config_to_ui_name(eval_config_type: EvalConfigType): string {
-    return (
-      {
-        g_eval: "G-Eval",
-        llm_as_judge: "LLM as Judge",
-      }[eval_config_type] || eval_config_type
-    )
-  }
-
-  // A name for the eval config that is human readable and helpful
-  // Combine's it's memorable name with it's properties
-  function get_eval_config_name(
-    eval_config: EvalConfig,
-    model_info: ProviderModels | null,
-  ): string {
-    let parts = []
-    parts.push(eval_config_to_ui_name(eval_config.config_type))
-    parts.push(
-      model_name(eval_config.model.properties["model_name"], model_info),
-    )
-    return eval_config.name + " — " + parts.join(", ")
-  }
-
   function get_eval_properties(
     evaluator: Eval,
-    score_summary: EvalResultSummary | null,
+    score_summary: EvalConfigCompareSummary | null,
   ): UiProperty[] {
     const properties: UiProperty[] = []
 
     properties.push({
-      name: "Name",
+      name: "Eval Name",
       value: evaluator.name,
     })
     if (evaluator.description) {
@@ -257,96 +157,16 @@
         value: evaluator.description,
       })
     }
-    let outputs = []
-    for (const output of evaluator.output_scores) {
-      outputs.push(output.name + " (" + output.type + ")")
-    }
-    if (outputs.length > 0) {
-      properties.push({
-        name: "Output Scores",
-        value: outputs.join(", "),
-      })
-    }
-    let eval_set_size = ""
+
+    let eval_configs_set_size = ""
     if (score_summary) {
-      eval_set_size = " (" + score_summary.dataset_size + " items)"
+      eval_configs_set_size = " (" + score_summary.dataset_size + " items)"
     }
-    properties.push({
-      name: "Eval Set",
-      value: evaluator.eval_set_filter_id + eval_set_size,
-    })
     properties.push({
       name: "Config Eval Set",
-      value: evaluator.eval_configs_filter_id,
+      value: evaluator.eval_configs_filter_id + eval_configs_set_size,
     })
     return properties
-  }
-
-  $: current_eval_config = eval_configs?.find(
-    (config) => config.id === current_eval_config_id,
-  )
-
-  function get_eval_config_properties(
-    eval_config_id: string | null,
-    model_info: ProviderModels | null,
-  ): UiProperty[] {
-    const eval_config = eval_configs?.find(
-      (config) => config.id === eval_config_id,
-    )
-    if (!eval_config) {
-      return [
-        {
-          name: "No Config Selected",
-          value: "Select a config from dropdown above",
-        },
-      ]
-    }
-
-    const properties: UiProperty[] = []
-
-    properties.push({
-      name: "Type",
-      value: eval_config_to_ui_name(eval_config.config_type),
-    })
-    properties.push({
-      name: "Eval Model",
-      value: model_name(
-        eval_config.model.properties["model_name"] + "",
-        model_info,
-      ),
-    })
-    properties.push({
-      name: "Eval Provider",
-      value: provider_name_from_id(
-        eval_config.model.properties["model_provider"] + "",
-      ),
-    })
-    const task_description = eval_config.properties["task_description"]
-    if (task_description) {
-      properties.push({
-        name: "Task Description",
-        value: task_description,
-      })
-    }
-    return properties
-  }
-
-  function get_eval_config_select_options(
-    configs: EvalConfig[] | null,
-  ): [string, [unknown, string][]][] {
-    const configs_options: [string, string][] = []
-    for (const c of configs || []) {
-      if (c.id) {
-        configs_options.push([c.id, get_eval_config_name(c, $model_info)])
-      }
-    }
-
-    const results: [string, [unknown, string][]][] = []
-    if (configs_options.length > 0) {
-      results.push(["Select Eval Config", configs_options])
-    }
-    results.push(["Manage Eval Configs", [["add_config", "Add Eval Config"]]])
-    return results
   }
 
   let run_dialog: Dialog | null = null
@@ -363,14 +183,6 @@
   let eval_error_count = 0
 
   function run_eval(): boolean {
-    if (!current_eval_config_id) {
-      eval_run_error = new KilnError("No eval config selected", null)
-      eval_state = "complete_with_errors"
-      // True to close the run dialog, and then show the error in the progress dialog
-      running_progress_dialog?.show()
-      return true
-    }
-
     score_summary = null
     eval_state = "running"
     eval_complete_count = 0
@@ -416,58 +228,14 @@
     return true
   }
 
-  let task_run_config_model_name = ""
-  let task_run_config_provider_name = ""
-  let task_run_config_prompt_method = "simple_prompt_builder"
-
-  let add_task_config_dialog: Dialog | null = null
-  let add_task_config_error: KilnError | null = null
-  async function add_task_config(): Promise<boolean> {
-    if (
-      !task_run_config_model_name ||
-      !task_run_config_provider_name ||
-      !task_run_config_prompt_method
-    ) {
-      add_task_config_error = new KilnError("Missing required fields", null)
-      return false
-    }
-
-    try {
-      const { error } = await client.POST(
-        "/api/projects/{project_id}/tasks/{task_id}/task_run_config",
-        {
-          params: {
-            path: {
-              project_id,
-              task_id,
-            },
-          },
-          body: {
-            model_name: task_run_config_model_name,
-            // @ts-expect-error not checking types here, server will check them
-            model_provider_name: task_run_config_provider_name,
-            prompt_id: task_run_config_prompt_method,
-          },
-        },
-      )
-      if (error) {
-        throw error
-      }
-      // Load the updated list of task run configs after success
-      get_task_run_configs()
-    } catch (error) {
-      add_task_config_error = createKilnError(error)
-      return false
-    }
-    return true
-  }
-
+  // TODO P0: adapt this from other screen, to this screen. warning if len(results) == 0, no items in dataset (dataset_size == 0), and other "go fix your dataset" warnings
   function show_incomplete_warning(
     score_summary: EvalResultSummary | null,
   ): boolean {
     if (!score_summary?.run_config_percent_complete) {
       return false
     }
+    return false
 
     const values = Object.values(score_summary.run_config_percent_complete)
     const minComplete =
@@ -478,16 +246,7 @@
   }
 </script>
 
-<AppPage
-  title="Evaluator"
-  subtitle={evaluator?.name}
-  action_buttons={[
-    {
-      label: "Compare Eval Configs",
-      href: `/evals/${project_id}/${task_id}/${eval_id}/eval_configs`,
-    },
-  ]}
->
+<AppPage title="Compare Eval Configs" subtitle={evaluator?.name}>
   {#if loading}
     <div class="w-full min-h-[50vh] flex justify-center items-center">
       <div class="loading loading-spinner loading-lg"></div>
@@ -496,14 +255,14 @@
     <div
       class="w-full min-h-[50vh] flex flex-col justify-center items-center gap-2"
     >
-      <div class="font-medium">Error Loading Evaluator</div>
+      <div class="font-medium">Error Loading</div>
       <div class="text-error text-sm">
         {error.getMessage() || "An unknown error occurred"}
       </div>
     </div>
   {:else if evaluator}
     <div class="flex flex-col xl:flex-row gap-8 xl:gap-16 mb-8">
-      <div class="grow basis-1/2">
+      <div class="grow">
         <div class="text-xl font-bold mb-4">Evaluator Properties</div>
         <div
           class="grid grid-cols-[auto,1fr] gap-y-2 gap-x-4 text-sm 2xl:text-base"
@@ -516,55 +275,15 @@
           {/each}
         </div>
       </div>
-      <div class="grow basis-1/2 flex flex-col gap-4">
-        <div>
-          <div class="text-xl font-bold">Evaluator Config</div>
-          <div class="text-sm text-gray-500 mb-2">
-            How the task outputs will be evaluated.
-          </div>
-
-          <FormElement
-            hide_label={true}
-            id="eval_config_select"
-            label="Eval Config"
-            inputType="select"
-            bind:value={current_eval_config_id}
-            select_options_grouped={get_eval_config_select_options(
-              eval_configs,
-            )}
-          />
-        </div>
-        <div
-          class="grid grid-cols-[auto,1fr] gap-y-2 gap-x-4 text-sm 2xl:text-base"
-        >
-          {#each get_eval_config_properties(current_eval_config_id, $model_info) as property}
-            <div class="flex items-center">{property.name}</div>
-            <div class="flex items-center text-gray-500 overflow-x-hidden">
-              {property.value}
-            </div>
-          {/each}
-          <div class="flex items-center">Quality</div>
-          <div class="flex items-center text-gray-500 overflow-x-hidden">
-            <a
-              href={`/evals/${project_id}/${task_id}/${eval_id}/eval_configs`}
-              class="link"
-            >
-              Compare and optimize
-            </a>
-          </div>
-        </div>
-      </div>
     </div>
     <div class="mt-16">
-      {#if task_run_configs?.length}
+      {#if eval_configs?.length}
         <div class="flex flex-col lg:flex-row gap-4 lg:gap-8 mb-6">
           <div class="grow">
-            <div class="text-xl font-bold">Results Summary</div>
+            <div class="text-xl font-bold">Correlation to Human Scores</div>
             <div class="text-xs text-gray-500">
-              Overview of how various task run configs perform on the selected
-              evaluator{current_eval_config
-                ? ` (${current_eval_config.name})`
-                : ""}.
+              Overview of how each eval config correlates to human scores
+              (ratings from the dataset tab).
             </div>
             {#if score_summary_error}
               <div class="text-error text-sm">
@@ -575,12 +294,6 @@
           </div>
           <div>
             {#if eval_state === "not_started"}
-              <button
-                class="btn btn-mid mr-2"
-                on:click={() => {
-                  add_task_config_dialog?.show()
-                }}>Add Run Config</button
-              >
               <button
                 class="btn btn-mid btn-primary"
                 on:click={() => {
@@ -610,6 +323,7 @@
         </div>
 
         <!-- Warn the user if some evals are incomplete -->
+        <!-- TODO more cases to explain here: needs rating, needs content, need eval run, etc-->
         {#if show_incomplete_warning(score_summary)}
           <div class="mt-6 mb-4">
             <button
@@ -629,9 +343,10 @@
             <thead>
               <tr>
                 <th>
-                  <div>Run Config</div>
-                  <div class="font-normal">How task output is generated</div>
+                  <div>Eval Config</div>
+                  <div class="font-normal">How task output is evaluated</div>
                 </th>
+                <th> Eval Instructions </th>
                 {#each evaluator.output_scores as output_score}
                   <th class="text-center">
                     {output_score.name}
@@ -664,42 +379,27 @@
               </tr>
             </thead>
             <tbody>
-              {#each task_run_configs || [] as task_run_config}
+              {#each eval_configs || [] as eval_config}
                 {@const percent_complete =
-                  score_summary?.run_config_percent_complete?.[
-                    "" + task_run_config.id
+                  score_summary?.eval_config_percent_complete?.[
+                    "" + eval_config.id
                   ]}
-                <tr
-                  class="hover cursor-pointer"
-                  on:click={() => {
-                    goto(
-                      `/evals/${project_id}/${task_id}/${eval_id}/${current_eval_config_id}/${task_run_config.id}/run_result`,
-                    )
-                  }}
-                >
+                <tr>
                   <td>
                     <div class="font-medium">
-                      {task_run_config.name}
+                      {eval_config.name}
                     </div>
                     <div class="text-sm text-gray-500">
                       {model_name(
-                        task_run_config?.run_config_properties?.model_name,
+                        eval_config?.model.properties?.["model_name"],
                         $model_info,
                       )}
                     </div>
                     <div class="text-sm text-gray-500">
                       {provider_name_from_id(
-                        task_run_config?.run_config_properties
-                          ?.model_provider_name,
+                        eval_config?.model.properties?.["model_provider_name"] +
+                          "",
                       )}
-                    </div>
-                    <div class="text-sm text-gray-500">
-                      Prompt:
-                      {task_run_config.prompt?.long_name ||
-                        task_run_config.prompt?.name ||
-                        prompt_name_from_id(
-                          task_run_config?.run_config_properties?.prompt_id,
-                        )}
                     </div>
                     {#if percent_complete}
                       <div
@@ -714,11 +414,34 @@
                       <div class="text-sm text-error">Eval 0% complete</div>
                     {/if}
                   </td>
+                  <td>
+                    <div class="max-w-[600px] min-w-[300px]">
+                      {#if eval_config.properties?.["task_description"]}
+                        <div class="text-sm mb-4">
+                          <div class="font-medium mb-2">Task Description:</div>
+                          {eval_config.properties["task_description"]}
+                        </div>
+                      {/if}
+                      {#if eval_config.properties?.["eval_steps"] && Array.isArray(eval_config.properties["eval_steps"])}
+                        <div class="text-sm">
+                          <div class="font-medium mb-2">
+                            Evaluator Instructions:
+                          </div>
+                          <ol class="list-decimal">
+                            {#each eval_config.properties["eval_steps"] as step}
+                              <li>
+                                <span class="whitespace-pre-line">
+                                  {step}
+                                </span>
+                              </li>
+                            {/each}
+                          </ol>
+                        </div>
+                      {/if}
+                    </div>
+                  </td>
                   {#each evaluator.output_scores as output_score}
-                    {@const score =
-                      score_summary?.results?.["" + task_run_config.id]?.[
-                        string_to_json_key(output_score.name)
-                      ]?.mean_score}
+                    {@const score = null}
                     <td class="text-center">
                       {score != null ? score.toFixed(2) : "unknown"}
                     </td>
@@ -729,64 +452,11 @@
           </table>
         </div>
       {:else}
-        <div class="text-xl font-bold">Results</div>
-        <div
-          class="font-light text-sm max-w-[400px] mx-auto flex flex-col gap-2 mt-8"
-        >
-          <div class="font-medium text-lg">Create a Run Config</div>
-          <div>
-            A task run config defines how the task is run, such as which model
-            and prompt to use. Create one to run this evaluator.
-          </div>
-          <button
-            class="btn btn-primary"
-            on:click={() => {
-              add_task_config_dialog?.show()
-            }}
-          >
-            Add Task Config
-          </button>
-        </div>
+        <!-- TODO error case here-->
       {/if}
     </div>
   {/if}
 </AppPage>
-
-<Dialog
-  bind:this={add_task_config_dialog}
-  title="Add a Task Run Config"
-  action_buttons={[
-    {
-      label: "Cancel",
-      isCancel: true,
-    },
-    {
-      label: "Create",
-      isPrimary: true,
-      asyncAction: add_task_config,
-    },
-  ]}
->
-  <h4 class="text-sm text-gray-500">
-    Create a task run config, defining a way to run this task (model+prompt).
-  </h4>
-  <h4 class="text-sm text-gray-500 mt-1">
-    Your evaluator can compare multiple run configs to find the best one for
-    running this task.
-  </h4>
-  <div class="flex flex-col gap-2 pt-6">
-    <AvailableModelsDropdown
-      bind:model_name={task_run_config_model_name}
-      bind:provider_name={task_run_config_provider_name}
-    />
-    <PromptTypeSelector bind:prompt_method={task_run_config_prompt_method} />
-    {#if add_task_config_error}
-      <div class="text-error text-sm">
-        {add_task_config_error.getMessage() || "An unknown error occurred"}
-      </div>
-    {/if}
-  </div>
-</Dialog>
 
 <Dialog
   bind:this={running_progress_dialog}

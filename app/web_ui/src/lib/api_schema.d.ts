@@ -742,6 +742,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/projects/{project_id}/tasks/{task_id}/eval/{eval_id}/eval_config/{eval_config_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Eval Config */
+        get: operations["get_eval_config_api_projects__project_id__tasks__task_id__eval__eval_id__eval_config__eval_config_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/projects/{project_id}/tasks/{task_id}/task_run_config": {
         parameters: {
             query?: never;
@@ -819,6 +836,23 @@ export interface paths {
         };
         /** Get Eval Config Score Summary */
         get: operations["get_eval_config_score_summary_api_projects__project_id__tasks__task_id__eval__eval_id__eval_config__eval_config_id__score_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/projects/{project_id}/tasks/{task_id}/eval/{eval_id}/eval_configs_score_summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Eval Configs Score Summary */
+        get: operations["get_eval_configs_score_summary_api_projects__project_id__tasks__task_id__eval__eval_id__eval_configs_score_summary_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1312,6 +1346,34 @@ export interface components {
             properties: Record<string, never>;
             /** Model Type */
             readonly model_type: string;
+        };
+        /** EvalConfigCompareSummary */
+        EvalConfigCompareSummary: {
+            /** Results */
+            results: {
+                [key: string]: {
+                    [key: string]: components["schemas"]["EvalConfigScoreSummary"];
+                };
+            };
+            /** Eval Config Percent Complete */
+            eval_config_percent_complete: {
+                [key: string]: number;
+            };
+            /** Dataset Size */
+            dataset_size: number;
+            /** Fully Rated Count */
+            fully_rated_count: number;
+            /** Partially Rated Count */
+            partially_rated_count: number;
+            /** Not Rated Count */
+            not_rated_count: number;
+        };
+        /** EvalConfigScoreSummary */
+        EvalConfigScoreSummary: {
+            /** Mean Absolute Error */
+            mean_absolute_error: number;
+            /** Mean Squared Error */
+            mean_squared_error: number;
         };
         /**
          * EvalConfigType
@@ -4031,6 +4093,40 @@ export interface operations {
             };
         };
     };
+    get_eval_config_api_projects__project_id__tasks__task_id__eval__eval_id__eval_config__eval_config_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                task_id: string;
+                eval_id: string;
+                eval_config_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EvalConfig"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     create_task_run_config_api_projects__project_id__tasks__task_id__task_run_config_post: {
         parameters: {
             query?: never;
@@ -4197,6 +4293,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EvalResultSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_eval_configs_score_summary_api_projects__project_id__tasks__task_id__eval__eval_id__eval_configs_score_summary_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                task_id: string;
+                eval_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EvalConfigCompareSummary"];
                 };
             };
             /** @description Validation Error */
