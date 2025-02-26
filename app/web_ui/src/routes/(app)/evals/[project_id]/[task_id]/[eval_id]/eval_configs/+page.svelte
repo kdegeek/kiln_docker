@@ -7,6 +7,7 @@
   import { page } from "$app/stores"
   import RunEval from "./../run_eval.svelte"
   import type { EvalConfig, EvalConfigCompareSummary } from "$lib/types"
+  import FormElement from "$lib/utils/form_element.svelte"
   import {
     model_info,
     load_model_info,
@@ -21,6 +22,7 @@
   import EvalConfigInstruction from "./eval_config_instruction.svelte"
   import Dialog from "$lib/ui/dialog.svelte"
   import { eval_config_to_ui_name } from "$lib/utils/formatters"
+  import type { TaskOutputRatingType } from "$lib/types"
 
   let score_legend_dialog: Dialog | null = null
 
@@ -38,6 +40,8 @@
   let score_summary: EvalConfigCompareSummary | null = null
   let score_summary_error: KilnError | null = null
   let score_summary_loading = false
+
+  let score_type: "mse" | "mae" | "norm_mse" | "norm_mae" = "norm_mse"
 
   $: loading = eval_loading || eval_configs_loading || score_summary_loading
   $: error = eval_error || eval_configs_error || score_summary_error
@@ -245,6 +249,31 @@
       eval_error = createKilnError(error)
     }
   }
+
+  function info_tooltip_text(
+    rating_type: TaskOutputRatingType,
+    score_type: "mse" | "mae" | "norm_mse" | "norm_mae",
+  ) {
+    let label = ""
+    if (score_type === "mae") {
+      label = "Mean absolute error"
+    } else if (score_type === "mse") {
+      label = "Mean squared error"
+    } else if (score_type === "norm_mse") {
+      label = "Normalized mean squared error"
+    } else if (score_type === "norm_mae") {
+      label = "Normalized mean absolute error"
+    }
+    label += " for "
+    if (rating_type === "five_star") {
+      label += "1 to 5 star rating."
+    } else if (rating_type === "pass_fail") {
+      label += "pass/fail rating."
+    } else if (rating_type === "pass_fail_critical") {
+      label += "pass/fail/critical rating."
+    }
+    return label
+  }
 </script>
 
 <AppPage
@@ -300,6 +329,14 @@
             <div class="text-xl font-bold">Correlation to Human Ratings</div>
             <div class="text-xs text-gray-500">
               How each eval config correlates to human ratings.
+              <button
+                class="link"
+                on:click={() => {
+                  score_legend_dialog?.show()
+                }}
+              >
+                Learn about score types.
+              </button>
             </div>
             {#if score_summary_error}
               <div class="text-error text-sm">
@@ -308,21 +345,29 @@
               </div>
             {/if}
           </div>
-          <div>
-            <button
-              class="btn btn-mid mr-2"
-              on:click={() => {
-                score_legend_dialog?.show()
-              }}
-            >
-              Score Legend
-            </button>
-            <RunEval
-              bind:run_url={run_eval_url}
-              on_run_complete={() => {
-                get_score_summary()
-              }}
+          <div class="flex flex-row gap-2">
+            <FormElement
+              id="score-type"
+              label="Score"
+              hide_label={true}
+              inputType="select"
+              select_options={[
+                ["norm_mse", "Normalized Mean Squared Error"],
+                ["norm_mae", "Normalized Mean Absolute Error"],
+                ["mse", "Mean Squared Error"],
+                ["mae", "Mean Absolute Error"],
+              ]}
+              bind:value={score_type}
             />
+            <div class="mt-1">
+              <RunEval
+                btn_size="normal"
+                bind:run_url={run_eval_url}
+                on_run_complete={() => {
+                  get_score_summary()
+                }}
+              />
+            </div>
           </div>
         </div>
 
@@ -334,7 +379,7 @@
               warning_message={`There are issues you should resolve before analyzing this data.`}
               tight={true}
             />
-            <ul class="list-disc list-inside text-error pl-2 pt-2">
+            <ul class="list-disc list-inside text-sm text-gray-500 pl-2 pt-2">
               {#each incomplete_warning(score_summary) as warning}
                 <li>{warning}</li>
               {/each}
@@ -354,30 +399,14 @@
                 {#each evaluator.output_scores as output_score}
                   <th class="text-center">
                     {output_score.name}
-                    <div class="font-normal">
-                      {#if output_score.type === "five_star"}
-                        1 to 5
-                        <span class="ml-[-5px]">
-                          <InfoTooltip
-                            tooltip_text="1 to 5 stars, where 5 is best"
-                          />
-                        </span>
-                      {:else if output_score.type === "pass_fail"}
-                        pass/fail
-                        <span class="ml-[-5px]">
-                          <InfoTooltip tooltip_text="0 is fail and 1 is pass" />
-                        </span>
-                      {:else if output_score.type === "pass_fail_critical"}
-                        pass/fail/critical
-                        <span class="ml-[-5px]">
-                          <InfoTooltip
-                            tooltip_text="-1 is critical failure, 0 is fail, and 1 is pass"
-                          />
-                        </span>
-                      {:else}
-                        {output_score.type}
-                      {/if}
-                    </div>
+                    <span class="ml-[-5px]">
+                      <InfoTooltip
+                        tooltip_text={info_tooltip_text(
+                          output_score.type,
+                          score_type,
+                        )}
+                      />
+                    </span>
                   </th>
                 {/each}
               </tr>
@@ -464,12 +493,15 @@
                       ]}
                     <td class="text-center min-w-[115px]">
                       {#if scores}
-                        <div>
-                          MAE: {scores.mean_absolute_error.toFixed(2)}
-                        </div>
-                        <div>
-                          MSE: {scores.mean_squared_error.toFixed(2)}
-                        </div>
+                        {#if score_type === "mae"}
+                          {scores.mean_absolute_error.toFixed(2)}
+                        {:else if score_type === "mse"}
+                          {scores.mean_squared_error.toFixed(2)}
+                        {:else if score_type === "norm_mse"}
+                          {scores.mean_normalized_squared_error.toFixed(3)}
+                        {:else if score_type === "norm_mae"}
+                          {scores.mean_normalized_absolute_error.toFixed(3)}
+                        {/if}
                       {:else}
                         unknown
                       {/if}
@@ -510,18 +542,35 @@
     },
   ]}
 >
-  <div class="font-medium mt-4">MAE: Mean Absolute Error</div>
+  <div class="font-medium text-sm text-gray-500">
+    Each score is a correlation score between the evaluator's score and the
+    human score added through the dataset tab.
+  </div>
+  <div class="font-medium mt-5">Mean Absolute Error</div>
   <div class="text-sm text-gray-500 font-medium mb-1">Lower is better</div>
-  <div class="font-light">
-    Example: If the eval scores an item a 3, and the eval scores it a 5, the
+  <div class="font-light text-sm">
+    Example: If a human scores an item a 3, and the eval scores it a 5, the
     absolute error would be 2 [abs(3-5)]. The overall score is the mean of all
     absolute errors.
   </div>
-  <div class="font-medium mt-6">MSE: Mean squared error</div>
+  <div class="font-medium mt-6">Normalized Mean Absolute Error</div>
   <div class="text-sm text-gray-500 font-medium mb-1">Lower is better</div>
-  <div class="font-light">
-    Example: If the eval scores an item a 3, and the eval scores it a 5, the
+  <div class="font-light text-sm">
+    Like mean absolute error, but scores are normalized to the range 0-1. For
+    example, for a 1-5 star rating, 1-star is score 0 and 5-star is score 1.
+  </div>
+  <div class="font-medium mt-6">Mean Squared Error</div>
+  <div class="text-sm text-gray-500 font-medium mb-1">Lower is better</div>
+  <div class="font-light text-sm">
+    Example: If a human scores an item a 3, and the eval scores it a 5, the
     squared error would be 4 [(3-5)^2]. The overall score is the mean of all
-    squared errors.
+    squared errors. This imporoves over absolute error as it penalizes larger
+    errors more.
+  </div>
+  <div class="font-medium mt-6">Normalized Mean Squared Error</div>
+  <div class="text-sm text-gray-500 font-medium mb-1">Lower is better</div>
+  <div class="font-light text-sm">
+    Like mean squared error, but scores are normalized to the range 0-1. For
+    example, for a 1-5 star rating, 1-star is score 0 and 5-star is score 1.
   </div>
 </Dialog>

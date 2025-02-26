@@ -1406,8 +1406,12 @@ export interface components {
         EvalConfigScoreSummary: {
             /** Mean Absolute Error */
             mean_absolute_error: number;
+            /** Mean Normalized Absolute Error */
+            mean_normalized_absolute_error: number;
             /** Mean Squared Error */
             mean_squared_error: number;
+            /** Mean Normalized Squared Error */
+            mean_normalized_squared_error: number;
         };
         /**
          * EvalConfigType

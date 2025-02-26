@@ -3,6 +3,7 @@
   import Dialog from "$lib/ui/dialog.svelte"
   import Warning from "$lib/ui/warning.svelte"
 
+  export let btn_size: "normal" | "mid" = "mid"
   export let on_run_complete: () => void = () => {}
   export let run_url: string
   export let eval_state:
@@ -36,10 +37,7 @@
     eval_total_count = 0
     eval_error_count = 0
 
-    const eventSource = new EventSource(
-      //`${base_url}/api/projects/${project_id}/tasks/${task_id}/eval/${eval_id}/eval_config/${eval_config_id}/run?all_run_configs=true`,
-      run_url,
-    )
+    const eventSource = new EventSource(run_url)
 
     eventSource.onmessage = (event) => {
       try {
@@ -81,7 +79,7 @@
 
 {#if eval_state === "not_started"}
   <button
-    class="btn btn-mid btn-primary"
+    class="btn {btn_size === 'mid' ? 'btn-mid' : ''} btn-primary"
     on:click={() => {
       run_dialog?.show()
     }}>Run Eval</button
