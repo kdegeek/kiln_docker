@@ -39,11 +39,10 @@
 
   let score_summary: EvalConfigCompareSummary | null = null
   let score_summary_error: KilnError | null = null
-  let score_summary_loading = false
 
   let score_type: "mse" | "mae" | "norm_mse" | "norm_mae" = "norm_mse"
 
-  $: loading = eval_loading || eval_configs_loading || score_summary_loading
+  $: loading = eval_loading || eval_configs_loading // Score summary not blocking whole UI
   $: error = eval_error || eval_configs_error || score_summary_error
   $: run_eval_url = `${base_url}/api/projects/${$page.params.project_id}/tasks/${$page.params.task_id}/eval/${$page.params.eval_id}/run_eval_config_eval`
 
@@ -123,7 +122,6 @@
   async function get_score_summary() {
     score_summary = null
     try {
-      score_summary_loading = true
       const { data, error } = await client.GET(
         "/api/projects/{project_id}/tasks/{task_id}/eval/{eval_id}/eval_configs_score_summary",
         {
@@ -142,8 +140,6 @@
       score_summary = data
     } catch (error) {
       score_summary_error = createKilnError(error)
-    } finally {
-      score_summary_loading = false
     }
   }
 

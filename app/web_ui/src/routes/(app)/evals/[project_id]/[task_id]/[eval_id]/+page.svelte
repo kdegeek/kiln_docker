@@ -50,13 +50,8 @@
 
   let score_summary: EvalResultSummary | null = null
   let score_summary_error: KilnError | null = null
-  let score_summary_loading = false
 
-  $: loading =
-    eval_loading ||
-    eval_configs_loading ||
-    task_run_configs_loading ||
-    score_summary_loading
+  $: loading = eval_loading || eval_configs_loading || task_run_configs_loading
   $: error = eval_error || eval_configs_error || task_run_configs_error
   // Note: not including score_summary_error, because it's not a critical error we should block the UI for
 
@@ -174,7 +169,7 @@
       return
     }
     try {
-      score_summary_loading = true
+      score_summary = null
       const { data, error } = await client.GET(
         "/api/projects/{project_id}/tasks/{task_id}/eval/{eval_id}/eval_config/{eval_config_id}/score_summary",
         {
@@ -194,8 +189,6 @@
       score_summary = data
     } catch (error) {
       score_summary_error = createKilnError(error)
-    } finally {
-      score_summary_loading = false
     }
   }
 
@@ -620,11 +613,11 @@
                           ? 'text-error'
                           : 'text-gray-500'}"
                       >
-                        Eval {(percent_complete * 100.0).toFixed(1)}% complete
+                        {(percent_complete * 100.0).toFixed(1)}% complete
                       </div>
                     {:else if score_summary}
                       <!-- We have results, but not for this run config -->
-                      <div class="text-sm text-error">Eval 0% complete</div>
+                      <div class="text-sm text-error">0% complete</div>
                     {/if}
                   </td>
                   {#each evaluator.output_scores as output_score}
