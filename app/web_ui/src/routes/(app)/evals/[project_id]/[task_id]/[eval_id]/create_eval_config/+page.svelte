@@ -204,9 +204,16 @@
         throw error
       }
       complete = true
-      goto(
-        `/evals/${$page.params.project_id}/${$page.params.task_id}/${$page.params.eval_id}?selected_eval_config=${data.id}`,
-      )
+      const next_page = $page.url.searchParams.get("next_page")
+      if (next_page === "eval_configs") {
+        goto(
+          `/evals/${$page.params.project_id}/${$page.params.task_id}/${$page.params.eval_id}/eval_configs`,
+        )
+      } else {
+        goto(
+          `/evals/${$page.params.project_id}/${$page.params.task_id}/${$page.params.eval_id}?selected_eval_config=${data.id}`,
+        )
+      }
     } catch (e) {
       create_evaluator_error = createKilnError(e)
     } finally {
@@ -217,8 +224,9 @@
 
 <div class="max-w-[1400px]">
   <AppPage
-    title="Add an Evaluator Config"
-    subtitle="Eval configs specify how an eval is run (models, prompts, etc). Multiple configs can be added to the same evaluator."
+    title="Add an Evaluation Method"
+    subtitle="An evaluation method specifies how an eval is run (algorithm, model, prompt, etc)."
+    sub_subtitle="Multiple evaluation methods can be added to the same evaluator, then compared to find the most accurate."
   >
     {#if loading}
       <div class="w-full min-h-[50vh] flex justify-center items-center">
@@ -304,8 +312,9 @@
             </div>
             <div class="text-xs text-gray-500">
               <div>
-                Include a short description of what this task does for the
-                evaluator to use as context.
+                Include a short description of what this task does. The
+                evaluator will use this for context. Keep it short, ideally one
+                sentence. Include more detailed requirements in steps below.
               </div>
             </div>
           </div>

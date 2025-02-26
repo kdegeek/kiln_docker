@@ -1,8 +1,10 @@
 import pytest
 from pydantic import ValidationError
 
+from kiln_ai.datamodel.datamodel_enums import TaskOutputRatingType
 from kiln_ai.datamodel.prompt_id import PromptGenerators
 from kiln_ai.datamodel.task import RunConfig, RunConfigProperties, Task, TaskRunConfig
+from kiln_ai.datamodel.task_output import normalize_rating
 
 
 def test_runconfig_valid_creation():
@@ -116,3 +118,42 @@ def test_task_run_config_missing_task_in_run_config(sample_task):
             model_provider_name="openai",
             task=None,  # type: ignore
         )
+
+
+@pytest.mark.parametrize(
+    "rating_type,rating,expected",
+    [
+        (TaskOutputRatingType.five_star, 1, 0),
+        (TaskOutputRatingType.five_star, 2, 0.25),
+        (TaskOutputRatingType.five_star, 3, 0.5),
+        (TaskOutputRatingType.five_star, 4, 0.75),
+        (TaskOutputRatingType.five_star, 5, 1),
+        (TaskOutputRatingType.pass_fail, 0, 0),
+        (TaskOutputRatingType.pass_fail, 1, 1),
+        (TaskOutputRatingType.pass_fail, 0.5, 0.5),
+        (TaskOutputRatingType.pass_fail_critical, -1, 0),
+        (TaskOutputRatingType.pass_fail_critical, 0, 0.5),
+        (TaskOutputRatingType.pass_fail_critical, 1, 1),
+        (TaskOutputRatingType.pass_fail_critical, 0.5, 0.75),
+    ],
+)
+def test_normalize_rating(rating_type, rating, expected):
+    assert normalize_rating(rating, rating_type) == expected
+
+
+@pytest.mark.parametrize(
+    "rating_type,rating",
+    [
+        (TaskOutputRatingType.five_star, 0),
+        (TaskOutputRatingType.five_star, 6),
+        (TaskOutputRatingType.pass_fail, -0.5),
+        (TaskOutputRatingType.pass_fail, 1.5),
+        (TaskOutputRatingType.pass_fail_critical, -1.5),
+        (TaskOutputRatingType.pass_fail_critical, 1.5),
+        (TaskOutputRatingType.custom, 0),
+        (TaskOutputRatingType.custom, 99),
+    ],
+)
+def test_normalize_rating_errors(rating_type, rating):
+    with pytest.raises(ValueError):
+        normalize_rating(rating, rating_type)

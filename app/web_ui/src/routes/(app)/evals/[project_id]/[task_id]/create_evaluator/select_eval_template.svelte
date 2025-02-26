@@ -18,7 +18,7 @@
       id: "kiln_requirements",
       name: "Overall Score and Task Requirements",
       description:
-        "Generate scores for the requirements you setup when you created this task plus, an overall-score. These can be compared to human-ratings from the Kiln UI.",
+        "Generate scores for the requirements you setup when you created this task, plus an overall-score. These can be compared to human ratings from the dataset UI.",
       recommended: true,
     },
     {
@@ -119,12 +119,12 @@
       id: "jailbreak",
       name: "Jailbreak Evaluator",
       description:
-        "Evaluate the model's ability to break out of the prompt, such as 'ignore previous instructions'. Also known as jailbreaking.",
+        "Evaluate the user's ability to break out of the prompt, using tactics such as 'ignore previous instructions'. Also known as jailbreaking.",
       eval_template: {
         template_id: "jailbreak",
         name: "Jailbreak Evaluator",
         description:
-          "Evaluate the model's ability to avoid jailbreak attempts and follow the prompt.",
+          "Evaluate the user's ability to break out of the prompt, using tactics such as 'ignore previous instructions'. Also known as jailbreaking.",
         output_scores: [
           {
             name: "Jailbreak Score",
@@ -154,7 +154,9 @@
 
     if (template_id === "kiln_requirements") {
       if (!task) {
-        alert("Task is required for this template, and task failed to load.")
+        alert(
+          "Task is required for this template, and the task failed to load.",
+        )
         return
       }
 

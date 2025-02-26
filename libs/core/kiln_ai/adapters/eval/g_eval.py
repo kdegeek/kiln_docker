@@ -4,9 +4,9 @@ from typing import Dict, List, Tuple
 from kiln_ai.adapters.adapter_registry import adapter_for_task
 from kiln_ai.adapters.eval.base_eval import BaseEval
 from kiln_ai.adapters.model_adapters.base_adapter import AdapterConfig, RunOutput
-from kiln_ai.adapters.prompt_builders import PromptGenerators, prompt_builder_from_id
+from kiln_ai.adapters.prompt_builders import PromptGenerators
 from kiln_ai.datamodel import Project, Task, TaskRun
-from kiln_ai.datamodel.eval import Eval, EvalConfig, EvalConfigType, EvalScores
+from kiln_ai.datamodel.eval import EvalConfig, EvalConfigType, EvalScores
 from kiln_ai.datamodel.task import RunConfig
 from openai.types.chat import ChatCompletionTokenLogprob
 
@@ -34,7 +34,7 @@ class GEvalTask(Task, parent_of={}):
         tmp_project = Project(name="GEval")
 
         # Build a simple LLM as Judge system instruction
-        system_instruction = f"Your job to evaluate a model's performance on a task. Blocks will be marked with <eval_data> tags.\n"
+        system_instruction = "Your job to evaluate a model's performance on a task. Blocks will be marked with <eval_data> tags.\n"
         # Optionally add a short task description
         task_description = eval_config.properties.get("task_description", None)
         if task_description:
@@ -75,7 +75,7 @@ class GEval(BaseEval):
     LLM as Judge is a method of evaluating the quality of a model's output. It simply asks the LLM to score, and uses the returned output (no logprobs needed). Also called direct evaluation.
     """
 
-    def __init__(self, eval_config: EvalConfig, run_config: RunConfig):
+    def __init__(self, eval_config: EvalConfig, run_config: RunConfig | None):
         if (
             eval_config.config_type != EvalConfigType.g_eval
             and eval_config.config_type != EvalConfigType.llm_as_judge

@@ -1,20 +1,26 @@
 import json
-from typing import Dict, Tuple
+from dataclasses import dataclass
+from typing import Dict, List, Tuple
 from unittest.mock import Mock, patch
 
 import pytest
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import StreamingResponse
 from fastapi.testclient import TestClient
 from kiln_ai.adapters.ml_model_list import ModelProviderName
 from kiln_ai.datamodel import (
     BasePrompt,
     DataSource,
     DataSourceType,
+    Priority,
     Project,
-    PromptId,
+    RequirementRating,
     Task,
+    TaskOutput,
+    TaskOutputRating,
+    TaskRequirement,
+    TaskRun,
 )
-from kiln_ai.datamodel.dataset_filters import DatasetFilterId
 from kiln_ai.datamodel.eval import (
     Eval,
     EvalConfig,
@@ -60,6 +66,15 @@ def mock_task(tmp_path):
         description="Test Description",
         instruction="Test Instructions",
         path=tmp_path / "task.kiln",
+        requirements=[
+            TaskRequirement(
+                name="score1",
+                description="desc1",
+                instruction="inst1",
+                priority=Priority.p1,
+                type="five_star",
+            ),
+        ],
         parent=project,
     )
     task.save_to_file()
@@ -75,6 +90,9 @@ def mock_eval(mock_task):
         template=EvalTemplate.bias,
         output_scores=[
             EvalOutputScore(name="score1", description="desc1", type="five_star"),
+            EvalOutputScore(
+                name="overall_rating", description="desc2", type="five_star"
+            ),
         ],
         eval_set_filter_id="tag::eval_set",
         eval_configs_filter_id="tag::golden",
@@ -346,6 +364,28 @@ async def test_create_eval_config(
     )
     assert config.properties["eval_steps"][0] == "step1"
     assert config.properties["eval_steps"][1] == "step2"
+
+
+def test_get_eval_config(
+    client, mock_task_from_id, mock_eval, mock_task, mock_eval_config
+):
+    mock_task_from_id.return_value = mock_task
+
+    with patch("app.desktop.studio_server.eval_api.eval_from_id") as mock_eval_from_id:
+        mock_eval_from_id.return_value = mock_eval
+        response = client.get(
+            "/api/projects/project1/tasks/task1/eval/eval1/eval_config/eval_config1"
+        )
+
+    assert response.status_code == 200
+    config = response.json()
+    assert isinstance(config, dict)
+
+    assert config["config_type"] == mock_eval_config.config_type
+    assert config["properties"] == mock_eval_config.properties
+    assert config["model"]["type"] == mock_eval_config.model.type
+
+    mock_eval_from_id.assert_called_once_with("project1", "task1", "eval1")
 
 
 def test_get_eval_configs(
@@ -629,7 +669,7 @@ async def test_get_eval_run_results(
 
     eval_run = EvalRun(
         task_run_config_id="run_config1",
-        scores={"score1": 3.0},
+        scores={"score1": 3.0, "overall_rating": 1.0},
         input="input",
         output="output",
         dataset_id="dataset_id1",
@@ -639,8 +679,8 @@ async def test_get_eval_run_results(
 
     # Test successful retrieval
     response = client.get(
-        f"/api/projects/project1/tasks/task1/eval/eval1"
-        f"/eval_config/eval_config1/run_config/run_config1/results"
+        "/api/projects/project1/tasks/task1/eval/eval1"
+        "/eval_config/eval_config1/run_config/run_config1/results"
     )
 
     assert response.status_code == 200
@@ -656,25 +696,351 @@ async def test_get_eval_run_results(
     assert len(data["results"]) == 1
     assert data["results"][0]["id"] == eval_run.id
     assert data["results"][0]["task_run_config_id"] == mock_run_config.id
-    assert data["results"][0]["scores"] == {"score1": 3.0}
+    assert data["results"][0]["scores"] == {"score1": 3.0, "overall_rating": 1.0}
 
     # Test with invalid eval ID
     response = client.get(
-        f"/api/projects/project1/tasks/task1/eval/invalid_eval"
-        f"/eval_config/eval_config1/run_config/run_config1/results"
+        "/api/projects/project1/tasks/task1/eval/invalid_eval"
+        "/eval_config/eval_config1/run_config/run_config1/results"
     )
     assert response.status_code == 404
 
     # Test with invalid eval config ID
     response = client.get(
-        f"/api/projects/project1/tasks/task1/eval/eval1"
-        f"/eval_config/invalid_config/run_config/run_config1/results"
+        "/api/projects/project1/tasks/task1/eval/eval1"
+        "/eval_config/invalid_config/run_config/run_config1/results"
     )
     assert response.status_code == 404
 
     # Test with invalid run config ID
     response = client.get(
-        f"/api/projects/project1/tasks/task1/eval/eval1"
-        f"/eval_config/eval_config1/run_config/invalid_run_config/results"
+        "/api/projects/project1/tasks/task1/eval/eval1"
+        "/eval_config/eval_config1/run_config/invalid_run_config/results"
     )
     assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_get_eval_config_compare_summary(
+    client,
+    mock_task_from_id,
+    mock_task,
+    mock_eval,
+    mock_eval_config,
+    mock_run_config,
+):
+    mock_task_from_id.return_value = mock_task
+
+    # structed data to make it easier to generate test cases.
+    @dataclass
+    class EvalCondigSummaryTestData:
+        human_overall_rating: float | None
+        score1_overall_rating: float | None
+        eval_overall_rating: float
+        eval__score1_rating: float
+        eval_config_id: str
+        skip_eval_run: bool = False
+        skip_golden_tag: bool = False
+
+    test_data: List[EvalCondigSummaryTestData] = [
+        # Test 1: ec1
+        # Normal run, with some data to check calulations on a sinlgle run
+        EvalCondigSummaryTestData(
+            human_overall_rating=5.0,
+            score1_overall_rating=2.0,
+            eval_overall_rating=1.0,
+            eval__score1_rating=3.5,
+            eval_config_id="ec1",
+        ),
+        # Should be ignored as it's not in the eval set filter (golden tag). Would mess up the scores of eval_config1 if included
+        EvalCondigSummaryTestData(
+            human_overall_rating=5.0,
+            score1_overall_rating=5.0,
+            eval_overall_rating=4.0,
+            eval__score1_rating=4.0,
+            eval_config_id="ec2",
+            skip_golden_tag=True,
+        ),
+        # Test 2: ec2 - Test multiple, and correct averaging
+        EvalCondigSummaryTestData(
+            human_overall_rating=5.0,
+            score1_overall_rating=5.0,
+            eval_overall_rating=4.0,
+            eval__score1_rating=4.0,
+            eval_config_id="ec2",
+        ),
+        EvalCondigSummaryTestData(
+            human_overall_rating=5.0,
+            score1_overall_rating=1.0,
+            eval_overall_rating=3.0,
+            eval__score1_rating=3.0,
+            eval_config_id="ec2",
+        ),
+        # Test 3: Dataset item that has partial human rating
+        EvalCondigSummaryTestData(
+            human_overall_rating=5.0,
+            score1_overall_rating=None,
+            eval_overall_rating=3.0,
+            eval__score1_rating=3.0,
+            eval_config_id="ec3",
+        ),
+        # Test 4: Dataset item that has no human rating
+        EvalCondigSummaryTestData(
+            human_overall_rating=None,
+            score1_overall_rating=None,
+            eval_overall_rating=3.0,
+            eval__score1_rating=3.0,
+            eval_config_id="ec4",
+        ),
+        # Test 5: skipping eval run should lower the percent complete
+        EvalCondigSummaryTestData(
+            human_overall_rating=5.0,
+            score1_overall_rating=5.0,
+            eval_overall_rating=4.0,
+            eval__score1_rating=4.0,
+            eval_config_id="ec5",
+            skip_eval_run=True,
+        ),
+    ]
+
+    # Count items that don't have skip_golden_tag set to True
+    total_in_dataset = sum(1 for x in test_data if not x.skip_golden_tag)
+
+    eval_configs_by_id: Dict[str, EvalConfig] = {}
+
+    assert len(mock_task.requirements) == 1
+    assert mock_task.requirements[0].name == "score1"
+    score1_requirement_id = mock_task.requirements[0].id
+    for test_case in test_data:
+        # create eval config if it doesn't exist
+        eval_config = eval_configs_by_id.get(test_case.eval_config_id)
+        if eval_config is None:
+            eval_config = EvalConfig(
+                id=test_case.eval_config_id,
+                name="Test Eval Config",
+                config_type=EvalConfigType.g_eval,
+                properties={"eval_steps": ["step1", "step2"]},
+                parent=mock_eval,
+                model=DataSource(
+                    id="model1",
+                    type=DataSourceType.synthetic,
+                    properties={
+                        "model_name": "gpt-4",
+                        "model_provider": "openai",
+                        "adapter_name": "TODO",
+                    },
+                ),
+                prompt=BasePrompt(
+                    name="test",
+                    prompt="base prompt",
+                    chain_of_thought_instructions="cot prompt",
+                ),
+            )
+            eval_config.save_to_file()
+            eval_configs_by_id[test_case.eval_config_id] = eval_config
+
+        tags = ["golden"]
+        if test_case.skip_golden_tag:
+            tags = []
+
+        ratings = {}
+        if test_case.score1_overall_rating is not None:
+            ratings[score1_requirement_id] = RequirementRating(
+                value=test_case.score1_overall_rating,
+                type="five_star",
+            )
+
+        task_run = TaskRun(
+            output=TaskOutput(
+                output="Test Output",
+                source=DataSource(
+                    type=DataSourceType.synthetic,
+                    properties={
+                        "model_name": "gpt-4",
+                        "model_provider": "openai",
+                        "adapter_name": "langchain_adapter",
+                    },
+                ),
+                rating=TaskOutputRating(
+                    value=test_case.human_overall_rating,
+                    requirement_ratings=ratings,
+                ),
+            ),
+            input="Test Input",
+            input_source=DataSource(
+                type=DataSourceType.synthetic,
+                properties={
+                    "model_name": "gpt-4",
+                    "model_provider": "openai",
+                    "adapter_name": "langchain_adapter",
+                },
+            ),
+            tags=tags,
+            parent=mock_task,
+        )
+        task_run.save_to_file()
+
+        if test_case.skip_eval_run:
+            continue
+
+        eval_run = EvalRun(
+            task_run_config_id="run_config1",
+            scores={
+                "score1": test_case.eval__score1_rating,
+                "overall_rating": test_case.eval_overall_rating,
+            },
+            input="input",
+            output="output",
+            dataset_id=task_run.id,
+            parent=eval_config,
+        )
+        eval_run.save_to_file()
+
+    # Test successful retrieval
+    response = client.get(
+        "/api/projects/project1/tasks/task1/eval/eval1/eval_configs_score_summary"
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+
+    assert "results" in data
+    results = data["results"]
+    assert isinstance(results, dict)
+
+    assert "eval_config_percent_complete" in data
+    eval_config_percent_complete = data["eval_config_percent_complete"]
+    assert isinstance(eval_config_percent_complete, dict)
+
+    # check the counts
+    assert data["fully_rated_count"] == 4
+    assert data["partially_rated_count"] == 1
+    assert data["not_rated_count"] == 1
+    assert data["dataset_size"] == total_in_dataset
+
+    # Test case 1: 1 item should be included, manually calculated scores, should exclude a second item that isn't in the eval config set filter
+    assert results["ec1"] == {
+        "overall_rating": {
+            "mean_squared_error": 16.0,  # error 4.0^2
+            "mean_absolute_error": 4.0,  # error 4.0
+            "mean_normalized_squared_error": 1,  # max error: 1 v 5
+            "mean_normalized_absolute_error": 1,  # max error: 1 v 5
+        },
+        "score1": {
+            "mean_squared_error": 2.25,  # error (3.5-5.0)^2
+            "mean_absolute_error": 1.5,  # error 1.5
+            "mean_normalized_squared_error": 0.140625,  # hand calc
+            "mean_normalized_absolute_error": 0.375,  # 1.5/4
+        },
+    }
+    # 1 of total_in_dataset eval configs are are in ec1 test
+    assert eval_config_percent_complete["ec1"] == pytest.approx(1 / total_in_dataset)
+
+    # Test case 2: check proper averaging
+    assert results["ec2"] == {
+        "overall_rating": {
+            "mean_squared_error": 2.5,  # error (1^2 + 2^2) / 2
+            "mean_absolute_error": 1.5,  # (1+2)/2
+            "mean_normalized_squared_error": 0.15625,  # (0.25^2 + 0.5^2) / 2
+            "mean_normalized_absolute_error": 0.375,  # (0.25 + 0.5) / 2
+        },
+        "score1": {
+            "mean_squared_error": 2.5,  # (1^2+2^2)/2
+            "mean_absolute_error": 1.5,  # (1+2)/2
+            "mean_normalized_squared_error": 0.15625,  # (0.25^2 + 0.5^2) / 2
+            "mean_normalized_absolute_error": 0.375,  # (0.25 + 0.5) / 2
+        },
+    }
+    # 2 of total_in_dataset eval configs are are in ec2 test
+    assert eval_config_percent_complete["ec2"] == pytest.approx(2 / total_in_dataset)
+
+    # Test case 3: Check partials still calculate available scores
+    assert results["ec3"] == {
+        "overall_rating": {
+            "mean_squared_error": 4,
+            "mean_absolute_error": 2,
+            "mean_normalized_squared_error": 0.25,
+            "mean_normalized_absolute_error": 0.5,
+        },
+    }
+    # 2 of total_in_dataset eval configs are are in ec2 test
+    assert eval_config_percent_complete["ec3"] == pytest.approx(1 / total_in_dataset)
+
+    # Test case 4: Check no rating is empty results
+    assert results.get("ec4", {}) == {}
+    assert eval_config_percent_complete["ec4"] == pytest.approx(1 / total_in_dataset)
+
+    # Test case 5: Check skipping eval run lowers the percent complete
+    assert eval_config_percent_complete["ec5"] == pytest.approx(0 / total_in_dataset)
+
+
+@pytest.mark.asyncio
+async def test_run_eval_config_eval(
+    client, mock_task_from_id, mock_task, mock_eval, mock_eval_config
+):
+    mock_task_from_id.return_value = mock_task
+
+    # Create a mock response for run_eval_runner_with_status
+    mock_response = StreamingResponse(
+        content=iter([b"data: test\n\n"]), media_type="text/event-stream"
+    )
+
+    with patch(
+        "app.desktop.studio_server.eval_api.run_eval_runner_with_status"
+    ) as mock_run_eval:
+        # Set up the mock to return our mock response
+        mock_run_eval.return_value = mock_response
+
+        # Call the endpoint
+        response = client.get(
+            "/api/projects/project1/tasks/task1/eval/eval1/run_eval_config_eval"
+        )
+
+        # Verify the response
+        assert response.status_code == 200
+
+        # Verify run_eval_runner_with_status was called with correct parameters
+        mock_run_eval.assert_called_once()
+
+        # Get the EvalRunner that was passed to run_eval_runner_with_status
+        eval_runner = mock_run_eval.call_args[0][0]
+
+        # Verify the EvalRunner was configured correctly
+        assert len(eval_runner.eval_configs) == 1
+        assert eval_runner.eval_configs[0].id == mock_eval_config.id
+        assert eval_runner.run_configs is None
+        assert eval_runner.eval_run_type == "eval_config_eval"
+
+
+@pytest.mark.asyncio
+async def test_set_current_eval_config(
+    client, mock_task_from_id, mock_task, mock_eval, mock_eval_config
+):
+    """Test setting the current eval config for an evaluation."""
+    mock_task_from_id.return_value = mock_task
+
+    # Get the eval before updating to verify the change
+    response = client.get("/api/projects/project1/tasks/task1/eval/eval1")
+    assert response.status_code == 200
+    eval_before = response.json()
+
+    # The current_config_id might be None or different initially
+    initial_config_id = eval_before.get("current_config_id")
+    assert initial_config_id is None
+
+    # Set the current eval config
+    with patch("app.desktop.studio_server.eval_api.eval_from_id") as mock_eval_from_id:
+        mock_eval_from_id.return_value = mock_eval
+        response = client.post(
+            "/api/projects/project1/tasks/task1/eval/eval1/set_current_eval_config/eval_config1"
+        )
+        assert response.status_code == 200
+        updated_eval = response.json()
+
+    # Verify the current_config_id was updated
+    assert updated_eval["current_config_id"] == "eval_config1"
+    assert updated_eval["id"] == "eval1"
+
+    # Verify the change persists by fetching the eval again
+    eval_from_disk = mock_task.evals()[0]
+    assert eval_from_disk.current_config_id == "eval_config1"

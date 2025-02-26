@@ -52,14 +52,14 @@
 
 <AppPage
   title="Evals"
-  subtitle="Evaluate models, prompts, and more."
+  subtitle="Evaluate task performance of various models, prompts, fine-tunes, and more."
   sub_subtitle={is_empty ? undefined : "Read the Docs"}
   sub_subtitle_link="https://docs.getkiln.ai/docs/evaluationsTODO"
   action_buttons={is_empty
     ? []
     : [
         {
-          label: "Create Evaluator",
+          label: "New Evaluator",
           href: `/evals/${project_id}/${task_id}/create_evaluator`,
           primary: true,
         },
