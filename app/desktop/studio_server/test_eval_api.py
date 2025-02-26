@@ -5,6 +5,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import StreamingResponse
 from fastapi.testclient import TestClient
 from kiln_ai.adapters.ml_model_list import ModelProviderName
 from kiln_ai.datamodel import (
@@ -961,3 +962,41 @@ async def test_get_eval_config_compare_summary(
 
     # Test case 5: Check skipping eval run lowers the percent complete
     assert eval_config_percent_complete["ec5"] == pytest.approx(0 / total_in_dataset)
+
+
+@pytest.mark.asyncio
+async def test_run_eval_config_eval(
+    client, mock_task_from_id, mock_task, mock_eval, mock_eval_config
+):
+    mock_task_from_id.return_value = mock_task
+
+    # Create a mock response for run_eval_runner_with_status
+    mock_response = StreamingResponse(
+        content=iter([b"data: test\n\n"]), media_type="text/event-stream"
+    )
+
+    with patch(
+        "app.desktop.studio_server.eval_api.run_eval_runner_with_status"
+    ) as mock_run_eval:
+        # Set up the mock to return our mock response
+        mock_run_eval.return_value = mock_response
+
+        # Call the endpoint
+        response = client.get(
+            "/api/projects/project1/tasks/task1/eval/eval1/run_eval_config_eval"
+        )
+
+        # Verify the response
+        assert response.status_code == 200
+
+        # Verify run_eval_runner_with_status was called with correct parameters
+        mock_run_eval.assert_called_once()
+
+        # Get the EvalRunner that was passed to run_eval_runner_with_status
+        eval_runner = mock_run_eval.call_args[0][0]
+
+        # Verify the EvalRunner was configured correctly
+        assert len(eval_runner.eval_configs) == 1
+        assert eval_runner.eval_configs[0].id == mock_eval_config.id
+        assert eval_runner.run_configs is None
+        assert eval_runner.eval_run_type == "eval_config_eval"

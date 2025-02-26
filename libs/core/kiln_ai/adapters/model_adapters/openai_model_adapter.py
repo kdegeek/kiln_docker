@@ -100,7 +100,8 @@ class OpenAICompatibleAdapter(BaseAdapter):
                 ]
             )
 
-        # OpenRouter specific options for reasoning models
+        # OpenRouter specific options for reasoning models and logprobs.
+        # TODO: this isn't a good place for this and I should refactor. But big usability improvement so keeping it here for now.
         extra_body = {}
         require_or_reasoning = (
             self.config.openrouter_style_reasoning and provider.reasoning_capable
@@ -115,8 +116,11 @@ class OpenAICompatibleAdapter(BaseAdapter):
                 # fp8 quants are awful
                 "ignore": ["DeepInfra"],
             }
-        elif self.model_provider().name == ModelProviderName.openrouter:
-            # OpenRouter specific options. Bit of a hack but really does improve usability.
+        elif (
+            self.run_config.model_provider_name == ModelProviderName.openrouter
+            and self.base_adapter_config.top_logprobs is not None
+        ):
+            # OpenRouter specific options related to logprobs. Bit of a hack but really does improve usability.
             extra_body["provider"] = {
                 "require_parameters": True,
                 "ignore": ["DeepInfra"],
@@ -246,7 +250,7 @@ class OpenAICompatibleAdapter(BaseAdapter):
             "parameters": output_schema,
         }
         # This parameter is only reliable for OpenAI
-        if self.model_provider().name == ModelProviderName.openai:
+        if self.run_config.model_provider_name == ModelProviderName.openai:
             function_params["strict"] = True
 
         return {

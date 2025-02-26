@@ -72,6 +72,27 @@ def task_run_config_from_id(
     )
 
 
+# JS SSE client (EventSource) doesn't work with POST requests, so we use GET, even though post would be better
+async def run_eval_runner_with_status(eval_runner: EvalRunner) -> StreamingResponse:
+    # Async messages via server side events (SSE)
+    async def event_generator():
+        async for progress in eval_runner.run():
+            data = {
+                "progress": progress.complete,
+                "total": progress.total,
+                "errors": progress.errors,
+            }
+            yield f"data: {json.dumps(data)}\n\n"
+
+        # Send the final complete message the app expects, and uses to stop listening
+        yield "data: complete\n\n"
+
+    return StreamingResponse(
+        content=event_generator(),
+        media_type="text/event-stream",
+    )
+
+
 class CreateEvaluatorRequest(BaseModel):
     name: str
     description: str
@@ -332,7 +353,6 @@ def connect_evals_api(app: FastAPI):
         eval_config.save_to_file()
         return eval_config
 
-    # JS SSE client (EventSource) doesn't work with POST requests, so we use GET, even though post would be better
     @app.get(
         "/api/projects/{project_id}/tasks/{task_id}/eval/{eval_id}/eval_config/{eval_config_id}/run"
     )
@@ -367,23 +387,25 @@ def connect_evals_api(app: FastAPI):
             eval_run_type="task_run_eval",
         )
 
-        # Async messages via server side events (SSE)
-        async def event_generator():
-            async for progress in eval_runner.run():
-                data = {
-                    "progress": progress.complete,
-                    "total": progress.total,
-                    "errors": progress.errors,
-                }
-                yield f"data: {json.dumps(data)}\n\n"
+        return await run_eval_runner_with_status(eval_runner)
 
-            # Send the final complete message the app expects, and uses to stop listening
-            yield "data: complete\n\n"
-
-        return StreamingResponse(
-            content=event_generator(),
-            media_type="text/event-stream",
+    @app.get(
+        "/api/projects/{project_id}/tasks/{task_id}/eval/{eval_id}/run_eval_config_eval"
+    )
+    async def run_eval_config_eval(
+        project_id: str,
+        task_id: str,
+        eval_id: str,
+    ) -> StreamingResponse:
+        eval = eval_from_id(project_id, task_id, eval_id)
+        eval_configs = eval.configs()
+        eval_runner = EvalRunner(
+            eval_configs=eval_configs,
+            run_configs=None,
+            eval_run_type="eval_config_eval",
         )
+
+        return await run_eval_runner_with_status(eval_runner)
 
     @app.get(
         "/api/projects/{project_id}/tasks/{task_id}/eval/{eval_id}/eval_config/{eval_config_id}/run_config/{run_config_id}/results"
