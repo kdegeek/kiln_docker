@@ -1,3 +1,4 @@
+import logging
 import os
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -19,15 +20,14 @@ from kiln_ai.adapters.ollama_tools import (
     ollama_base_url,
     parse_ollama_tags,
 )
-from kiln_ai.adapters.provider_tools import (
-    provider_name_from_id,
-    provider_warnings,
-)
+from kiln_ai.adapters.provider_tools import provider_name_from_id, provider_warnings
 from kiln_ai.datamodel.registry import all_projects
 from kiln_ai.utils.config import Config
 from kiln_ai.utils.exhaustive_error import raise_exhaustive_enum_error
 from langchain_aws import ChatBedrockConverse
 from pydantic import BaseModel, Field
+
+logger = logging.getLogger(__name__)
 
 
 async def connect_ollama(custom_ollama_url: str | None = None) -> OllamaConnection:
@@ -598,9 +598,9 @@ def custom_models() -> AvailableModels | None:
                     untested_model=True,
                 )
             )
-        except Exception as e:
+        except Exception:
             # Continue on to the rest
-            print(f"Error processing custom model {model_id}: {e}")
+            logger.error("Error processing custom model %s", model_id, exc_info=True)
 
     return AvailableModels(
         provider_name="Custom Models",
@@ -698,11 +698,13 @@ def openai_compatible_providers_load_cache() -> OpenAICompatibleProviderCache | 
         models: List[ModelDetails] = []
         base_url = provider.get("base_url")
         if not base_url or not base_url.startswith("http"):
-            print(f"No base URL for OpenAI compatible provider {provider} - {base_url}")
+            logger.warning(
+                "No base URL for OpenAI compatible provider %s - %s", provider, base_url
+            )
             continue
         name = provider.get("name")
         if not name:
-            print(f"No name for OpenAI compatible provider {provider}")
+            logger.warning("No name for OpenAI compatible provider %s", provider)
             continue
 
         # API key is optional, as some providers don't require it
@@ -736,8 +738,10 @@ def openai_compatible_providers_load_cache() -> OpenAICompatibleProviderCache | 
                     models=models,
                 )
             )
-        except Exception as e:
-            print(f"Error connecting to OpenAI compatible provider {name}: {e}")
+        except Exception:
+            logger.error(
+                "Error connecting to OpenAI compatible provider %s", name, exc_info=True
+            )
             has_error = True
             continue
 
