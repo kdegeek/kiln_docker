@@ -27,6 +27,7 @@ from kiln_ai.datamodel.eval import (
 from kiln_ai.datamodel.json_schema import string_to_json_key
 from kiln_ai.datamodel.prompt_id import is_frozen_prompt
 from kiln_ai.datamodel.task import RunConfigProperties, TaskRunConfig
+from kiln_ai.datamodel.task_output import normalize_rating
 from kiln_ai.utils.name_generator import generate_memorable_name
 from kiln_server.task_api import task_from_id
 from pydantic import BaseModel
@@ -144,7 +145,9 @@ class EvalResultSummary(BaseModel):
 
 class EvalConfigScoreSummary(BaseModel):
     mean_absolute_error: float
+    mean_normalized_absolute_error: float
     mean_squared_error: float
+    mean_normalized_squared_error: float
 
 
 class EvalConfigCompareSummary(BaseModel):
@@ -588,7 +591,9 @@ def connect_evals_api(app: FastAPI):
 
         # eval_config_id -> output_score_id -> scores/total
         total_squared_error: Dict[str, Dict[str, float]] = {}
+        total_normalized_squared_error: Dict[str, Dict[str, float]] = {}
         total_absolute_error: Dict[str, Dict[str, float]] = {}
+        total_normalized_absolute_error: Dict[str, Dict[str, float]] = {}
         total_count: Dict[str, Dict[str, int]] = {}
 
         # important: readonly makes this much faster
@@ -630,17 +635,32 @@ def connect_evals_api(app: FastAPI):
                         total_squared_error[eval_config_id] = {}
                         total_absolute_error[eval_config_id] = {}
                         total_count[eval_config_id] = {}
+                        total_normalized_squared_error[eval_config_id] = {}
+                        total_normalized_absolute_error[eval_config_id] = {}
                     if score_key not in total_squared_error[eval_config_id]:
                         total_squared_error[eval_config_id][score_key] = 0
                         total_absolute_error[eval_config_id][score_key] = 0
                         total_count[eval_config_id][score_key] = 0
+                        total_normalized_squared_error[eval_config_id][score_key] = 0
+                        total_normalized_absolute_error[eval_config_id][score_key] = 0
 
-                    # TODO normalize MSE?
+                    normalized_eval_score = normalize_rating(
+                        eval_score, output_score.type
+                    )
+                    normalized_human_score = normalize_rating(
+                        human_score, output_score.type
+                    )
                     total_squared_error[eval_config_id][score_key] += (
                         eval_score - human_score
                     ) ** 2
+                    total_normalized_squared_error[eval_config_id][score_key] += (
+                        normalized_eval_score - normalized_human_score
+                    ) ** 2
                     total_absolute_error[eval_config_id][score_key] += abs(
                         eval_score - human_score
+                    )
+                    total_normalized_absolute_error[eval_config_id][score_key] += abs(
+                        normalized_eval_score - normalized_human_score
                     )
                     total_count[eval_config_id][score_key] += 1
 
@@ -657,6 +677,14 @@ def connect_evals_api(app: FastAPI):
                         ),
                         mean_absolute_error=(
                             total_absolute_error[eval_config_id][score_key] / count
+                        ),
+                        mean_normalized_squared_error=(
+                            total_normalized_squared_error[eval_config_id][score_key]
+                            / count
+                        ),
+                        mean_normalized_absolute_error=(
+                            total_normalized_absolute_error[eval_config_id][score_key]
+                            / count
                         ),
                     )
 
