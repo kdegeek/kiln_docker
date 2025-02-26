@@ -133,8 +133,11 @@ class EvalRunner:
             already_run[eval_config.id] = {}
             for run_config in self.run_configs or []:
                 already_run[eval_config.id][run_config.id] = set()
-                for run in eval_config.runs(readonly=True):
-                    already_run[eval_config.id][run_config.id].add(run.dataset_id)
+            for run in eval_config.runs(readonly=True):
+                if run.task_run_config_id is not None:
+                    already_run[eval_config.id][run.task_run_config_id].add(
+                        run.dataset_id
+                    )
 
         return [
             EvalJob(
