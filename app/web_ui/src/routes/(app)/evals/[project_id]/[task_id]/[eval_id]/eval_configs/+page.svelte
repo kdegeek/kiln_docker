@@ -5,31 +5,31 @@
   import { KilnError, createKilnError } from "$lib/utils/error_handlers"
   import { onMount, tick } from "svelte"
   import { page } from "$app/stores"
-  import FormElement from "$lib/utils/form_element.svelte"
-  import type {
-    EvalConfig,
-    EvalConfigType,
-    ProviderModels,
-    EvalConfigCompareSummary,
-  } from "$lib/types"
-  import { goto } from "$app/navigation"
+  import RunEval from "./../run_eval.svelte"
+  import type { EvalConfig, EvalConfigCompareSummary } from "$lib/types"
   import {
     model_info,
     load_model_info,
     model_name,
     provider_name_from_id,
-    prompt_name_from_id,
     load_available_prompts,
     load_available_models,
   } from "$lib/stores"
-  import Dialog from "$lib/ui/dialog.svelte"
   import Warning from "$lib/ui/warning.svelte"
-  import { string_to_json_key } from "$lib/utils/json_schema_editor/json_schema_templates"
   import InfoTooltip from "$lib/ui/info_tooltip.svelte"
+  import { string_to_json_key } from "$lib/utils/json_schema_editor/json_schema_templates"
+  import EvalConfigInstruction from "./eval_config_instruction.svelte"
+  import Dialog from "$lib/ui/dialog.svelte"
+  import { eval_config_to_ui_name } from "$lib/utils/formatters"
+
+  let score_legend_dialog: Dialog | null = null
 
   let evaluator: Eval | null = null
   let eval_error: KilnError | null = null
   let eval_loading = true
+
+  let eval_config_instructions_dialog: Dialog | null = null
+  let displayed_eval_config: EvalConfig | null = null
 
   let eval_configs: EvalConfig[] | null = null
   let eval_configs_error: KilnError | null = null
@@ -41,6 +41,7 @@
 
   $: loading = eval_loading || eval_configs_loading || score_summary_loading
   $: error = eval_error || eval_configs_error || score_summary_error
+  $: run_eval_url = `${base_url}/api/projects/${$page.params.project_id}/tasks/${$page.params.task_id}/eval/${$page.params.eval_id}/run_eval_config_eval`
 
   onMount(async () => {
     // Wait for page params to load
@@ -169,84 +170,51 @@
     return properties
   }
 
-  let run_dialog: Dialog | null = null
-  let running_progress_dialog: Dialog | null = null
+  function incomplete_warning(
+    score_summary: EvalConfigCompareSummary | null,
+  ): string[] {
+    if (!score_summary) {
+      return []
+    }
 
-  let eval_run_error: KilnError | null = null
-  let eval_state:
-    | "not_started"
-    | "running"
-    | "complete"
-    | "complete_with_errors" = "not_started"
-  let eval_complete_count = 0
-  let eval_total_count = 0
-  let eval_error_count = 0
+    const warnings: string[] = []
+    if (score_summary.dataset_size === 0) {
+      warnings.push(
+        "No items in your eval-config dataset. Generate some runs in your dataset tab, and tag them to add them to your eval-config dataset.",
+      )
+    }
+    if (score_summary.not_rated_count > 0) {
+      warnings.push(
+        `${score_summary.not_rated_count} item(s) in your eval-config dataset are not rated at all. Add human ratings to these items in the dataset tab.`,
+      )
+    }
+    if (score_summary.partially_rated_count > 0) {
+      warnings.push(
+        `${score_summary.partially_rated_count} item(s) in your eval-config dataset are only partially rated. Add human ratings to these items in the dataset tab for each score.`,
+      )
+    }
 
-  function run_eval(): boolean {
-    score_summary = null
-    eval_state = "running"
-    eval_complete_count = 0
-    eval_total_count = 0
-    eval_error_count = 0
-
-    const eventSource = new EventSource(
-      `${base_url}/api/projects/${project_id}/tasks/${task_id}/eval/${eval_id}/eval_config/${current_eval_config_id}/run?all_run_configs=true`,
+    const completion_values = Object.values(
+      score_summary.eval_config_percent_complete,
     )
-
-    eventSource.onmessage = (event) => {
-      try {
-        if (event.data === "complete") {
-          // Special end message
-          eventSource.close()
-          eval_state =
-            eval_error_count > 0 ? "complete_with_errors" : "complete"
-          get_score_summary()
-        } else {
-          const data = JSON.parse(event.data)
-          eval_complete_count = data.progress
-          eval_total_count = data.total
-          eval_error_count = data.errors
-          eval_state = "running"
-        }
-      } catch (error) {
-        eval_run_error = createKilnError(error)
-        eval_state = "complete_with_errors"
-        get_score_summary()
-      }
-    }
-
-    // Don't restart on an error (default SSE behavior)
-    eventSource.onerror = (error) => {
-      eventSource.close()
-      eval_state = "complete_with_errors"
-      eval_run_error = createKilnError(error)
-      get_score_summary()
-    }
-
-    // Switch over to the progress dialog, closing the run dialog
-    running_progress_dialog?.show()
-    return true
-  }
-
-  // TODO P0: adapt this from other screen, to this screen. warning if len(results) == 0, no items in dataset (dataset_size == 0), and other "go fix your dataset" warnings
-  function show_incomplete_warning(
-    score_summary: EvalResultSummary | null,
-  ): boolean {
-    if (!score_summary?.run_config_percent_complete) {
-      return false
-    }
-    return false
-
-    const values = Object.values(score_summary.run_config_percent_complete)
     const minComplete =
-      values.length > 0
-        ? values.reduce((min, val) => Math.min(min, val), 1.0)
+      completion_values.length > 0
+        ? completion_values.reduce((min, val) => Math.min(min, val), 1.0)
         : 1.0
-    return minComplete < 1.0
+    if (minComplete < 1.0) {
+      warnings.push(
+        "You evals are incomplete. Click 'Run Evals' to generate scores for the missing items.",
+      )
+    }
+
+    return warnings
   }
 </script>
 
-<AppPage title="Compare Eval Configs" subtitle={evaluator?.name}>
+<AppPage
+  title="Compare Eval Configs"
+  subtitle="Find the evaluator that best matches human-ratings"
+>
   {#if loading}
     <div class="w-full min-h-[50vh] flex justify-center items-center">
       <div class="loading loading-spinner loading-lg"></div>
@@ -282,8 +250,8 @@
           <div class="grow">
             <div class="text-xl font-bold">Correlation to Human Scores</div>
             <div class="text-xs text-gray-500">
-              Overview of how each eval config correlates to human scores
-              (ratings from the dataset tab).
+              How each eval config correlates to human scores (ratings from the
+              dataset tab).
             </div>
             {#if score_summary_error}
               <div class="text-error text-sm">
@@ -293,48 +261,35 @@
             {/if}
           </div>
           <div>
-            {#if eval_state === "not_started"}
-              <button
-                class="btn btn-mid btn-primary"
-                on:click={() => {
-                  run_dialog?.show()
-                }}>Run Eval</button
-              >
-            {:else}
-              <button
-                class="btn btn-mid"
-                on:click={() => {
-                  running_progress_dialog?.show()
-                }}
-              >
-                {#if eval_state === "running"}
-                  <div class="loading loading-spinner loading-xs"></div>
-                  Running...
-                {:else if eval_state === "complete"}
-                  Eval Complete
-                {:else if eval_state === "complete_with_errors"}
-                  Eval Complete with Errors
-                {:else}
-                  Eval Status
-                {/if}
-              </button>
-            {/if}
+            <button
+              class="btn btn-mid mr-2"
+              on:click={() => {
+                score_legend_dialog?.show()
+              }}
+            >
+              Score Legend
+            </button>
+            <RunEval
+              bind:run_url={run_eval_url}
+              on_run_complete={() => {
+                get_score_summary()
+              }}
+            />
           </div>
         </div>
 
         <!-- Warn the user if some evals are incomplete -->
-        <!-- TODO more cases to explain here: needs rating, needs content, need eval run, etc-->
-        {#if show_incomplete_warning(score_summary)}
+        {#if incomplete_warning(score_summary).length}
           <div class="mt-6 mb-4">
-            <button
-              class="tooltip tooltip-top cursor-pointer"
-              data-tip="Running evals will update any missing dataset items, without re-running complete items. If some evals consistently fail, check the logs; it is likely that the model is failing on the task or the eval."
-            >
-              <Warning
-                warning_message={`Some evals are incomplete and should be excluded from analysis. Run evals to complete their dataset.`}
-                tight={true}
-              />
-            </button>
+            <Warning
+              warning_message={`There are issues you should resolve before analyzing this data.`}
+              tight={true}
+            />
+            <ul class="list-disc list-inside text-error">
+              {#each incomplete_warning(score_summary) as warning}
+                <li>{warning}</li>
+              {/each}
+            </ul>
           </div>
         {/if}
 
@@ -390,6 +345,9 @@
                       {eval_config.name}
                     </div>
                     <div class="text-sm text-gray-500">
+                      {eval_config_to_ui_name(eval_config.config_type)}
+                    </div>
+                    <div class="text-sm text-gray-500">
                       {model_name(
                         eval_config?.model.properties?.["model_name"],
                         $model_info,
@@ -397,8 +355,7 @@
                     </div>
                     <div class="text-sm text-gray-500">
                       {provider_name_from_id(
-                        eval_config?.model.properties?.["model_provider_name"] +
-                          "",
+                        eval_config?.model.properties?.["model_provider"] + "",
                       )}
                     </div>
                     {#if percent_complete}
@@ -407,43 +364,54 @@
                           ? 'text-error'
                           : 'text-gray-500'}"
                       >
-                        Eval {(percent_complete * 100.0).toFixed(1)}% complete
+                        {(percent_complete * 100.0).toFixed(1)}% complete
                       </div>
                     {:else if score_summary}
                       <!-- We have results, but not for this run config -->
-                      <div class="text-sm text-error">Eval 0% complete</div>
+                      <div class="text-sm text-error">0% complete</div>
                     {/if}
                   </td>
                   <td>
-                    <div class="max-w-[600px] min-w-[300px]">
-                      {#if eval_config.properties?.["task_description"]}
-                        <div class="text-sm mb-4">
-                          <div class="font-medium mb-2">Task Description:</div>
-                          {eval_config.properties["task_description"]}
-                        </div>
-                      {/if}
-                      {#if eval_config.properties?.["eval_steps"] && Array.isArray(eval_config.properties["eval_steps"])}
-                        <div class="text-sm">
-                          <div class="font-medium mb-2">
-                            Evaluator Instructions:
+                    <div class="max-w-[600px] min-w-[200px]">
+                      <div class="max-h-[140px] overflow-y-hidden relative">
+                        <EvalConfigInstruction {eval_config} />
+                        <div class="absolute bottom-0 left-0 w-full">
+                          <div
+                            class="h-36 bg-gradient-to-t from-white to-transparent"
+                          ></div>
+                          <div
+                            class="text-center bg-white font-medium font-sm text-gray-500"
+                          >
+                            <button
+                              class="text-gray-500"
+                              on:click={() => {
+                                displayed_eval_config = eval_config
+                                eval_config_instructions_dialog?.show()
+                              }}
+                            >
+                              See all
+                            </button>
                           </div>
-                          <ol class="list-decimal">
-                            {#each eval_config.properties["eval_steps"] as step}
-                              <li>
-                                <span class="whitespace-pre-line">
-                                  {step}
-                                </span>
-                              </li>
-                            {/each}
-                          </ol>
                         </div>
-                      {/if}
+                      </div>
                     </div>
                   </td>
                   {#each evaluator.output_scores as output_score}
-                    {@const score = null}
-                    <td class="text-center">
-                      {score != null ? score.toFixed(2) : "unknown"}
+                    {@const scores =
+                      score_summary?.results?.["" + eval_config.id]?.[
+                        string_to_json_key(output_score.name)
+                      ]}
+                    <td class="text-center min-w-[115px]">
+                      {#if scores}
+                        <div>
+                          MAE: {scores.mean_absolute_error.toFixed(2)}
+                        </div>
+                        <div>
+                          MSE: {scores.mean_squared_error.toFixed(2)}
+                        </div>
+                      {:else}
+                        unknown
+                      {/if}
                     </td>
                   {/each}
                 </tr>
@@ -459,77 +427,40 @@
 </AppPage>
 
 <Dialog
-  bind:this={running_progress_dialog}
-  title="Eval Progress"
-  action_buttons={eval_state === "complete" ||
-  eval_state === "complete_with_errors"
-    ? [
-        {
-          label: "Close",
-          isCancel: true,
-          isPrimary: false,
-        },
-      ]
-    : []}
->
-  <div
-    class="mt-12 mb-6 flex flex-col items-center justify-center min-h-[100px] text-center"
-  >
-    {#if eval_state === "complete"}
-      <div class="font-medium">Eval Complete 🎉</div>
-      {#if eval_total_count == 0}
-        <div class="text-gray-500 text-sm mt-2">
-          No evals were run, because everything was already up to date!
-        </div>
-      {/if}
-    {:else if eval_state === "complete_with_errors"}
-      <div class="font-medium">Eval Complete with Errors</div>
-    {:else if eval_state === "running"}
-      <div class="loading loading-spinner loading-lg text-success"></div>
-      <div class="font-medium mt-4">Running...</div>
-    {/if}
-    <div class="text-sm font-light min-w-[120px]">
-      {#if eval_total_count > 0}
-        <div>
-          {eval_complete_count + eval_error_count} of {eval_total_count}
-        </div>
-      {/if}
-      {#if eval_error_count > 0}
-        <div class="text-error font-light text-xs">
-          {eval_error_count} error{eval_error_count === 1 ? "" : "s"}
-        </div>
-      {/if}
-      {#if eval_run_error}
-        <div class="text-error font-light text-xs mt-2">
-          {eval_run_error.getMessage() || "An unknown error occurred"}
-        </div>
-      {/if}
-    </div>
-  </div>
-</Dialog>
-
-<Dialog
-  bind:this={run_dialog}
-  title="Run Eval"
+  bind:this={eval_config_instructions_dialog}
+  title="Eval Config Instructions: {displayed_eval_config?.name}"
   action_buttons={[
     {
-      label: "Cancel",
+      label: "Close",
       isCancel: true,
-    },
-    {
-      label: "Run Eval",
-      action: run_eval,
-      isPrimary: true,
     },
   ]}
 >
-  <div class="flex flex-col gap-2 font-light mt-4">
-    <div>Run this eval with the selected configuration?</div>
-    <div>Don't close this page if you want to monitor progress.</div>
-    <Warning
-      warning_color="warning"
-      warning_message="This may use considerable compute/credits."
-      tight={true}
-    />
+  <EvalConfigInstruction bind:eval_config={displayed_eval_config} />
+</Dialog>
+
+<Dialog
+  bind:this={score_legend_dialog}
+  title="Score Legend"
+  action_buttons={[
+    {
+      label: "Close",
+      isCancel: true,
+    },
+  ]}
+>
+  <div class="font-medium mt-4">MAE: Mean Absolute Error</div>
+  <div class="text-sm text-gray-500 font-medium mb-1">Lower is better</div>
+  <div class="font-light">
+    Example: If the eval scores an item a 3, and the eval scores it a 5, the
+    absolute error would be 2 [abs(3-5)]. The overall score is the mean of all
+    absolute errors.
+  </div>
+  <div class="font-medium mt-6">MSE: Mean squared error</div>
+  <div class="text-sm text-gray-500 font-medium mb-1">Lower is better</div>
+  <div class="font-light">
+    Example: If the eval scores an item a 3, and the eval scores it a 5, the
+    squared error would be 4 [(3-5)^2]. The overall score is the mean of all
+    squared errors.
   </div>
 </Dialog>
