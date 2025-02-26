@@ -389,6 +389,21 @@ def connect_evals_api(app: FastAPI):
 
         return await run_eval_runner_with_status(eval_runner)
 
+    @app.post(
+        "/api/projects/{project_id}/tasks/{task_id}/eval/{eval_id}/set_current_eval_config/{eval_config_id}"
+    )
+    async def set_default_eval_config(
+        project_id: str,
+        task_id: str,
+        eval_id: str,
+        eval_config_id: str,
+    ) -> Eval:
+        eval = eval_from_id(project_id, task_id, eval_id)
+        eval.current_config_id = eval_config_id
+        eval.save_to_file()
+
+        return eval
+
     @app.get(
         "/api/projects/{project_id}/tasks/{task_id}/eval/{eval_id}/run_eval_config_eval"
     )
@@ -470,6 +485,9 @@ def connect_evals_api(app: FastAPI):
 
         # important: readonly makes this much faster
         for eval_run in eval_config.runs(readonly=True):
+            if eval_run.task_run_config_id is None:
+                # This eval_run is not associated with a run_config, so we can't count it
+                continue
             run_config_id = str(eval_run.task_run_config_id)
 
             # Check if we should count this eval_run. Not every eval_run has to go into the stats:

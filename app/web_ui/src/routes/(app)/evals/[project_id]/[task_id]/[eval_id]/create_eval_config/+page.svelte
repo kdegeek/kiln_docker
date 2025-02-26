@@ -204,9 +204,16 @@
         throw error
       }
       complete = true
-      goto(
-        `/evals/${$page.params.project_id}/${$page.params.task_id}/${$page.params.eval_id}?selected_eval_config=${data.id}`,
-      )
+      const next_page = $page.url.searchParams.get("next_page")
+      if (next_page === "eval_configs") {
+        goto(
+          `/evals/${$page.params.project_id}/${$page.params.task_id}/${$page.params.eval_id}/eval_configs`,
+        )
+      } else {
+        goto(
+          `/evals/${$page.params.project_id}/${$page.params.task_id}/${$page.params.eval_id}?selected_eval_config=${data.id}`,
+        )
+      }
     } catch (e) {
       create_evaluator_error = createKilnError(e)
     } finally {

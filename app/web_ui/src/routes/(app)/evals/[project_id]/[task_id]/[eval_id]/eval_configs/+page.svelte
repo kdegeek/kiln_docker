@@ -51,9 +51,10 @@
       load_model_info(),
       load_available_prompts(),
       load_available_models(),
+      // Get this first, as we want to know "current" for sorting
+      get_eval(),
     ])
     // These can be parallel
-    get_eval()
     get_eval_config()
     get_score_summary()
   })
@@ -102,7 +103,12 @@
       if (error) {
         throw error
       }
-      eval_configs = data
+      // sort with current on top
+      eval_configs = data.sort((a, b) => {
+        if (evaluator && a.id === evaluator.current_config_id) return -1
+        if (evaluator && b.id === evaluator.current_config_id) return 1
+        return 0
+      })
     } catch (error) {
       eval_configs_error = createKilnError(error)
     } finally {
@@ -180,17 +186,17 @@
     const warnings: string[] = []
     if (score_summary.dataset_size === 0) {
       warnings.push(
-        "No items in your eval-config dataset. Generate some runs in your dataset tab, and tag them to add them to your eval-config dataset.",
+        "There are zero items in your config eval dataset. Generate some runs in your dataset tab, and tag them to add them to your eval-config dataset.",
       )
     }
     if (score_summary.not_rated_count > 0) {
       warnings.push(
-        `${score_summary.not_rated_count} item(s) in your eval-config dataset are not rated at all. Add human ratings to these items in the dataset tab.`,
+        `${score_summary.not_rated_count} item(s) in your config eval dataset are not rated at all. Add human ratings to these items in the dataset tab.`,
       )
     }
     if (score_summary.partially_rated_count > 0) {
       warnings.push(
-        `${score_summary.partially_rated_count} item(s) in your eval-config dataset are only partially rated. Add human ratings to these items in the dataset tab for each score.`,
+        `${score_summary.partially_rated_count} item(s) in your config eval dataset are only partially rated. Add human ratings to these items for every score.`,
       )
     }
 
@@ -209,11 +215,47 @@
 
     return warnings
   }
+
+  async function set_current_eval_config(
+    eval_config_id: string | null | undefined,
+  ) {
+    if (!eval_config_id) {
+      return
+    }
+    try {
+      const { data, error } = await client.POST(
+        "/api/projects/{project_id}/tasks/{task_id}/eval/{eval_id}/set_current_eval_config/{eval_config_id}",
+        {
+          params: {
+            path: {
+              project_id: $page.params.project_id,
+              task_id: $page.params.task_id,
+              eval_id: $page.params.eval_id,
+              eval_config_id: eval_config_id,
+            },
+          },
+        },
+      )
+      if (error) {
+        throw error
+      }
+      // Update the evaluator with the latest
+      evaluator = data
+    } catch (error) {
+      eval_error = createKilnError(error)
+    }
+  }
 </script>
 
 <AppPage
   title="Compare Eval Configs"
   subtitle="Find the evaluator that best matches human-ratings"
+  action_buttons={[
+    {
+      label: "Add Eval Config",
+      href: `/evals/${$page.params.project_id}/${$page.params.task_id}/${$page.params.eval_id}/create_eval_config?next_page=eval_configs`,
+    },
+  ]}
 >
   {#if loading}
     <div class="w-full min-h-[50vh] flex justify-center items-center">
@@ -242,16 +284,22 @@
             </div>
           {/each}
         </div>
+        {#if score_summary && score_summary.dataset_size > 0 && score_summary.dataset_size < 25}
+          <Warning
+            warning_message={`There are only ${score_summary.dataset_size} items in your eval-config dataset. This is generally too small to get a good sense of how well your eval-configs perform.`}
+            warning_color="warning"
+            tight={true}
+          />
+        {/if}
       </div>
     </div>
     <div class="mt-16">
       {#if eval_configs?.length}
         <div class="flex flex-col lg:flex-row gap-4 lg:gap-8 mb-6">
           <div class="grow">
-            <div class="text-xl font-bold">Correlation to Human Scores</div>
+            <div class="text-xl font-bold">Correlation to Human Ratings</div>
             <div class="text-xs text-gray-500">
-              How each eval config correlates to human scores (ratings from the
-              dataset tab).
+              How each eval config correlates to human ratings.
             </div>
             {#if score_summary_error}
               <div class="text-error text-sm">
@@ -279,13 +327,14 @@
         </div>
 
         <!-- Warn the user if some evals are incomplete -->
+
         {#if incomplete_warning(score_summary).length}
           <div class="mt-6 mb-4">
             <Warning
               warning_message={`There are issues you should resolve before analyzing this data.`}
               tight={true}
             />
-            <ul class="list-disc list-inside text-error">
+            <ul class="list-disc list-inside text-error pl-2 pt-2">
               {#each incomplete_warning(score_summary) as warning}
                 <li>{warning}</li>
               {/each}
@@ -369,6 +418,18 @@
                     {:else if score_summary}
                       <!-- We have results, but not for this run config -->
                       <div class="text-sm text-error">0% complete</div>
+                    {/if}
+                    {#if eval_config.id == evaluator.current_config_id}
+                      <div class="badge badge-primary mt-2">Default</div>
+                    {:else}
+                      <button
+                        class="link text-sm text-gray-500"
+                        on:click={() => {
+                          set_current_eval_config(eval_config.id)
+                        }}
+                      >
+                        Set as default
+                      </button>
                     {/if}
                   </td>
                   <td>

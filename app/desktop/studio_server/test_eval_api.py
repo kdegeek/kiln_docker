@@ -1000,3 +1000,37 @@ async def test_run_eval_config_eval(
         assert eval_runner.eval_configs[0].id == mock_eval_config.id
         assert eval_runner.run_configs is None
         assert eval_runner.eval_run_type == "eval_config_eval"
+
+
+@pytest.mark.asyncio
+async def test_set_current_eval_config(
+    client, mock_task_from_id, mock_task, mock_eval, mock_eval_config
+):
+    """Test setting the current eval config for an evaluation."""
+    mock_task_from_id.return_value = mock_task
+
+    # Get the eval before updating to verify the change
+    response = client.get("/api/projects/project1/tasks/task1/eval/eval1")
+    assert response.status_code == 200
+    eval_before = response.json()
+
+    # The current_config_id might be None or different initially
+    initial_config_id = eval_before.get("current_config_id")
+    assert initial_config_id is None
+
+    # Set the current eval config
+    with patch("app.desktop.studio_server.eval_api.eval_from_id") as mock_eval_from_id:
+        mock_eval_from_id.return_value = mock_eval
+        response = client.post(
+            "/api/projects/project1/tasks/task1/eval/eval1/set_current_eval_config/eval_config1"
+        )
+        assert response.status_code == 200
+        updated_eval = response.json()
+
+    # Verify the current_config_id was updated
+    assert updated_eval["current_config_id"] == "eval_config1"
+    assert updated_eval["id"] == "eval1"
+
+    # Verify the change persists by fetching the eval again
+    eval_from_disk = mock_task.evals()[0]
+    assert eval_from_disk.current_config_id == "eval_config1"
