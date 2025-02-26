@@ -52,7 +52,7 @@
 
 <AppPage
   title="Evals"
-  subtitle="Evaluate the quality of models, prompts, fine-tunes, and more."
+  subtitle="Evaluate task performance of various models, prompts, fine-tunes, and more."
   sub_subtitle={is_empty ? undefined : "Read the Docs"}
   sub_subtitle_link="https://docs.getkiln.ai/docs/evaluationsTODO"
   action_buttons={is_empty
