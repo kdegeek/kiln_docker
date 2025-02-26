@@ -159,7 +159,7 @@
     const properties: UiProperty[] = []
 
     properties.push({
-      name: "Eval Name",
+      name: "Name",
       value: evaluator.name,
     })
     if (evaluator.description) {
@@ -174,7 +174,7 @@
       eval_configs_set_size = " (" + score_summary.dataset_size + " items)"
     }
     properties.push({
-      name: "Config Eval Set",
+      name: "Eval Method Dataset",
       value: evaluator.eval_configs_filter_id + eval_configs_set_size,
     })
     return properties
@@ -190,17 +190,17 @@
     const warnings: string[] = []
     if (score_summary.dataset_size === 0) {
       warnings.push(
-        "There are zero items in your config eval dataset. Generate some runs in your dataset tab, and tag them to add them to your eval-config dataset.",
+        "There are zero items in your eval method dataset. Generate some runs in your dataset tab, and tag them to add them to your eval method dataset.",
       )
     }
     if (score_summary.not_rated_count > 0) {
       warnings.push(
-        `${score_summary.not_rated_count} item(s) in your config eval dataset are not rated at all. Add human ratings to these items in the dataset tab.`,
+        `${score_summary.not_rated_count} item(s) in your eval method dataset are not rated at all. Add human ratings to these items in the dataset tab.`,
       )
     }
     if (score_summary.partially_rated_count > 0) {
       warnings.push(
-        `${score_summary.partially_rated_count} item(s) in your config eval dataset are only partially rated. Add human ratings to these items for every score.`,
+        `${score_summary.partially_rated_count} item(s) in your eval method dataset are only partially rated. Add human ratings for each score in the dataset tab.`,
       )
     }
 
@@ -277,11 +277,11 @@
 </script>
 
 <AppPage
-  title="Compare Eval Configs"
-  subtitle="Find the evaluator that best matches human-ratings"
+  title="Compare Evaluation Methods"
+  subtitle="Find the evaluation method that best matches human-ratings"
   action_buttons={[
     {
-      label: "Add Eval Config",
+      label: "Add Eval Method",
       href: `/evals/${$page.params.project_id}/${$page.params.task_id}/${$page.params.eval_id}/create_eval_config?next_page=eval_configs`,
     },
   ]}
@@ -314,11 +314,13 @@
           {/each}
         </div>
         {#if score_summary && score_summary.dataset_size > 0 && score_summary.dataset_size < 25}
-          <Warning
-            warning_message={`There are only ${score_summary.dataset_size} items in your eval-config dataset. This is generally too small to get a good sense of how well your eval-configs perform.`}
-            warning_color="warning"
-            tight={true}
-          />
+          <div class="mt-4">
+            <Warning
+              warning_message={`There are only ${score_summary.dataset_size} item(s) in your Eval Method Dataset. This is generally too small to get a good sense of how well your eval-configs perform.`}
+              warning_color="warning"
+              tight={true}
+            />
+          </div>
         {/if}
       </div>
     </div>
@@ -328,7 +330,7 @@
           <div class="grow">
             <div class="text-xl font-bold">Correlation to Human Ratings</div>
             <div class="text-xs text-gray-500">
-              How each eval config correlates to human ratings.
+              How each eval method correlates to human ratings.
               <button
                 class="link"
                 on:click={() => {
@@ -392,7 +394,7 @@
             <thead>
               <tr>
                 <th>
-                  <div>Eval Config</div>
+                  <div>Eval Method</div>
                   <div class="font-normal">How task output is evaluated</div>
                 </th>
                 <th> Eval Instructions </th>
@@ -521,7 +523,7 @@
 
 <Dialog
   bind:this={eval_config_instructions_dialog}
-  title="Eval Config Instructions: {displayed_eval_config?.name}"
+  title="Eval Method Instructions: {displayed_eval_config?.name}"
   action_buttons={[
     {
       label: "Close",

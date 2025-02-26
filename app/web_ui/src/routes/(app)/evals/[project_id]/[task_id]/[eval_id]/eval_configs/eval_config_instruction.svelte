@@ -15,12 +15,10 @@
 
 {#if eval_config}
   {@const eval_steps = get_eval_steps(eval_config)}
-  {#if eval_config.properties?.["task_description"]}
-    <div class="text-sm mb-4">
-      <div class="font-medium mb-2">Task Description:</div>
-      {eval_config.properties["task_description"]}
-    </div>
-  {/if}
+  <div class="text-sm mb-4">
+    <div class="font-medium mb-2">Task Description:</div>
+    {eval_config.properties["task_description"] || "No description provided."}
+  </div>
   {#if eval_steps}
     <div class="text-sm">
       <div class="font-medium mb-2">Evaluation Steps:</div>

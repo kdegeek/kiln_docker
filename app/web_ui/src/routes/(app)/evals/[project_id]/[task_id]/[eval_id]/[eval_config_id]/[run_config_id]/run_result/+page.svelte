@@ -11,6 +11,7 @@
   import { onMount, tick } from "svelte"
   import { page } from "$app/stores"
   import { string_to_json_key } from "$lib/utils/json_schema_editor/json_schema_templates"
+  import { eval_config_to_ui_name } from "$lib/utils/formatters"
   import {
     model_info,
     load_model_info,
@@ -20,6 +21,7 @@
     load_available_prompts,
     load_available_models,
   } from "$lib/stores"
+  import OutputTypeTablePreview from "../../../output_type_table_preview.svelte"
 
   let results: EvalRunResult | null = null
   let results_error: KilnError | null = null
@@ -73,7 +75,7 @@
       return {}
     }
     return {
-      Name: run_config.name,
+      "Run Method Name": run_config.name,
       Model: model_name(
         run_config.run_config_properties?.model_name,
         $model_info,
@@ -82,7 +84,7 @@
         run_config.run_config_properties?.model_provider_name,
       ),
       Prompt: prompt_name_from_id(run_config.run_config_properties?.prompt_id),
-      "Input Source": evaluator.eval_set_filter_id,
+      "Task Inputs Dataset": evaluator.eval_set_filter_id,
     }
   }
 
@@ -94,14 +96,14 @@
       return {}
     }
     return {
-      Name: evaluator.name,
-      "Eval Config Name": eval_config.name,
-      "Eval Type": eval_config.config_type,
-      "Eval Model": model_name(
+      "Eval Name": evaluator.name,
+      "Eval Method Name": eval_config.name,
+      Algorithm: eval_config_to_ui_name(eval_config.config_type),
+      Model: model_name(
         eval_config.model.properties["model_name"] + "",
         $model_info,
       ),
-      "Eval Provider": provider_name_from_id(
+      "Model Provider": provider_name_from_id(
         eval_config.model.properties["model_provider"] + "",
       ),
     }
@@ -110,7 +112,7 @@
 
 <AppPage
   title="Eval Results"
-  subtitle="Evaluating a task run config, with an evaluator."
+  subtitle="Evaluating a task run method with an evaluation method."
 >
   {#if results_loading}
     <div class="w-full min-h-[50vh] flex justify-center items-center">
@@ -131,15 +133,15 @@
     >
       <div class="font-medium">Eval Results Empty</div>
       <div class="text-error text-sm">
-        No results found for this run config.
+        No results found for this run method.
       </div>
     </div>
   {:else if results}
     <div class="flex flex-col xl:flex-row gap-8 xl:gap-16 mb-8">
       <div class="grow basis-1/2">
-        <div class="text-xl font-bold">Task Run Config</div>
+        <div class="text-xl font-bold">Task Run Method</div>
         <div class="text-sm text-gray-500 mb-4">
-          How the outputs were generated.
+          How the task outputs were generated.
         </div>
         <div
           class="grid grid-cols-[auto,1fr] gap-y-2 gap-x-4 text-sm 2xl:text-base"
@@ -153,9 +155,9 @@
         </div>
       </div>
       <div class="grow basis-1/2">
-        <div class="text-xl font-bold">Evaluator</div>
+        <div class="text-xl font-bold">Evaluation Method</div>
         <div class="text-sm text-gray-500 mb-4">
-          How the outputs were evaluated.
+          How the task outputs were evaluated.
         </div>
         <div
           class="grid grid-cols-[auto,1fr] gap-y-2 gap-x-4 text-sm 2xl:text-base"
@@ -176,7 +178,10 @@
             <th>Input</th>
             <th>Output</th>
             {#each results.eval.output_scores as score}
-              <th class="text-center">{score.name}</th>
+              <th class="text-center">
+                {score.name}
+                <OutputTypeTablePreview output_score_type={score.type} />
+              </th>
             {/each}
           </tr>
         </thead>

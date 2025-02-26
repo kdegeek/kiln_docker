@@ -125,11 +125,11 @@
     eval_set_default_tags[selected_template ?? "none"] || "eval_set"
   const config_set_default_tags: Record<EvalTemplate | "none", string> = {
     kiln_requirements: "golden",
-    toxicity: "toxicity_config_evals",
-    bias: "bias_config_evals",
-    maliciousness: "maliciousness_config_evals",
-    factual_correctness: "factual_config_evals",
-    jailbreak: "jailbreak_config_evals",
+    toxicity: "toxicity_golden",
+    bias: "bias_golden",
+    maliciousness: "maliciousness_golden",
+    factual_correctness: "factual_golden",
+    jailbreak: "jailbreak_golden",
     none: "golden",
   }
   $: suggested_config_set_tag =
@@ -253,11 +253,12 @@
 
         <div class="text-sm font-medium text-left pt-6 flex flex-col gap-1">
           <div class="text-xl font-bold" id="requirements_part">
-            Part 3: Evaluation Dataset
+            Part 3: Task Evaluation Dataset
           </div>
           <div class="text-xs text-gray-500">
-            Specify which which part of your dataset this evaluator should run
-            on.
+            Specify which which part of your dataset is used when evaluating
+            different methods of running your task (various prompts, models,
+            fine-tunes, etc).
           </div>
         </div>
         <FormElement
@@ -292,16 +293,17 @@
 
         <div class="text-sm font-medium text-left pt-6 flex flex-col gap-1">
           <div class="text-xl font-bold" id="requirements_part">
-            Part 3: Dataset to Evaluate Evaluation Configs
+            Part 4: Dataset to Compare Evaluation Methods
           </div>
           <div class="text-xs text-gray-500">
-            Specify which which part of your dataset this evaluator should run
-            on when attemping to find the ideal evaluation config (prompt,
-            model, etc).
+            Specify which which part of your dataset is used when trying to find
+            the best evaluation method for this task. You'll rate these dataset
+            items, so we can compare the evaluator's ratings to your human
+            preferences.
           </div>
         </div>
         <FormElement
-          label="Evaluation Config Dataset"
+          label="Evaluation Method Dataset"
           info_description="You can populate this dataset later. We recommend you have a person rate all of the samples in this dataset, so you can compare evaluation methods to human ratings."
           inputType="select"
           id="automatic_validation"
