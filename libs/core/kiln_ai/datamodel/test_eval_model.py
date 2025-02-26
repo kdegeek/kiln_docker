@@ -605,3 +605,57 @@ def test_eval_run_custom_scores_not_allowed(valid_eval_config, valid_eval_run_da
                 )
             ],
         )
+
+
+def test_eval_run_eval_config_eval_validation():
+    """Test that eval_config_eval and task_run_config_id validation works correctly"""
+
+    # Case 1: Valid configuration - eval_config_eval=True and task_run_config_id=None
+    valid_run1 = EvalRun(
+        dataset_id="dataset123",
+        eval_config_eval=True,
+        task_run_config_id=None,
+        input="test input",
+        output="test output",
+        scores={"score": 1.0},
+    )
+    assert valid_run1.eval_config_eval is True
+    assert valid_run1.task_run_config_id is None
+
+    # Case 2: Valid configuration - eval_config_eval=False and task_run_config_id is set
+    valid_run2 = EvalRun(
+        dataset_id="dataset123",
+        eval_config_eval=False,
+        task_run_config_id="config456",
+        input="test input",
+        output="test output",
+        scores={"score": 1.0},
+    )
+    assert valid_run2.eval_config_eval is False
+    assert valid_run2.task_run_config_id == "config456"
+
+    # Case 3: Invalid configuration - eval_config_eval=True but task_run_config_id is set
+    with pytest.raises(
+        ValueError, match="task_run_config_id must be None if eval_config_eval is true"
+    ):
+        EvalRun(
+            dataset_id="dataset123",
+            eval_config_eval=True,
+            task_run_config_id="config456",
+            input="test input",
+            output="test output",
+            scores={"score": 1.0},
+        )
+
+    # Case 4: Invalid configuration - eval_config_eval=False but task_run_config_id is None
+    with pytest.raises(
+        ValueError, match="task_run_config_id must be set if eval_config_eval is false"
+    ):
+        EvalRun(
+            dataset_id="dataset123",
+            eval_config_eval=False,
+            task_run_config_id=None,
+            input="test input",
+            output="test output",
+            scores={"score": 1.0},
+        )

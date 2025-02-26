@@ -84,8 +84,15 @@ class EvalRun(KilnParentedModel):
     dataset_id: ID_TYPE = Field(
         description="The ID of the dataset item that was used for this run (we only use it's input). Must belong to the same Task as this eval."
     )
-    task_run_config_id: ID_TYPE = Field(
-        description="The ID of the TaskRunConfig that was run. Must belong to the same Task as this eval."
+    # Eval runs can be one of 2 types:
+    # 1) eval_config_eval=False: we were evaluating a task run (a method of running the task). We ran the task with the task_run_config, saved the output, then ran the evaluator on the output. task_run_config_id must be set.
+    # 2) eval_config_eval=True: we were evaluating an eval config (a method of evaluating the task). We used the existing dataset item input/output, and ran the evaluator on it. task_run_config_id must be None.
+    task_run_config_id: ID_TYPE | None = Field(
+        description="The ID of the TaskRunConfig that was run, if this eval run was based on a task run. Must belong to the same Task as this eval. Can be None if this eval run is based on an eval config."
+    )
+    eval_config_eval: bool = Field(
+        description="Whether this eval run to evaluate the parent eval config (evaluating the config using an existing dataset item). If true, task_run_config_id must be None, as we're not running the task.",
+        default=False,
     )
     # This may duplicate the dataset_id.input, but we're denormalizing intentionally.
     input: str = Field(
@@ -102,6 +109,18 @@ class EvalRun(KilnParentedModel):
         if self.parent is not None and self.parent.__class__.__name__ != "EvalConfig":
             raise ValueError("parent must be an EvalConfig")
         return self.parent  # type: ignore
+
+    @model_validator(mode="after")
+    def validate_eval_run_types(self) -> Self:
+        if self.eval_config_eval and self.task_run_config_id is not None:
+            raise ValueError(
+                "task_run_config_id must be None if eval_config_eval is true"
+            )
+        if not self.eval_config_eval and self.task_run_config_id is None:
+            raise ValueError(
+                "task_run_config_id must be set if eval_config_eval is false"
+            )
+        return self
 
     @model_validator(mode="after")
     def validate_scores(self) -> Self:

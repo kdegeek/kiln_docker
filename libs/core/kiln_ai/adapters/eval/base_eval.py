@@ -11,7 +11,7 @@ from kiln_ai.utils.exhaustive_error import raise_exhaustive_enum_error
 
 
 class BaseEval:
-    def __init__(self, eval_config: EvalConfig, run_config: RunConfig):
+    def __init__(self, eval_config: EvalConfig, run_config: RunConfig | None):
         self.eval_config = eval_config
         eval = eval_config.parent_eval()
         if not eval:
@@ -40,7 +40,10 @@ class BaseEval:
 
         return model_name, ModelProviderName(provider)
 
-    async def run(self, input: str) -> tuple[TaskRun, EvalScores]:
+    async def run_task_and_eval(self, input: str) -> tuple[TaskRun, EvalScores]:
+        if self.run_config is None:
+            raise ValueError("Run config is required for run_task_and_eval")
+
         run_adapter = adapter_for_task(
             self.target_task,
             self.run_config.model_name,

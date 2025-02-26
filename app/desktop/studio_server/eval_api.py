@@ -167,7 +167,7 @@ def human_score_from_task_run(
 
 
 def count_human_evals(
-    items: Set[TaskRun],
+    items: List[TaskRun],
     eval: Eval,
     score_key_to_task_requirement_id: Dict[str, ID_TYPE],
 ) -> Tuple[int, int, int]:
@@ -362,8 +362,9 @@ def connect_evals_api(app: FastAPI):
             ]
 
         eval_runner = EvalRunner(
-            eval_config=eval_config,
+            eval_configs=[eval_config],
             run_configs=run_configs,
+            eval_run_type="task_run_eval",
         )
 
         # Async messages via server side events (SSE)
@@ -630,7 +631,9 @@ def connect_evals_api(app: FastAPI):
 
         # Count how many dataset items have human evals
         fully_rated_count, partially_rated_count, not_rated_count = count_human_evals(
-            expected_dataset_items.values(), eval, score_key_to_task_requirement_id
+            list(expected_dataset_items.values()),
+            eval,
+            score_key_to_task_requirement_id,
         )
 
         return EvalConfigCompareSummary(

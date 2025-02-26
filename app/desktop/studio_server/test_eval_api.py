@@ -13,7 +13,6 @@ from kiln_ai.datamodel import (
     DataSourceType,
     Priority,
     Project,
-    PromptId,
     RequirementRating,
     Task,
     TaskOutput,
@@ -21,7 +20,6 @@ from kiln_ai.datamodel import (
     TaskRequirement,
     TaskRun,
 )
-from kiln_ai.datamodel.dataset_filters import DatasetFilterId
 from kiln_ai.datamodel.eval import (
     Eval,
     EvalConfig,
@@ -680,8 +678,8 @@ async def test_get_eval_run_results(
 
     # Test successful retrieval
     response = client.get(
-        f"/api/projects/project1/tasks/task1/eval/eval1"
-        f"/eval_config/eval_config1/run_config/run_config1/results"
+        "/api/projects/project1/tasks/task1/eval/eval1"
+        "/eval_config/eval_config1/run_config/run_config1/results"
     )
 
     assert response.status_code == 200
@@ -701,22 +699,22 @@ async def test_get_eval_run_results(
 
     # Test with invalid eval ID
     response = client.get(
-        f"/api/projects/project1/tasks/task1/eval/invalid_eval"
-        f"/eval_config/eval_config1/run_config/run_config1/results"
+        "/api/projects/project1/tasks/task1/eval/invalid_eval"
+        "/eval_config/eval_config1/run_config/run_config1/results"
     )
     assert response.status_code == 404
 
     # Test with invalid eval config ID
     response = client.get(
-        f"/api/projects/project1/tasks/task1/eval/eval1"
-        f"/eval_config/invalid_config/run_config/run_config1/results"
+        "/api/projects/project1/tasks/task1/eval/eval1"
+        "/eval_config/invalid_config/run_config/run_config1/results"
     )
     assert response.status_code == 404
 
     # Test with invalid run config ID
     response = client.get(
-        f"/api/projects/project1/tasks/task1/eval/eval1"
-        f"/eval_config/eval_config1/run_config/invalid_run_config/results"
+        "/api/projects/project1/tasks/task1/eval/eval1"
+        "/eval_config/eval_config1/run_config/invalid_run_config/results"
     )
     assert response.status_code == 404
 
@@ -899,7 +897,7 @@ async def test_get_eval_config_compare_summary(
 
     # Test successful retrieval
     response = client.get(
-        f"/api/projects/project1/tasks/task1/eval/eval1/eval_configs_score_summary"
+        "/api/projects/project1/tasks/task1/eval/eval1/eval_configs_score_summary"
     )
 
     assert response.status_code == 200
@@ -947,7 +945,7 @@ async def test_get_eval_config_compare_summary(
     # 2 of total_in_dataset eval configs are are in ec2 test
     assert eval_config_percent_complete["ec2"] == pytest.approx(2 / total_in_dataset)
 
-    # Test case 3: Check partials still calulate available scores
+    # Test case 3: Check partials still calculate available scores
     assert results["ec3"] == {
         "overall_rating": {
             "mean_squared_error": 4,
