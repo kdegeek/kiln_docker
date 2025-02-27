@@ -54,7 +54,7 @@
   title="Evals"
   subtitle="Evaluate task performance of various models, prompts, fine-tunes, and more."
   sub_subtitle={is_empty ? undefined : "Read the Docs"}
-  sub_subtitle_link="https://docs.getkiln.ai/docs/evaluationsTODO"
+  sub_subtitle_link="https://docs.getkiln.ai/docs/evaluations"
   action_buttons={is_empty
     ? []
     : [
