@@ -71,6 +71,8 @@ class ModelName(str, Enum):
     gemma_2_27b = "gemma_2_27b"
     claude_3_5_haiku = "claude_3_5_haiku"
     claude_3_5_sonnet = "claude_3_5_sonnet"
+    claude_3_7_sonnet = "claude_3_7_sonnet"
+    claude_3_7_sonnet_thinking = "claude_3_7_sonnet_thinking"
     gemini_1_5_flash = "gemini_1_5_flash"
     gemini_1_5_flash_8b = "gemini_1_5_flash_8b"
     gemini_1_5_pro = "gemini_1_5_pro"
@@ -205,6 +207,34 @@ built_in_models: List[KilnModel] = [
                 name=ModelProviderName.openrouter,
                 structured_output_mode=StructuredOutputMode.function_calling,
                 provider_options={"model": "anthropic/claude-3.5-sonnet"},
+            ),
+        ],
+    ),
+    # Claude 3.7 Sonnet
+    KilnModel(
+        family=ModelFamily.claude,
+        name=ModelName.claude_3_7_sonnet,
+        friendly_name="Claude 3.7 Sonnet",
+        providers=[
+            KilnModelProvider(
+                name=ModelProviderName.openrouter,
+                structured_output_mode=StructuredOutputMode.function_calling,
+                provider_options={"model": "anthropic/claude-3.7-sonnet"},
+            ),
+        ],
+    ),
+    # Claude 3.7 Sonnet Thinking
+    KilnModel(
+        family=ModelFamily.claude,
+        name=ModelName.claude_3_7_sonnet_thinking,
+        friendly_name="Claude 3.7 Sonnet Thinking",
+        providers=[
+            KilnModelProvider(
+                name=ModelProviderName.openrouter,
+                provider_options={"model": "anthropic/claude-3.7-sonnet:thinking"},
+                reasoning_capable=True,
+                # For reasoning models, we need to use json_instructions with OpenRouter
+                structured_output_mode=StructuredOutputMode.json_instructions,
             ),
         ],
     ),
