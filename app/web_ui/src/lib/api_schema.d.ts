@@ -984,6 +984,23 @@ export interface components {
             /** Remove Tags */
             remove_tags?: string[] | null;
         };
+        /** CorrelationResult */
+        CorrelationResult: {
+            /** Mean Absolute Error */
+            mean_absolute_error: number;
+            /** Mean Normalized Absolute Error */
+            mean_normalized_absolute_error: number;
+            /** Mean Squared Error */
+            mean_squared_error: number;
+            /** Mean Normalized Squared Error */
+            mean_normalized_squared_error: number;
+            /** Spearman Correlation */
+            spearman_correlation: number;
+            /** Pearson Correlation */
+            pearson_correlation: number;
+            /** Kendalltau Correlation */
+            kendalltau_correlation: number;
+        };
         /**
          * CreateDatasetSplitRequest
          * @description Request to create a dataset split
@@ -1386,7 +1403,7 @@ export interface components {
             /** Results */
             results: {
                 [key: string]: {
-                    [key: string]: components["schemas"]["EvalConfigScoreSummary"];
+                    [key: string]: components["schemas"]["CorrelationResult"];
                 };
             };
             /** Eval Config Percent Complete */
@@ -1401,17 +1418,6 @@ export interface components {
             partially_rated_count: number;
             /** Not Rated Count */
             not_rated_count: number;
-        };
-        /** EvalConfigScoreSummary */
-        EvalConfigScoreSummary: {
-            /** Mean Absolute Error */
-            mean_absolute_error: number;
-            /** Mean Normalized Absolute Error */
-            mean_normalized_absolute_error: number;
-            /** Mean Squared Error */
-            mean_squared_error: number;
-            /** Mean Normalized Squared Error */
-            mean_normalized_squared_error: number;
         };
         /**
          * EvalConfigType

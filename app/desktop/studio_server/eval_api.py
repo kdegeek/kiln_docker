@@ -32,6 +32,12 @@ from kiln_ai.utils.name_generator import generate_memorable_name
 from kiln_server.task_api import task_from_id
 from pydantic import BaseModel
 
+from .correlation_calculator import (
+    CorrelationCalculator,
+    CorrelationResult,
+    CorrelationScore,
+)
+
 
 def eval_from_id(project_id: str, task_id: str, eval_id: str) -> Eval:
     task = task_from_id(project_id, task_id)
@@ -143,16 +149,9 @@ class EvalResultSummary(BaseModel):
     dataset_size: int
 
 
-class EvalConfigScoreSummary(BaseModel):
-    mean_absolute_error: float
-    mean_normalized_absolute_error: float
-    mean_squared_error: float
-    mean_normalized_squared_error: float
-
-
 class EvalConfigCompareSummary(BaseModel):
-    # Summary of results. eval_config_id -> output_score_id -> ScoreSummary
-    results: Dict[str, Dict[str, EvalConfigScoreSummary]]
+    # Summary of results. eval_config_id -> output_score_id -> CorrelationResult
+    results: Dict[str, Dict[str, CorrelationResult]]
     # eval_config_id -> percent of the dataset that has been processed (run with eval scores)
     eval_config_percent_complete: Dict[str, float]
     # The total size of the dataset used for the eval config comparisons (eval.eval_configs_filter_id set size)
@@ -589,12 +588,8 @@ def connect_evals_api(app: FastAPI):
             for eval_config in eval_configs
         }
 
-        # eval_config_id -> output_score_id -> scores/total
-        total_squared_error: Dict[str, Dict[str, float]] = {}
-        total_normalized_squared_error: Dict[str, Dict[str, float]] = {}
-        total_absolute_error: Dict[str, Dict[str, float]] = {}
-        total_normalized_absolute_error: Dict[str, Dict[str, float]] = {}
-        total_count: Dict[str, Dict[str, int]] = {}
+        # eval_config_id -> output_score_id -> correlation calculator
+        correlation_calculators: Dict[str, Dict[str, CorrelationCalculator]] = {}
 
         # important: readonly makes this much faster
         for eval_config in eval_configs:
@@ -631,18 +626,13 @@ def connect_evals_api(app: FastAPI):
                         # This score doesn't have both a human eval and eval score, so we can't compare
                         continue
 
-                    if eval_config_id not in total_squared_error:
-                        total_squared_error[eval_config_id] = {}
-                        total_absolute_error[eval_config_id] = {}
-                        total_count[eval_config_id] = {}
-                        total_normalized_squared_error[eval_config_id] = {}
-                        total_normalized_absolute_error[eval_config_id] = {}
-                    if score_key not in total_squared_error[eval_config_id]:
-                        total_squared_error[eval_config_id][score_key] = 0
-                        total_absolute_error[eval_config_id][score_key] = 0
-                        total_count[eval_config_id][score_key] = 0
-                        total_normalized_squared_error[eval_config_id][score_key] = 0
-                        total_normalized_absolute_error[eval_config_id][score_key] = 0
+                    if eval_config_id not in correlation_calculators:
+                        correlation_calculators[eval_config_id] = {}
+
+                    if score_key not in correlation_calculators[eval_config_id]:
+                        correlation_calculators[eval_config_id][score_key] = (
+                            CorrelationCalculator()
+                        )
 
                     normalized_eval_score = normalize_rating(
                         eval_score, output_score.type
@@ -650,43 +640,28 @@ def connect_evals_api(app: FastAPI):
                     normalized_human_score = normalize_rating(
                         human_score, output_score.type
                     )
-                    total_squared_error[eval_config_id][score_key] += (
-                        eval_score - human_score
-                    ) ** 2
-                    total_normalized_squared_error[eval_config_id][score_key] += (
-                        normalized_eval_score - normalized_human_score
-                    ) ** 2
-                    total_absolute_error[eval_config_id][score_key] += abs(
-                        eval_score - human_score
+                    correlation_calculators[eval_config_id][score_key].add_score(
+                        CorrelationScore(
+                            measured_score=eval_score,
+                            human_score=human_score,
+                            normalized_measured_score=normalized_eval_score,
+                            normalized_human_score=normalized_human_score,
+                        )
                     )
-                    total_normalized_absolute_error[eval_config_id][score_key] += abs(
-                        normalized_eval_score - normalized_human_score
-                    )
-                    total_count[eval_config_id][score_key] += 1
 
         # Convert to score summaries
-        results: Dict[str, Dict[str, EvalConfigScoreSummary]] = {}
-        for eval_config_id in total_count.keys():
+        results: Dict[str, Dict[str, CorrelationResult]] = {}
+        for eval_config_id in correlation_calculators.keys():
             results[eval_config_id] = {}
-            for score_key in total_count[eval_config_id].keys():
-                count = total_count[eval_config_id][score_key]
-                if count > 0:
-                    results[eval_config_id][score_key] = EvalConfigScoreSummary(
-                        mean_squared_error=(
-                            total_squared_error[eval_config_id][score_key] / count
-                        ),
-                        mean_absolute_error=(
-                            total_absolute_error[eval_config_id][score_key] / count
-                        ),
-                        mean_normalized_squared_error=(
-                            total_normalized_squared_error[eval_config_id][score_key]
-                            / count
-                        ),
-                        mean_normalized_absolute_error=(
-                            total_normalized_absolute_error[eval_config_id][score_key]
-                            / count
-                        ),
-                    )
+            for score_key in correlation_calculators[eval_config_id].keys():
+                if not correlation_calculators[eval_config_id][score_key]:
+                    # No scores to calculate correlation for this pair
+                    continue
+
+                correlation_result = correlation_calculators[eval_config_id][
+                    score_key
+                ].calculate_correlation()
+                results[eval_config_id][score_key] = correlation_result
 
         # Calculate the percent of the dataset that has been processed
         eval_config_percent_complete: Dict[str, float] = {}
