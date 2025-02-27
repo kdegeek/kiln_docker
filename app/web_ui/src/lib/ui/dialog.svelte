@@ -2,6 +2,7 @@
   import { KilnError, createKilnError } from "$lib/utils/error_handlers"
 
   export let title: string
+  export let blur_background: boolean = false
   const id: string = "dialog-" + Math.random().toString(36)
   type ActionButton = {
     label: string
@@ -10,6 +11,7 @@
     action?: () => boolean
     isCancel?: boolean
     isPrimary?: boolean
+    isError?: boolean
     disabled?: boolean
   }
   export let action_buttons: ActionButton[] = []
@@ -94,7 +96,8 @@
               <button
                 class="btn btn-sm h-10 min-w-24 {button.isPrimary
                   ? 'btn-primary'
-                  : 'btn-secondary'}"
+                  : 'btn-secondary'}
+                  {button.isError ? 'btn-error' : ''}"
                 disabled={button.disabled}
                 on:click={() => perform_button_action(button)}
               >
@@ -106,7 +109,10 @@
       </div>
     {/if}
   </div>
-  <form method="dialog" class="modal-backdrop">
+  <form
+    method="dialog"
+    class="modal-backdrop {blur_background ? 'backdrop-blur-sm' : ''}"
+  >
     <button>close</button>
   </form>
 </dialog>

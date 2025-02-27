@@ -1,5 +1,7 @@
 <script lang="ts">
   import AppPage from "../../../../../../../app_page.svelte"
+  import Dialog from "$lib/ui/dialog.svelte"
+  import Warning from "$lib/ui/warning.svelte"
   import type {
     EvalRunResult,
     Eval,
@@ -26,8 +28,10 @@
   let results: EvalRunResult | null = null
   let results_error: KilnError | null = null
   let results_loading = true
+  let peek_dialog: Dialog | null = null
 
   onMount(async () => {
+    peek_dialog?.show()
     // Wait for params to load
     await tick()
     // Wait for these 3 to load, as they are needed for better labels. Usually already cached and instant.
@@ -204,3 +208,40 @@
     </div>
   {/if}
 </AppPage>
+
+<Dialog
+  title="Are you sure you want to peek?"
+  bind:this={peek_dialog}
+  blur_background={true}
+  action_buttons={[
+    {
+      label: "Look Anyways",
+      isError: true,
+    },
+    {
+      label: "Go Back",
+      isPrimary: true,
+      action: () => {
+        window.history.back()
+        return true
+      },
+    },
+  ]}
+>
+  <div class="font-light flex flex-col gap-4">
+    <Warning
+      warning_message="We strongly suggest you don't look at these results! Looking at these results can bias your future iterations."
+    />
+    <div>
+      Viewing these evaluation results may lead to data leakage - a fundamental
+      issue in machine learning where information from your test set
+      inadvertently influences your development process. When you examine
+      specific examples, you're likely to optimize for those particular cases
+      rather than developing solutions that generalize well to unseen data.
+    </div>
+    <div>
+      Use our "Run" screen or fresh synthetic dataset generation if you want to
+      explore what type of content a run method is generating.
+    </div>
+  </div>
+</Dialog>
