@@ -40,7 +40,16 @@
   let score_summary: EvalConfigCompareSummary | null = null
   let score_summary_error: KilnError | null = null
 
-  let score_type: "mse" | "mae" | "norm_mse" | "norm_mae" = "norm_mse"
+  type ScoreType =
+    | "mse"
+    | "mae"
+    | "norm_mse"
+    | "norm_mae"
+    | "spearman"
+    | "pearson"
+    | "kendalltau"
+
+  let score_type: ScoreType = "kendalltau"
 
   $: loading = eval_loading || eval_configs_loading // Score summary not blocking whole UI
   $: error = eval_error || eval_configs_error || score_summary_error
@@ -248,7 +257,7 @@
 
   function info_tooltip_text(
     rating_type: TaskOutputRatingType,
-    score_type: "mse" | "mae" | "norm_mse" | "norm_mae",
+    score_type: ScoreType,
   ) {
     let label = ""
     if (score_type === "mae") {
@@ -259,6 +268,12 @@
       label = "Normalized mean squared error"
     } else if (score_type === "norm_mae") {
       label = "Normalized mean absolute error"
+    } else if (score_type === "spearman") {
+      label = "Spearman's rank correlation"
+    } else if (score_type === "pearson") {
+      label = "Pearson's correlation"
+    } else if (score_type === "kendalltau") {
+      label = "Kendall Tau correlation"
     }
     label += " for "
     if (rating_type === "five_star") {
@@ -354,6 +369,9 @@
                 ["norm_mae", "Normalized Mean Absolute Error"],
                 ["mse", "Mean Squared Error"],
                 ["mae", "Mean Absolute Error"],
+                ["spearman", "Spearman Rank Correlation"],
+                ["pearson", "Pearson Correlation"],
+                ["kendalltau", "Kendall Tau Correlation"],
               ]}
               bind:value={score_type}
             />
@@ -499,6 +517,12 @@
                           {scores.mean_normalized_squared_error.toFixed(3)}
                         {:else if score_type === "norm_mae"}
                           {scores.mean_normalized_absolute_error.toFixed(3)}
+                        {:else if score_type === "spearman"}
+                          {scores.spearman_correlation.toFixed(3)}
+                        {:else if score_type === "pearson"}
+                          {scores.pearson_correlation.toFixed(3)}
+                        {:else if score_type === "kendalltau"}
+                          {scores.kendalltau_correlation.toFixed(3)}
                         {/if}
                       {:else}
                         unknown
@@ -532,7 +556,7 @@
 
 <Dialog
   bind:this={score_legend_dialog}
-  title="Score Legend"
+  title="Score Types Explained"
   action_buttons={[
     {
       label: "Close",
@@ -544,6 +568,44 @@
     Each score is a correlation score between the evaluator's score and the
     human score added through the dataset tab.
   </div>
+  <div class="m-8 font-light text-sm">
+    <div class="font-extrabold">TL;DR</div>
+    <div class="mb-2">
+      We suggest you use Kendall Tau correlation scores to compare results.
+    </div>
+    <div class="mb-2">
+      Higher values are better. 1.0 is a perfect correlation between the
+      evaluator and human scores. 0 is no correlation. -1.0 is perfect negative
+      correlation.
+    </div>
+    <div>
+      Subjective tasks will never reach a perfect 1.0 score, so don't worry if
+      your score isn't perfect.
+    </div>
+  </div>
+  <div class="font-medium mt-5">
+    Spearman, Kendall Tau, and Pearson Correlation
+  </div>
+  <div class="text-sm text-gray-500 font-medium mb-1">
+    From -1 to 1, higher is better
+  </div>
+  <div class="font-light text-sm">
+    These are three scientific correlation coefficients. For all three, The
+    value tends to be high (close to 1) for samples with a strongly positive
+    correlation, low (close to -1) for samples with a strongly negative
+    correlation, and close to zero for samples with weak correlation.
+  </div>
+  <ul class="list-disc text-sm text-gray-500 pl-5 pt-2">
+    <li>
+      Spearman evaluates the rank of the scores and is less sensitive to
+      absolute values than Pearson.
+    </li>
+    <li>
+      Kendall Tau evaluates pair order, is more robust to outliers, and performs
+      better on small datasets.
+    </li>
+    <li>Pearson evaluates linear correlation.</li>
+  </ul>
   <div class="font-medium mt-5">Mean Absolute Error</div>
   <div class="text-sm text-gray-500 font-medium mb-1">Lower is better</div>
   <div class="font-light text-sm">
