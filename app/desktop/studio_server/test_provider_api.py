@@ -1468,4 +1468,4 @@ async def test_disconnect_api_key_unsupported_provider(client, provider_id):
     )
 
     assert response.status_code == 400
-    assert response.json() == {"message": f"Provider not supported"}
+    assert response.json() == {"message": "Provider not supported"}

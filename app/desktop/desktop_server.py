@@ -8,6 +8,7 @@ import kiln_server.server as kiln_server
 import uvicorn
 from fastapi import FastAPI
 
+from app.desktop.log_config import log_config
 from app.desktop.studio_server.data_gen_api import connect_data_gen_api
 from app.desktop.studio_server.eval_api import connect_evals_api
 from app.desktop.studio_server.finetune_api import connect_fine_tune_api
@@ -48,8 +49,8 @@ def server_config(port=8757):
         make_app(),
         host="127.0.0.1",
         port=port,
-        log_level="warning",
         use_colors=False,
+        log_config=log_config(),
     )
 
 
