@@ -140,7 +140,7 @@ def test_structured_output_workflow(tmp_path):
 
     # Create runs
     runs = []
-    for source in DataSourceType:
+    for source in [DataSourceType.human, DataSourceType.synthetic]:
         for _ in range(2):
             task_run = TaskRun(
                 input="Generate info for John Doe",
@@ -214,9 +214,9 @@ def test_structured_output_workflow(tmp_path):
 
     assert loaded_task.name == "Structured Output Task"
     assert len(loaded_task.requirements) == 2
-    assert len(loaded_task.runs()) == 5
-
     loaded_runs = loaded_task.runs()
+    assert len(loaded_runs) == 5
+
     for task_run in loaded_runs:
         output = task_run.output
         assert output.rating is not None

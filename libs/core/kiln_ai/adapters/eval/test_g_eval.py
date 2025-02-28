@@ -77,11 +77,10 @@ def test_eval_config(test_task):
         parent=eval,
         config_type=EvalConfigType.g_eval,
         model=DataSource(
-            type=DataSourceType.synthetic,
+            type=DataSourceType.eval,
             properties={
                 "model_name": "gpt_4o_mini",
                 "model_provider": "openai",
-                "adapter_name": "openai_compatible",
             },
         ),
         properties={
@@ -149,7 +148,10 @@ async def run_g_eval_test(
     g_eval = GEval(test_eval_config, test_run_config)
 
     # Run the evaluation
-    eval_result = await g_eval.run_eval(test_task_run)
+    eval_result, intermediate_outputs = await g_eval.run_eval(test_task_run)
+
+    # Should have 1 intermediate output (thinking or chain of thought)
+    assert len(intermediate_outputs) == 1
 
     assert "topic_alignment" in eval_result
     topic_alignment = eval_result["topic_alignment"]
@@ -171,7 +173,7 @@ async def run_g_eval_test(
     "config_type", [EvalConfigType.g_eval, EvalConfigType.llm_as_judge]
 )
 @pytest.mark.paid
-async def test_run_g_eval(
+async def test_run_g_eval_paid(
     test_task, test_eval_config, test_task_run, config_type, test_run_config
 ):
     await run_g_eval_test(
@@ -191,10 +193,13 @@ async def test_run_g_eval_e2e(
     g_eval = GEval(test_eval_config, test_run_config)
 
     # Run the evaluation
-    task_run, scores = await g_eval.run("chickens")
+    task_run, scores, intermediate_outputs = await g_eval.run_task_and_eval("chickens")
 
     # Verify the evaluation results
     assert isinstance(scores, dict)
+
+    # Should have 1 intermediate output (thinking or chain of thought)
+    assert len(intermediate_outputs) == 1
 
     assert "topic_alignment" in scores
     topic_alignment = scores["topic_alignment"]
@@ -436,11 +441,10 @@ def test_g_eval_system_instruction():
         parent=eval,
         name="Test Eval",
         model=DataSource(
-            type=DataSourceType.synthetic,
+            type=DataSourceType.eval,
             properties={
                 "model_name": "gpt_4o_mini",
                 "model_provider": "openai",
-                "adapter_name": "openai_compatible",
             },
         ),
         config_type=EvalConfigType.g_eval,

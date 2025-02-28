@@ -235,8 +235,8 @@ class EvalConfig(KilnParentedModel, KilnParentModel, parent_of={"runs": EvalRun}
 
     @model_validator(mode="after")
     def validate_model(self) -> Self:
-        if self.model.type != DataSourceType.synthetic:
-            raise ValueError("model must be a synthetic model for an eval config")
+        if self.model.type != DataSourceType.eval:
+            raise ValueError("model must be a eval datasource for an eval config")
         return self
 
     @model_validator(mode="after")

@@ -59,11 +59,10 @@ def mock_eval(mock_task):
 @pytest.fixture
 def data_source():
     return DataSource(
-        type=DataSourceType.synthetic,
+        type=DataSourceType.eval,
         properties={
             "model_name": "gpt-4",
             "model_provider": "openai",
-            "adapter_name": "langchain_adapter",
         },
     )
 

@@ -112,11 +112,10 @@ def mock_eval_config(mock_eval):
         parent=mock_eval,
         model=DataSource(
             id="model1",
-            type=DataSourceType.synthetic,
+            type=DataSourceType.eval,
             properties={
                 "model_name": "gpt-4",
                 "model_provider": "openai",
-                "adapter_name": "TODO",
             },
         ),
         prompt=BasePrompt(
@@ -342,7 +341,7 @@ async def test_create_eval_config(
     assert result["name"] == valid_eval_config_request.name
     assert result["config_type"] == valid_eval_config_request.type
     assert result["properties"] == valid_eval_config_request.properties
-    assert result["model"]["type"] == DataSourceType.synthetic
+    assert result["model"]["type"] == DataSourceType.eval
     assert (
         result["model"]["properties"]["model_name"]
         == valid_eval_config_request.model_name
@@ -357,7 +356,7 @@ async def test_create_eval_config(
     config = mock_eval.configs()[0]
     assert config.config_type == valid_eval_config_request.type
     assert config.properties == valid_eval_config_request.properties
-    assert config.model.type == DataSourceType.synthetic
+    assert config.model.type == DataSourceType.eval
     assert config.model.properties["model_name"] == valid_eval_config_request.model_name
     assert (
         config.model.properties["model_provider"] == valid_eval_config_request.provider
@@ -823,11 +822,10 @@ async def test_get_eval_config_compare_summary(
                 parent=mock_eval,
                 model=DataSource(
                     id="model1",
-                    type=DataSourceType.synthetic,
+                    type=DataSourceType.eval,
                     properties={
                         "model_name": "gpt-4",
                         "model_provider": "openai",
-                        "adapter_name": "TODO",
                     },
                 ),
                 prompt=BasePrompt(

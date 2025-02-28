@@ -340,11 +340,10 @@ def connect_evals_api(app: FastAPI):
             config_type=request.type,
             properties=request.properties,
             model=DataSource(
-                type=DataSourceType.synthetic,
+                type=DataSourceType.eval,
                 properties={
                     "model_name": request.model_name,
                     "model_provider": request.provider,
-                    "adapter_name": "kiln_eval",
                 },
             ),
             parent=eval,

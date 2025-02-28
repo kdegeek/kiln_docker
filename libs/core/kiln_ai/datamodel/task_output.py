@@ -171,6 +171,7 @@ class DataSourceType(str, Enum):
 
     human = "human"
     synthetic = "synthetic"
+    eval = "eval"
 
 
 class DataSourceProperty(BaseModel):
@@ -206,25 +207,25 @@ class DataSource(BaseModel):
             name="created_by",
             type=str,
             required_for=[DataSourceType.human],
-            not_allowed_for=[DataSourceType.synthetic],
+            not_allowed_for=[DataSourceType.synthetic, DataSourceType.eval],
         ),
         DataSourceProperty(
             name="model_name",
             type=str,
-            required_for=[DataSourceType.synthetic],
+            required_for=[DataSourceType.synthetic, DataSourceType.eval],
             not_allowed_for=[DataSourceType.human],
         ),
         DataSourceProperty(
             name="model_provider",
             type=str,
-            required_for=[DataSourceType.synthetic],
+            required_for=[DataSourceType.synthetic, DataSourceType.eval],
             not_allowed_for=[DataSourceType.human],
         ),
         DataSourceProperty(
             name="adapter_name",
             type=str,
             required_for=[DataSourceType.synthetic],
-            not_allowed_for=[DataSourceType.human],
+            not_allowed_for=[DataSourceType.human, DataSourceType.eval],
         ),
         DataSourceProperty(
             # Legacy field -- allow loading from old runs, but we shouldn't be setting it.

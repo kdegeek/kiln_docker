@@ -37,11 +37,10 @@ def valid_eval_config_data():
         "config_type": EvalConfigType.g_eval,
         "properties": {"eval_steps": ["step1", "step2"]},
         "model": DataSource(
-            type=DataSourceType.synthetic,
+            type=DataSourceType.eval,
             properties={
                 "model_name": "gpt-4",
                 "model_provider": "openai",
-                "adapter_name": "openai_compatible",
             },
         ),
     }
@@ -56,10 +55,9 @@ def test_eval_config_valid(valid_eval_config):
     assert valid_eval_config.name == "Test Eval Config"
     assert valid_eval_config.config_type == EvalConfigType.g_eval
     assert valid_eval_config.properties["eval_steps"] == ["step1", "step2"]
-    assert valid_eval_config.model.type == DataSourceType.synthetic
+    assert valid_eval_config.model.type == DataSourceType.eval
     assert valid_eval_config.model.properties["model_name"] == "gpt-4"
     assert valid_eval_config.model.properties["model_provider"] == "openai"
-    assert valid_eval_config.model.properties["adapter_name"] == "openai_compatible"
 
 
 def test_eval_config_missing_eval_steps(valid_eval_config):
