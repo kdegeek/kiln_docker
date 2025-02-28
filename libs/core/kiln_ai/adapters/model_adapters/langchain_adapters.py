@@ -224,6 +224,9 @@ class LangchainAdapter(BaseAdapter):
         options = {}
         # We may need to add some provider specific logic here if providers use different names for the same mode, but everyone is copying openai for now
         match provider.structured_output_mode:
+            case StructuredOutputMode.function_calling_weak:
+                # Langchaing doesn't handle weak/strict separately
+                options["method"] = "function_calling"
             case StructuredOutputMode.function_calling:
                 options["method"] = "function_calling"
             case StructuredOutputMode.json_mode:

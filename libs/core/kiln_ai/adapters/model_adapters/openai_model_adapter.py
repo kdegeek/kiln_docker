@@ -220,8 +220,10 @@ class OpenAICompatibleAdapter(BaseAdapter):
                         },
                     }
                 }
+            case StructuredOutputMode.function_calling_weak:
+                return self.tool_call_params(strict=False)
             case StructuredOutputMode.function_calling:
-                return self.tool_call_params()
+                return self.tool_call_params(strict=True)
             case StructuredOutputMode.json_instructions:
                 # JSON done via instructions in prompt, not the API response format. Do not ask for json_object (see option below).
                 return {}
@@ -230,11 +232,11 @@ class OpenAICompatibleAdapter(BaseAdapter):
                 return {"response_format": {"type": "json_object"}}
             case StructuredOutputMode.default:
                 # Default to function calling -- it's older than the other modes. Higher compatibility.
-                return self.tool_call_params()
+                return self.tool_call_params(strict=True)
             case _:
                 raise_exhaustive_enum_error(provider.structured_output_mode)
 
-    def tool_call_params(self) -> dict[str, Any]:
+    def tool_call_params(self, strict: bool) -> dict[str, Any]:
         # Add additional_properties: false to the schema (OpenAI requires this for some models)
         output_schema = self.task().output_schema()
         if not isinstance(output_schema, dict):
@@ -247,8 +249,8 @@ class OpenAICompatibleAdapter(BaseAdapter):
             "name": "task_response",
             "parameters": output_schema,
         }
-        # This parameter is only reliable for OpenAI
-        if self.run_config.model_provider_name == ModelProviderName.openai:
+        # This should be on, but we allow setting function_calling_weak for APIs that don't support it.
+        if strict:
             function_params["strict"] = True
 
         return {

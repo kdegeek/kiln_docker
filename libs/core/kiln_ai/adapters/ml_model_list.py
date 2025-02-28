@@ -197,7 +197,7 @@ built_in_models: List[KilnModel] = [
         providers=[
             KilnModelProvider(
                 name=ModelProviderName.openrouter,
-                structured_output_mode=StructuredOutputMode.function_calling,
+                structured_output_mode=StructuredOutputMode.json_instruction_and_object,
                 provider_options={"model": "anthropic/claude-3-5-haiku"},
             ),
         ],
@@ -210,7 +210,7 @@ built_in_models: List[KilnModel] = [
         providers=[
             KilnModelProvider(
                 name=ModelProviderName.openrouter,
-                structured_output_mode=StructuredOutputMode.function_calling,
+                structured_output_mode=StructuredOutputMode.json_instruction_and_object,
                 provider_options={"model": "anthropic/claude-3.5-sonnet"},
             ),
         ],
@@ -247,7 +247,6 @@ built_in_models: List[KilnModel] = [
                 # No custom parser -- openrouter implemented it themselves
                 structured_output_mode=StructuredOutputMode.json_instructions,
                 reasoning_capable=True,
-                supports_logprobs=True,
             ),
             KilnModelProvider(
                 name=ModelProviderName.fireworks_ai,
@@ -394,7 +393,8 @@ built_in_models: List[KilnModel] = [
             KilnModelProvider(
                 name=ModelProviderName.openrouter,
                 supports_data_gen=False,
-                structured_output_mode=StructuredOutputMode.function_calling,
+                # Need to not pass "strict=True" to the function call to get this to work with logprobs for some reason. Openrouter issue.
+                structured_output_mode=StructuredOutputMode.function_calling_weak,
                 provider_options={"model": "meta-llama/llama-3.1-70b-instruct"},
                 supports_logprobs=True,
             ),

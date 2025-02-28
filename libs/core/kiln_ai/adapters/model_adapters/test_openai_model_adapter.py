@@ -166,10 +166,10 @@ async def test_response_format_options_json_schema(config, mock_task):
         }
 
 
-def test_tool_call_params_non_openai(config, mock_task):
+def test_tool_call_params_weak(config, mock_task):
     adapter = OpenAICompatibleAdapter(config=config, kiln_task=mock_task)
 
-    params = adapter.tool_call_params()
+    params = adapter.tool_call_params(strict=False)
     expected_schema = mock_task.output_schema()
     expected_schema["additionalProperties"] = False
 
@@ -190,11 +190,11 @@ def test_tool_call_params_non_openai(config, mock_task):
     }
 
 
-def test_tool_call_params_openai(config, mock_task):
+def test_tool_call_params_strict(config, mock_task):
     config.provider_name = "openai"
     adapter = OpenAICompatibleAdapter(config=config, kiln_task=mock_task)
 
-    params = adapter.tool_call_params()
+    params = adapter.tool_call_params(strict=True)
     expected_schema = mock_task.output_schema()
     expected_schema["additionalProperties"] = False
 
