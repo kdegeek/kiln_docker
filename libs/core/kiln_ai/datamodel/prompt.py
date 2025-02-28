@@ -11,9 +11,9 @@ class BasePrompt(BaseModel):
     """
 
     name: str = NAME_FIELD
-    long_name: str | None = Field(
+    description: str | None = Field(
         default=None,
-        description="A more detailed name for the prompt, usually incorporating the source of the prompt.",
+        description="A more detailed description of the prompt.",
     )
     generator_id: str | None = Field(
         default=None,

@@ -46,6 +46,7 @@ def test_create_prompt_success(client, project_and_task):
     prompt_data = {
         "name": "Test Prompt",
         "prompt": "This is a test prompt",
+        "description": "This is a test prompt description",
         "chain_of_thought_instructions": "Think step by step, explaining your reasoning.",
     }
 
@@ -58,6 +59,7 @@ def test_create_prompt_success(client, project_and_task):
     assert response.status_code == 200
     res = response.json()
     assert res["name"] == "Test Prompt"
+    assert res["description"] == "This is a test prompt description"
     assert res["prompt"] == "This is a test prompt"
 
     # Check that the prompt was saved to the task/file

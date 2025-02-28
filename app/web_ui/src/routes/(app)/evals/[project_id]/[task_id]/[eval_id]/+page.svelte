@@ -601,8 +601,7 @@
                     </div>
                     <div class="text-sm text-gray-500">
                       Prompt:
-                      {task_run_config.prompt?.long_name ||
-                        task_run_config.prompt?.name ||
+                      {task_run_config.prompt?.name ||
                         prompt_name_from_id(
                           task_run_config?.run_config_properties?.prompt_id,
                         )}

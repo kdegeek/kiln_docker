@@ -17,7 +17,7 @@ from kiln_ai.datamodel.dataset_split import DatasetSplit
 from kiln_ai.datamodel.eval import Eval
 from kiln_ai.datamodel.json_schema import JsonObjectSchema, schema_from_json_str
 from kiln_ai.datamodel.prompt import BasePrompt, Prompt
-from kiln_ai.datamodel.prompt_id import PromptGenerators, PromptId
+from kiln_ai.datamodel.prompt_id import PromptId
 from kiln_ai.datamodel.task_run import TaskRun
 
 if TYPE_CHECKING:

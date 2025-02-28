@@ -21,7 +21,7 @@
       Object.entries({
         ID: prompt_model?.id,
         Name: prompt_model?.name,
-        "Long Name": prompt_model?.long_name,
+        Description: prompt_model?.description,
         "Created By": prompt_model?.created_by,
         "Created At": formatDate(prompt_model?.created_at || undefined),
         "Chain of Thought": prompt_model?.chain_of_thought_instructions
@@ -38,7 +38,8 @@
 <div class="max-w-[1400px]">
   <AppPage
     title="Saved Prompt"
-    subtitle={prompt_model?.long_name || prompt_model?.name}
+    subtitle={prompt_model?.name}
+    sub_subtitle={prompt_model?.description || undefined}
   >
     {#if !$current_task_prompts}
       <div class="w-full min-h-[50vh] flex justify-center items-center">

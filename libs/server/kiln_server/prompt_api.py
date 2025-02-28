@@ -16,6 +16,7 @@ class ApiPrompt(BasePrompt):
 
 class PromptCreateRequest(BaseModel):
     name: str
+    description: str | None = None
     prompt: str
     chain_of_thought_instructions: str | None = None
 
@@ -42,6 +43,7 @@ def connect_prompt_api(app: FastAPI):
         prompt = Prompt(
             parent=parent_task,
             name=prompt_data.name,
+            description=prompt_data.description,
             prompt=prompt_data.prompt,
             chain_of_thought_instructions=prompt_data.chain_of_thought_instructions,
         )

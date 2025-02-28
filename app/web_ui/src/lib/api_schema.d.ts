@@ -907,10 +907,10 @@ export interface components {
              */
             name: string;
             /**
-             * Long Name
-             * @description A more detailed name for the prompt, usually incorporating the source of the prompt.
+             * Description
+             * @description A more detailed description of the prompt.
              */
-            long_name?: string | null;
+            description?: string | null;
             /**
              * Generator Id
              * @description The id of the generator that created this prompt.
@@ -955,10 +955,10 @@ export interface components {
              */
             name: string;
             /**
-             * Long Name
-             * @description A more detailed name for the prompt, usually incorporating the source of the prompt.
+             * Description
+             * @description A more detailed description of the prompt.
              */
-            long_name?: string | null;
+            description?: string | null;
             /**
              * Generator Id
              * @description The id of the generator that created this prompt.
@@ -1925,10 +1925,10 @@ export interface components {
              */
             name: string;
             /**
-             * Long Name
-             * @description A more detailed name for the prompt, usually incorporating the source of the prompt.
+             * Description
+             * @description A more detailed description of the prompt.
              */
-            long_name?: string | null;
+            description?: string | null;
             /**
              * Generator Id
              * @description The id of the generator that created this prompt.
@@ -1974,6 +1974,8 @@ export interface components {
         PromptCreateRequest: {
             /** Name */
             name: string;
+            /** Description */
+            description?: string | null;
             /** Prompt */
             prompt: string;
             /** Chain Of Thought Instructions */

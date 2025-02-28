@@ -268,8 +268,8 @@ async def test_create_task_run_config_with_freezing(
     )
     assert result["prompt"]["name"] == "Custom Name"
     assert (
-        result["prompt"]["long_name"]
-        == "Custom Name (frozen prompt from 'simple_chain_of_thought_prompt_builder')"
+        result["prompt"]["description"]
+        == "Frozen copy of prompt 'simple_chain_of_thought_prompt_builder'"
     )
     # Fetch it from API
     fetch_response = client.get("/api/projects/project1/tasks/task1/task_run_configs")
@@ -279,8 +279,8 @@ async def test_create_task_run_config_with_freezing(
     assert configs[0]["id"] == result["id"]
     assert configs[0]["name"] == result["name"]
     assert configs[0]["prompt"]["name"] == "Custom Name"
-    assert configs[0]["prompt"]["long_name"] == (
-        "Custom Name (frozen prompt from 'simple_chain_of_thought_prompt_builder')"
+    assert configs[0]["prompt"]["description"] == (
+        "Frozen copy of prompt 'simple_chain_of_thought_prompt_builder'"
     )
     assert configs[0]["run_config_properties"]["prompt_id"] == (
         "task_run_config::project1::task1::" + result["id"]
