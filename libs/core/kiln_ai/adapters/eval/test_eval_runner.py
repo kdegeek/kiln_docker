@@ -5,7 +5,6 @@ import pytest
 from kiln_ai.adapters.eval.base_eval import BaseEval
 from kiln_ai.adapters.eval.eval_runner import EvalJob, EvalRunner
 from kiln_ai.datamodel import (
-    BasePrompt,
     DataSource,
     DataSourceType,
     Task,
@@ -59,19 +58,21 @@ def mock_eval(mock_task):
 @pytest.fixture
 def data_source():
     return DataSource(
-        type=DataSourceType.eval,
+        type=DataSourceType.synthetic,
         properties={
             "model_name": "gpt-4",
             "model_provider": "openai",
+            "adapter_name": "test_adapter",
         },
     )
 
 
 @pytest.fixture
-def mock_eval_config(mock_eval, data_source):
+def mock_eval_config(mock_eval):
     eval_config = EvalConfig(
         name="test",
-        model=data_source,
+        model_name="gpt-4",
+        model_provider="openai",
         parent=mock_eval,
         properties={
             "eval_steps": ["step1", "step2", "step3"],
@@ -100,9 +101,7 @@ def mock_run_config(
 
 
 @pytest.fixture
-def mock_eval_runner(
-    mock_eval, data_source, mock_task, mock_eval_config, mock_run_config
-):
+def mock_eval_runner(mock_eval, mock_task, mock_eval_config, mock_run_config):
     return EvalRunner(
         eval_configs=[mock_eval_config],
         run_configs=[mock_run_config],
@@ -229,7 +228,8 @@ def test_collect_tasks_filtering(
     # add a second eval config, and call a new runner with multiple eval configs
     eval_config = EvalConfig(
         name="test2",
-        model=data_source,
+        model_name="gpt-4",
+        model_provider="openai",
         parent=mock_eval,
         properties={
             "eval_steps": ["step1", "step2", "step3"],
@@ -262,7 +262,8 @@ def test_validate_same_task(
     # second eval config has a different task
     eval_config = EvalConfig(
         name="test2",
-        model=data_source,
+        model_name="gpt-4",
+        model_provider="openai",
         properties={
             "eval_steps": ["step1", "step2", "step3"],
         },
@@ -626,7 +627,7 @@ async def test_run_job_evaluator_error(
     )
 
     class ErrorEvaluator(BaseEval):
-        async def run(self, input_text):
+        async def run_task_and_eval(self, input_text):
             raise ValueError("Evaluation failed")
 
     with patch(

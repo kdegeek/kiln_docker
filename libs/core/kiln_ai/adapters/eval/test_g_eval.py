@@ -8,7 +8,6 @@ from kiln_ai.adapters.ml_model_list import built_in_models
 from kiln_ai.adapters.model_adapters.base_adapter import RunOutput
 from kiln_ai.adapters.test_prompt_adaptors import get_all_models_and_providers
 from kiln_ai.datamodel import (
-    BasePrompt,
     DataSource,
     DataSourceType,
     Project,
@@ -76,13 +75,8 @@ def test_eval_config(test_task):
         name="Llama 8b Joke Generator Eval",
         parent=eval,
         config_type=EvalConfigType.g_eval,
-        model=DataSource(
-            type=DataSourceType.eval,
-            properties={
-                "model_name": "gpt_4o_mini",
-                "model_provider": "openai",
-            },
-        ),
+        model_name="gpt_4o_mini",
+        model_provider="openai",
         properties={
             "eval_steps": [
                 "Is the joke funny?",
@@ -143,8 +137,8 @@ async def run_g_eval_test(
     # Create G-Eval instance
     test_eval_config.config_type = config_type
     if model_name is not None and provider_name is not None:
-        test_eval_config.model.properties["model_name"] = model_name
-        test_eval_config.model.properties["model_provider"] = provider_name
+        test_eval_config.model_name = model_name
+        test_eval_config.model_provider = provider_name
     g_eval = GEval(test_eval_config, test_run_config)
 
     # Run the evaluation
@@ -440,13 +434,8 @@ def test_g_eval_system_instruction():
     eval_config = EvalConfig(
         parent=eval,
         name="Test Eval",
-        model=DataSource(
-            type=DataSourceType.eval,
-            properties={
-                "model_name": "gpt_4o_mini",
-                "model_provider": "openai",
-            },
-        ),
+        model_name="gpt_4o_mini",
+        model_provider="openai",
         config_type=EvalConfigType.g_eval,
         properties={
             "task_description": "Test task description",
@@ -504,5 +493,5 @@ async def test_all_built_in_models_logprobs_geval(
         EvalConfigType.g_eval,
         test_run_config,
         model_name,
-        provider_name,
+        provider_name.value,
     )

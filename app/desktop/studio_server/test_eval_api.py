@@ -110,14 +110,8 @@ def mock_eval_config(mock_eval):
         config_type=EvalConfigType.g_eval,
         properties={"eval_steps": ["step1", "step2"]},
         parent=mock_eval,
-        model=DataSource(
-            id="model1",
-            type=DataSourceType.eval,
-            properties={
-                "model_name": "gpt-4",
-                "model_provider": "openai",
-            },
-        ),
+        model_name="gpt-4",
+        model_provider="openai",
         prompt=BasePrompt(
             name="test",
             prompt="base prompt",
@@ -341,26 +335,16 @@ async def test_create_eval_config(
     assert result["name"] == valid_eval_config_request.name
     assert result["config_type"] == valid_eval_config_request.type
     assert result["properties"] == valid_eval_config_request.properties
-    assert result["model"]["type"] == DataSourceType.eval
-    assert (
-        result["model"]["properties"]["model_name"]
-        == valid_eval_config_request.model_name
-    )
-    assert (
-        result["model"]["properties"]["model_provider"]
-        == valid_eval_config_request.provider
-    )
+    assert result["model_name"] == valid_eval_config_request.model_name
+    assert result["model_provider"] == valid_eval_config_request.provider
 
     # Fetch disk
     assert len(mock_eval.configs()) == 1
     config = mock_eval.configs()[0]
     assert config.config_type == valid_eval_config_request.type
     assert config.properties == valid_eval_config_request.properties
-    assert config.model.type == DataSourceType.eval
-    assert config.model.properties["model_name"] == valid_eval_config_request.model_name
-    assert (
-        config.model.properties["model_provider"] == valid_eval_config_request.provider
-    )
+    assert config.model_name == valid_eval_config_request.model_name
+    assert config.model_provider == valid_eval_config_request.provider
     assert config.properties["eval_steps"][0] == "step1"
     assert config.properties["eval_steps"][1] == "step2"
 
@@ -382,7 +366,8 @@ def test_get_eval_config(
 
     assert config["config_type"] == mock_eval_config.config_type
     assert config["properties"] == mock_eval_config.properties
-    assert config["model"]["type"] == mock_eval_config.model.type
+    assert config["model_name"] == mock_eval_config.model_name
+    assert config["model_provider"] == mock_eval_config.model_provider
 
     mock_eval_from_id.assert_called_once_with("project1", "task1", "eval1")
 
@@ -406,7 +391,8 @@ def test_get_eval_configs(
     config = configs[0]
     assert config["config_type"] == mock_eval_config.config_type
     assert config["properties"] == mock_eval_config.properties
-    assert config["model"]["type"] == mock_eval_config.model.type
+    assert config["model_name"] == mock_eval_config.model_name
+    assert config["model_provider"] == mock_eval_config.model_provider
 
     mock_eval_from_id.assert_called_once_with("project1", "task1", "eval1")
 
@@ -820,14 +806,8 @@ async def test_get_eval_config_compare_summary(
                 config_type=EvalConfigType.g_eval,
                 properties={"eval_steps": ["step1", "step2"]},
                 parent=mock_eval,
-                model=DataSource(
-                    id="model1",
-                    type=DataSourceType.eval,
-                    properties={
-                        "model_name": "gpt-4",
-                        "model_provider": "openai",
-                    },
-                ),
+                model_name="gpt-4",
+                model_provider="openai",
                 prompt=BasePrompt(
                     name="test",
                     prompt="base prompt",

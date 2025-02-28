@@ -13,8 +13,6 @@ from kiln_ai.datamodel.eval import (
 )
 from kiln_ai.datamodel.task import Task
 from kiln_ai.datamodel.task_output import (
-    DataSource,
-    DataSourceType,
     TaskOutputRatingType,
 )
 
@@ -36,13 +34,8 @@ def valid_eval_config_data():
         "name": "Test Eval Config",
         "config_type": EvalConfigType.g_eval,
         "properties": {"eval_steps": ["step1", "step2"]},
-        "model": DataSource(
-            type=DataSourceType.eval,
-            properties={
-                "model_name": "gpt-4",
-                "model_provider": "openai",
-            },
-        ),
+        "model_name": "gpt-4",
+        "model_provider": "openai",
     }
 
 
@@ -55,9 +48,8 @@ def test_eval_config_valid(valid_eval_config):
     assert valid_eval_config.name == "Test Eval Config"
     assert valid_eval_config.config_type == EvalConfigType.g_eval
     assert valid_eval_config.properties["eval_steps"] == ["step1", "step2"]
-    assert valid_eval_config.model.type == DataSourceType.eval
-    assert valid_eval_config.model.properties["model_name"] == "gpt-4"
-    assert valid_eval_config.model.properties["model_provider"] == "openai"
+    assert valid_eval_config.model_name == "gpt-4"
+    assert valid_eval_config.model_provider == "openai"
 
 
 def test_eval_config_missing_eval_steps(valid_eval_config):
@@ -97,13 +89,6 @@ def test_eval_config_invalid_config_type(valid_eval_config):
     # Create an invalid config type using string
     with pytest.raises(ValueError):
         valid_eval_config.config_type = "invalid_type"
-
-
-def test_human_datasource(valid_eval_config):
-    with pytest.raises(ValueError):
-        valid_eval_config.model.type = DataSourceType.human
-        # Not ideal - error isn'd caught until we try to save or set a root field
-        valid_eval_config.name = "Test Config"
 
 
 def test_eval_basic_properties():
@@ -232,7 +217,8 @@ def test_eval_with_persisted_children(mock_task, valid_eval_config_data, tmp_pat
     assert evals[0].name == "Test Eval"
     configs = evals[0].configs()
     assert len(configs) == 1
-    assert configs[0].model.properties["model_provider"] == "openai"
+    assert configs[0].model_provider == "openai"
+    assert configs[0].model_name == "gpt-4"
 
     # and back up
     assert configs[0].parent_eval().parent_task().path == task_path

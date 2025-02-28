@@ -26,8 +26,8 @@ class BaseEval:
         self.run_config = run_config
 
     def model_and_provider(self) -> tuple[str, ModelProviderName]:
-        model_name = self.eval_config.model.properties.get("model_name")
-        provider = self.eval_config.model.properties.get("model_provider")
+        model_name = self.eval_config.model_name
+        provider = self.eval_config.model_provider
         if (
             not model_name
             or not provider

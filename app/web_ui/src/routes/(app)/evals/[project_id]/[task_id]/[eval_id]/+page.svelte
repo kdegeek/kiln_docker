@@ -220,9 +220,7 @@
   ): string {
     let parts = []
     parts.push(eval_config_to_ui_name(eval_config.config_type))
-    parts.push(
-      model_name(eval_config.model.properties["model_name"], model_info),
-    )
+    parts.push(model_name(eval_config.model_name, model_info))
     return eval_config.name + " — " + parts.join(", ")
   }
 
@@ -299,16 +297,11 @@
     })
     properties.push({
       name: "Eval Model",
-      value: model_name(
-        eval_config.model.properties["model_name"] + "",
-        model_info,
-      ),
+      value: model_name(eval_config.model_name, model_info),
     })
     properties.push({
       name: "Model Provider",
-      value: provider_name_from_id(
-        eval_config.model.properties["model_provider"] + "",
-      ),
+      value: provider_name_from_id(eval_config.model_provider),
     })
     const task_description = eval_config.properties["task_description"]
     if (task_description) {

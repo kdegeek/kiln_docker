@@ -106,13 +106,8 @@
       "Eval Name": evaluator.name,
       "Eval Method Name": eval_config.name,
       Algorithm: eval_config_to_ui_name(eval_config.config_type),
-      Model: model_name(
-        eval_config.model.properties["model_name"] + "",
-        $model_info,
-      ),
-      "Model Provider": provider_name_from_id(
-        eval_config.model.properties["model_provider"] + "",
-      ),
+      Model: model_name(eval_config.model_name, $model_info),
+      "Model Provider": provider_name_from_id(eval_config.model_provider),
     }
   }
 </script>

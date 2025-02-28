@@ -1387,8 +1387,16 @@ export interface components {
              * @description A name for this entity.
              */
             name: string;
-            /** @description The model to use for this eval config. */
-            model: components["schemas"]["DataSource"];
+            /**
+             * Model Name
+             * @description The name of the model to use for this eval config.
+             */
+            model_name: string;
+            /**
+             * Model Provider
+             * @description The provider of the model to use for this eval config.
+             */
+            model_provider: string;
             /**
              * @description This is used to determine the type of eval to run.
              * @default g_eval
@@ -2130,7 +2138,7 @@ export interface components {
          *     - json_instruction_and_object: append instructions to the prompt to request json matching the schema. Also request the response as json_mode via API capabilities (returning dictionaries).
          * @enum {string}
          */
-        StructuredOutputMode: "default" | "json_schema" | "function_calling" | "json_mode" | "json_instructions" | "json_instruction_and_object";
+        StructuredOutputMode: "default" | "json_schema" | "function_calling_weak" | "function_calling" | "json_mode" | "json_instructions" | "json_instruction_and_object";
         /**
          * Task
          * @description Represents a specific task to be performed, with associated requirements and validation rules.

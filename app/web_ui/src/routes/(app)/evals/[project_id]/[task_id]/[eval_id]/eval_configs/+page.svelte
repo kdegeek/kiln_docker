@@ -442,15 +442,10 @@
                       {eval_config_to_ui_name(eval_config.config_type)}
                     </div>
                     <div class="text-sm text-gray-500">
-                      {model_name(
-                        eval_config?.model.properties?.["model_name"],
-                        $model_info,
-                      )}
+                      {model_name(eval_config?.model_name, $model_info)}
                     </div>
                     <div class="text-sm text-gray-500">
-                      {provider_name_from_id(
-                        eval_config?.model.properties?.["model_provider"] + "",
-                      )}
+                      {provider_name_from_id(eval_config?.model_provider)}
                     </div>
                     {#if percent_complete}
                       <div

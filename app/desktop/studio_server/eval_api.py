@@ -339,13 +339,8 @@ def connect_evals_api(app: FastAPI):
             name=name,
             config_type=request.type,
             properties=request.properties,
-            model=DataSource(
-                type=DataSourceType.eval,
-                properties={
-                    "model_name": request.model_name,
-                    "model_provider": request.provider,
-                },
-            ),
+            model_name=request.model_name,
+            model_provider=request.provider,
             parent=eval,
         )
         eval_config.save_to_file()

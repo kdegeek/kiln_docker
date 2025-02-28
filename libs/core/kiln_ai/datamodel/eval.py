@@ -195,7 +195,12 @@ class EvalConfig(KilnParentedModel, KilnParentModel, parent_of={"runs": EvalRun}
     """
 
     name: str = NAME_FIELD
-    model: DataSource = Field(description="The model to use for this eval config.")
+    model_name: str = Field(
+        description="The name of the model to use for this eval config. ",
+    )
+    model_provider: str = Field(
+        description="The provider of the model to use for this eval config.",
+    )
     config_type: EvalConfigType = Field(
         default=EvalConfigType.g_eval,
         description="This is used to determine the type of eval to run.",
@@ -232,15 +237,6 @@ class EvalConfig(KilnParentedModel, KilnParentModel, parent_of={"runs": EvalRun}
             return self
         else:
             raise ValueError(f"Invalid eval config type: {self.config_type}")
-
-    @model_validator(mode="after")
-    def validate_model(self, info: ValidationInfo) -> Self:
-        # Only validate during object creation, not when loading from file.
-        if self.loaded_from_file(info):
-            return self
-        if self.model.type != DataSourceType.eval:
-            raise ValueError("model must be a eval datasource for an eval config")
-        return self
 
     @model_validator(mode="after")
     def validate_json_serializable(self) -> "EvalConfig":
