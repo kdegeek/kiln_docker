@@ -47,7 +47,6 @@ class LangchainAdapter(BaseAdapter):
         model_name: str | None = None,
         provider: str | None = None,
         prompt_id: PromptId | None = None,
-        tags: list[str] | None = None,
         base_adapter_config: AdapterConfig | None = None,
     ):
         if custom_model is not None:
@@ -89,7 +88,6 @@ class LangchainAdapter(BaseAdapter):
 
         super().__init__(
             run_config=run_config,
-            tags=tags,
             config=base_adapter_config,
         )
 

@@ -30,6 +30,7 @@ class AdapterConfig:
 
     allow_saving: bool = True
     top_logprobs: int | None = None
+    default_tags: list[str] | None = None
 
 
 COT_FINAL_ANSWER_PROMPT = "Considering the above, return a final result."
@@ -52,7 +53,6 @@ class BaseAdapter(metaclass=ABCMeta):
     def __init__(
         self,
         run_config: RunConfig,
-        tags: list[str] | None = None,
         config: AdapterConfig | None = None,
     ):
         self.run_config = run_config
@@ -63,7 +63,6 @@ class BaseAdapter(metaclass=ABCMeta):
 
         self.output_schema = self.task().output_json_schema
         self.input_schema = self.task().input_json_schema
-        self.default_tags = tags
         self.base_adapter_config = config or AdapterConfig()
 
     def task(self) -> Task:
@@ -234,7 +233,7 @@ class BaseAdapter(metaclass=ABCMeta):
                 ),
             ),
             intermediate_outputs=run_output.intermediate_outputs,
-            tags=self.default_tags or [],
+            tags=self.base_adapter_config.default_tags or [],
         )
 
         return new_task_run

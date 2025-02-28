@@ -19,7 +19,6 @@ def adapter_for_task(
     model_name: str,
     provider: ModelProviderName,
     prompt_id: PromptId | None = None,
-    tags: list[str] | None = None,
     base_adapter_config: AdapterConfig | None = None,
 ) -> BaseAdapter:
     # Get the provider to run. For things like the fine-tune provider, we want to run the underlying provider
@@ -42,7 +41,6 @@ def adapter_for_task(
                     },
                 ),
                 prompt_id=prompt_id,
-                tags=tags,
                 base_adapter_config=base_adapter_config,
             )
         case ModelProviderName.openai:
@@ -54,7 +52,6 @@ def adapter_for_task(
                     provider_name=provider,
                 ),
                 prompt_id=prompt_id,
-                tags=tags,
                 base_adapter_config=base_adapter_config,
             )
         case ModelProviderName.openai_compatible:
@@ -63,7 +60,6 @@ def adapter_for_task(
                 kiln_task=kiln_task,
                 config=config,
                 prompt_id=prompt_id,
-                tags=tags,
                 base_adapter_config=base_adapter_config,
             )
         # Use LangchainAdapter for the rest
@@ -93,6 +89,5 @@ def adapter_for_task(
         model_name=model_name,
         provider=provider,
         prompt_id=prompt_id,
-        tags=tags,
         base_adapter_config=base_adapter_config,
     )

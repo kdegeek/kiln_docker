@@ -5,6 +5,7 @@ import pytest
 from kiln_ai import datamodel
 from kiln_ai.adapters.adapter_registry import adapter_for_task
 from kiln_ai.adapters.ml_model_list import ModelProviderName
+from kiln_ai.adapters.model_adapters.base_adapter import AdapterConfig
 from kiln_ai.adapters.model_adapters.langchain_adapters import LangchainAdapter
 from kiln_ai.adapters.model_adapters.openai_model_adapter import OpenAICompatibleAdapter
 from kiln_ai.adapters.prompt_builders import BasePromptBuilder
@@ -106,10 +107,12 @@ def test_tags_passed_through(mock_config, basic_task):
         kiln_task=basic_task,
         model_name="gpt-4",
         provider=ModelProviderName.openai,
-        tags=tags,
+        base_adapter_config=AdapterConfig(
+            default_tags=tags,
+        ),
     )
 
-    assert adapter.default_tags == tags
+    assert adapter.base_adapter_config.default_tags == tags
 
 
 def test_invalid_provider(mock_config, basic_task):

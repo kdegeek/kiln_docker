@@ -31,7 +31,6 @@ class OpenAICompatibleAdapter(BaseAdapter):
         config: OpenAICompatibleConfig,
         kiln_task: datamodel.Task,
         prompt_id: PromptId | None = None,
-        tags: list[str] | None = None,
         base_adapter_config: AdapterConfig | None = None,
     ):
         self.config = config
@@ -50,7 +49,6 @@ class OpenAICompatibleAdapter(BaseAdapter):
 
         super().__init__(
             run_config=run_config,
-            tags=tags,
             config=base_adapter_config,
         )
 

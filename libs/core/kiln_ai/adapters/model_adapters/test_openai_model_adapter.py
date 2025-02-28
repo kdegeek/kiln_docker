@@ -5,11 +5,11 @@ import pytest
 from openai import AsyncOpenAI
 
 from kiln_ai.adapters.ml_model_list import StructuredOutputMode
+from kiln_ai.adapters.model_adapters.base_adapter import AdapterConfig
 from kiln_ai.adapters.model_adapters.openai_compatible_config import (
     OpenAICompatibleConfig,
 )
 from kiln_ai.adapters.model_adapters.openai_model_adapter import OpenAICompatibleAdapter
-from kiln_ai.adapters.prompt_builders import BasePromptBuilder
 from kiln_ai.datamodel import Project, Task
 
 
@@ -53,14 +53,14 @@ def test_initialization(config, mock_task):
         config=config,
         kiln_task=mock_task,
         prompt_id="simple_prompt_builder",
-        tags=["test-tag"],
+        base_adapter_config=AdapterConfig(default_tags=["test-tag"]),
     )
 
     assert isinstance(adapter.client, AsyncOpenAI)
     assert adapter.config == config
     assert adapter.run_config.task == mock_task
     assert adapter.run_config.prompt_id == "simple_prompt_builder"
-    assert adapter.default_tags == ["test-tag"]
+    assert adapter.base_adapter_config.default_tags == ["test-tag"]
     assert adapter.run_config.model_name == config.model_name
     assert adapter.run_config.model_provider_name == config.provider_name
 

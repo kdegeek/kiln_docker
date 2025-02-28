@@ -7,6 +7,7 @@ from kiln_ai.adapters.data_gen.data_gen_task import (
     DataGenSampleTaskInput,
     wrap_task_with_guidance,
 )
+from kiln_ai.adapters.model_adapters.base_adapter import AdapterConfig
 from kiln_ai.datamodel import DataSource, DataSourceType, PromptId, TaskRun
 from kiln_server.run_api import model_provider_from_string
 from kiln_server.task_api import task_from_id
@@ -141,7 +142,7 @@ def connect_data_gen_api(app: FastAPI):
             model_name=sample.output_model_name,
             provider=model_provider_from_string(sample.output_provider),
             prompt_id=sample.prompt_method,
-            tags=tags,
+            base_adapter_config=AdapterConfig(default_tags=tags),
         )
 
         properties: dict[str, str | int | float] = {

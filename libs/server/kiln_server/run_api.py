@@ -5,6 +5,7 @@ from typing import Any, Dict
 from fastapi import FastAPI, HTTPException
 from kiln_ai.adapters.adapter_registry import adapter_for_task
 from kiln_ai.adapters.ml_model_list import ModelProviderName
+from kiln_ai.adapters.model_adapters.base_adapter import AdapterConfig
 from kiln_ai.datamodel import (
     PromptId,
     Task,
@@ -198,7 +199,7 @@ def connect_run_api(app: FastAPI):
             model_name=request.model_name,
             provider=model_provider_from_string(request.provider),
             prompt_id=request.ui_prompt_method or "simple_prompt_builder",
-            tags=request.tags,
+            base_adapter_config=AdapterConfig(default_tags=request.tags),
         )
 
         input = request.plaintext_input

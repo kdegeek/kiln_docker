@@ -600,12 +600,20 @@
                       )}
                     </div>
                     <div class="text-sm text-gray-500">
-                      Prompt:
+                      Prompt Name:
                       {task_run_config.prompt?.name ||
                         prompt_name_from_id(
                           task_run_config?.run_config_properties?.prompt_id,
                         )}
                     </div>
+                    {#if task_run_config?.prompt?.generator_id && task_run_config?.run_config_properties?.prompt_id?.startsWith("task_run_config::")}
+                      <!-- Special description for prompts frozen to the task run config. The name alone isn't that helpful, so we say where it comes from (eg "Basic (Zero Shot")) -->
+                      <div class="text-sm text-gray-500">
+                        Prompt Source: {prompt_name_from_id(
+                          task_run_config?.prompt?.generator_id,
+                        )}
+                      </div>
+                    {/if}
                     {#if percent_complete}
                       <div
                         class="text-sm {percent_complete < 1.0
