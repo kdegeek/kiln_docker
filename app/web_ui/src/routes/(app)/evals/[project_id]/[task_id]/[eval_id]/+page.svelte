@@ -398,6 +398,8 @@
         : 1.0
     return minComplete < 1.0
   }
+
+  $: has_default_eval_config = evaluator && evaluator.current_config_id
 </script>
 
 <AppPage
@@ -407,6 +409,7 @@
     {
       label: "Compare Evaluation Methods",
       href: `/evals/${project_id}/${task_id}/${eval_id}/eval_configs`,
+      primary: !has_default_eval_config,
     },
   ]}
 >
@@ -464,6 +467,19 @@
               eval_configs,
             )}
           />
+          {#if !has_default_eval_config}
+            <Warning
+              warning_message="No default evaluation method selected. We recommend using 'Compare Evaluation Methods' and selecting one as the default."
+              warning_color="warning"
+              tight={true}
+            />
+          {:else if has_default_eval_config && evaluator.current_config_id != current_eval_config_id}
+            <Warning
+              warning_message="The currently selected evaluation method is not the default. You can change the default in 'Compare Evaluation Methods'."
+              warning_color="warning"
+              tight={true}
+            />
+          {/if}
         </div>
         <div
           class="grid grid-cols-[auto,1fr] gap-y-2 gap-x-4 text-sm 2xl:text-base"
@@ -491,7 +507,6 @@
         <div class="flex flex-col lg:flex-row gap-4 lg:gap-8 mb-6">
           <div class="grow">
             <div class="text-xl font-bold">Compare Run Methods</div>
-
             <div class="text-xs text-gray-500">
               Find the best method of running your task including various
               prompts, models, fine-tunes, and more.
@@ -635,24 +650,23 @@
           </table>
         </div>
       {:else}
-        <div class="text-xl font-bold">Results</div>
-        <div
-          class="font-light text-sm max-w-[400px] mx-auto flex flex-col gap-2 mt-8"
-        >
-          <div class="font-medium text-lg">Create a Run Method</div>
-          <div>
-            A task run method defines how the task is run, such as which model
-            and prompt to use. Create one to run this evaluator.
-          </div>
-          <button
-            class="btn btn-primary"
-            on:click={() => {
-              add_task_config_dialog?.show()
-            }}
-          >
-            Add Task Config
-          </button>
+        <div class="text-xl font-bold">Compare Run Methods</div>
+        <div class="text-sm text-gray-500">
+          Find the best method of running your task including various prompts,
+          models, fine-tunes, and more. Add one or more task run method to get
+          started.
         </div>
+
+        <button
+          class="btn min-w-[200px] mt-4 {has_default_eval_config
+            ? 'btn-primary'
+            : ''}"
+          on:click={() => {
+            add_task_config_dialog?.show()
+          }}
+        >
+          Add Task Config
+        </button>
       {/if}
     </div>
   {/if}
