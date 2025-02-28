@@ -43,6 +43,7 @@ class ModelFamily(str, Enum):
     mixtral = "mixtral"
     qwen = "qwen"
     deepseek = "deepseek"
+    dolphin = "dolphin"
 
 
 # Where models have instruct and raw versions, instruct is default and raw is specified
@@ -88,6 +89,7 @@ class ModelName(str, Enum):
     deepseek_r1_distill_qwen_1p5b = "deepseek_r1_distill_qwen_1p5b"
     deepseek_r1_distill_qwen_7b = "deepseek_r1_distill_qwen_7b"
     deepseek_r1_distill_llama_8b = "deepseek_r1_distill_llama_8b"
+    dolphin_2_9_8x22b = "dolphin_2_9_8x22b"
 
 
 class ModelParserID(str, Enum):
@@ -959,6 +961,28 @@ built_in_models: List[KilnModel] = [
                 reasoning_capable=True,
                 structured_output_mode=StructuredOutputMode.json_instructions,
                 provider_options={"model": "deepseek-r1:1.5b"},
+            ),
+        ],
+    ),
+    # Dolphin 2.9 Mixtral 8x22B
+    KilnModel(
+        family=ModelFamily.dolphin,
+        name=ModelName.dolphin_2_9_8x22b,
+        friendly_name="Dolphin 2.9 8x22B",
+        providers=[
+            KilnModelProvider(
+                name=ModelProviderName.ollama,
+                structured_output_mode=StructuredOutputMode.json_schema,
+                supports_data_gen=True,
+                provider_options={"model": "dolphin-mixtral:8x22b"},
+            ),
+            KilnModelProvider(
+                name=ModelProviderName.openrouter,
+                provider_options={
+                    "model": "cognitivecomputations/dolphin-mixtral-8x22b"
+                },
+                supports_data_gen=True,
+                structured_output_mode=StructuredOutputMode.json_instruction_and_object,
             ),
         ],
     ),

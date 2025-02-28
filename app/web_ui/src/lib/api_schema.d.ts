@@ -1184,6 +1184,11 @@ export interface components {
              * @description The prompt method used to generate the output
              */
             prompt_method: string;
+            /**
+             * Human Guidance
+             * @description Optional human guidance for generation
+             */
+            human_guidance?: string | null;
         };
         /**
          * DataSource

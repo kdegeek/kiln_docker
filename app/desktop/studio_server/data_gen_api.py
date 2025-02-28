@@ -5,6 +5,7 @@ from kiln_ai.adapters.data_gen.data_gen_task import (
     DataGenCategoriesTaskInput,
     DataGenSampleTask,
     DataGenSampleTaskInput,
+    wrap_task_with_guidance,
 )
 from kiln_ai.datamodel import DataSource, DataSourceType, PromptId, TaskRun
 from kiln_server.run_api import model_provider_from_string
@@ -61,6 +62,10 @@ class DataGenSaveSamplesApiInput(BaseModel):
     output_provider: str = Field(description="The provider of the model to use")
     prompt_method: PromptId = Field(
         description="The prompt method used to generate the output"
+    )
+    human_guidance: str | None = Field(
+        description="Optional human guidance for generation",
+        default=None,
     )
 
 
@@ -120,6 +125,12 @@ def connect_data_gen_api(app: FastAPI):
         session_id: str | None = None,
     ) -> TaskRun:
         task = task_from_id(project_id, task_id)
+
+        # Wrap the task instuctions with human guidance, if provided
+        if sample.human_guidance is not None and sample.human_guidance.strip() != "":
+            task.instruction = wrap_task_with_guidance(
+                task.instruction, sample.human_guidance
+            )
 
         tags = ["synthetic"]
         if session_id:
