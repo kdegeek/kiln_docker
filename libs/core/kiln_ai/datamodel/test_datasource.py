@@ -29,6 +29,34 @@ def test_valid_synthetic_data_source():
     assert data_source.properties["adapter_name"] == "langchain"
 
 
+def test_valid_eval_data_source():
+    data_source = DataSource(
+        type=DataSourceType.eval,
+        properties={
+            "model_name": "GPT-4",
+            "model_provider": "OpenAI",
+            "prompt_id": "simple_prompt_builder",
+        },
+    )
+    assert data_source.type == DataSourceType.eval
+    assert data_source.properties["model_name"] == "GPT-4"
+    assert data_source.properties["model_provider"] == "OpenAI"
+    assert data_source.properties["prompt_id"] == "simple_prompt_builder"
+
+
+def test_invalid_eval_data_source():
+    with pytest.raises(ValidationError, match="'adapter_name' is not allowed for"):
+        DataSource(
+            type=DataSourceType.eval,
+            properties={
+                "model_name": "GPT-4",
+                "model_provider": "OpenAI",
+                "prompt_id": "simple_prompt_builder",
+                "adapter_name": "this_should_not_be_set",
+            },
+        )
+
+
 def test_missing_required_property():
     with pytest.raises(ValidationError, match="'created_by' is required for"):
         DataSource(type=DataSourceType.human)
