@@ -925,18 +925,18 @@ async def test_get_eval_config_compare_summary(
             "mean_absolute_error": 4.0,  # error 4.0
             "mean_normalized_squared_error": 1,  # max error: 1 v 5
             "mean_normalized_absolute_error": 1,  # max error: 1 v 5
-            "spearman_correlation": 0,  # default value for 1 pair
-            "pearson_correlation": 0,
-            "kendalltau_correlation": 0,
+            "spearman_correlation": None,  # Not enough data
+            "pearson_correlation": None,
+            "kendalltau_correlation": None,
         },
         "score1": {
             "mean_squared_error": 2.25,  # error (3.5-5.0)^2
             "mean_absolute_error": 1.5,  # error 1.5
             "mean_normalized_squared_error": 0.140625,  # hand calc
             "mean_normalized_absolute_error": 0.375,  # 1.5/4
-            "spearman_correlation": 0,  # default value for 1 pair
-            "pearson_correlation": 0,
-            "kendalltau_correlation": 0,
+            "spearman_correlation": None,  # Not enough data
+            "pearson_correlation": None,  # Not enough data
+            "kendalltau_correlation": None,  # Not enough data
         },
     }
     # 1 of total_in_dataset eval configs are are in ec1 test
@@ -949,9 +949,9 @@ async def test_get_eval_config_compare_summary(
             "mean_absolute_error": 1.5,  # (1+2)/2
             "mean_normalized_squared_error": 0.15625,  # (0.25^2 + 0.5^2) / 2
             "mean_normalized_absolute_error": 0.375,  # (0.25 + 0.5) / 2
-            "spearman_correlation": 0,
-            "pearson_correlation": 0,
-            "kendalltau_correlation": 0,
+            "spearman_correlation": None,
+            "pearson_correlation": None,
+            "kendalltau_correlation": None,
         },
         "score1": {
             "mean_squared_error": 2.5,  # (1^2+2^2)/2
@@ -973,9 +973,9 @@ async def test_get_eval_config_compare_summary(
             "mean_absolute_error": 2,
             "mean_normalized_squared_error": 0.25,
             "mean_normalized_absolute_error": 0.5,
-            "spearman_correlation": 0,
-            "pearson_correlation": 0,
-            "kendalltau_correlation": 0,
+            "spearman_correlation": None,
+            "pearson_correlation": None,
+            "kendalltau_correlation": None,
         },
     }
     # 2 of total_in_dataset eval configs are are in ec2 test

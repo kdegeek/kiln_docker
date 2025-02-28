@@ -194,9 +194,9 @@ class TestCorrelationCalculator:
         assert result.mean_normalized_absolute_error == 0.0
         assert result.mean_squared_error == 0.0
         assert result.mean_normalized_squared_error == 0.0
-        assert result.spearman_correlation == 0.0
-        assert result.pearson_correlation == 0.0
-        assert result.kendalltau_correlation == 0.0
+        assert result.spearman_correlation is None
+        assert result.pearson_correlation is None
+        assert result.kendalltau_correlation is None
 
     def test_two_data_points(self, two_data_points):
         """Test correlation calculations with two data points"""

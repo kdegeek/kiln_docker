@@ -518,11 +518,17 @@
                         {:else if score_type === "norm_mae"}
                           {scores.mean_normalized_absolute_error.toFixed(3)}
                         {:else if score_type === "spearman"}
-                          {scores.spearman_correlation.toFixed(3)}
+                          {scores.spearman_correlation
+                            ? scores.spearman_correlation.toFixed(3)
+                            : "N/A"}
                         {:else if score_type === "pearson"}
-                          {scores.pearson_correlation.toFixed(3)}
+                          {scores.pearson_correlation
+                            ? scores.pearson_correlation.toFixed(3)
+                            : "N/A"}
                         {:else if score_type === "kendalltau"}
-                          {scores.kendalltau_correlation.toFixed(3)}
+                          {scores.kendalltau_correlation
+                            ? scores.kendalltau_correlation.toFixed(3)
+                            : "N/A"}
                         {/if}
                       {:else}
                         unknown
@@ -593,7 +599,8 @@
     These are three scientific correlation coefficients. For all three, The
     value tends to be high (close to 1) for samples with a strongly positive
     correlation, low (close to -1) for samples with a strongly negative
-    correlation, and close to zero for samples with weak correlation.
+    correlation, and close to zero for samples with weak correlation. Scores may
+    be 'N/A' if there are too few samples or not enough variation in scores.
   </div>
   <ul class="list-disc text-sm text-gray-500 pl-5 pt-2">
     <li>
