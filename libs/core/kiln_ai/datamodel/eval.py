@@ -2,7 +2,7 @@ import json
 from enum import Enum
 from typing import TYPE_CHECKING, Any, Dict, List, Union
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, ValidationInfo, model_validator
 from typing_extensions import Self
 
 from kiln_ai.datamodel.basemodel import (
@@ -234,7 +234,10 @@ class EvalConfig(KilnParentedModel, KilnParentModel, parent_of={"runs": EvalRun}
             raise ValueError(f"Invalid eval config type: {self.config_type}")
 
     @model_validator(mode="after")
-    def validate_model(self) -> Self:
+    def validate_model(self, info: ValidationInfo) -> Self:
+        # Only validate during object creation, not when loading from file.
+        if self.loaded_from_file(info):
+            return self
         if self.model.type != DataSourceType.eval:
             raise ValueError("model must be a eval datasource for an eval config")
         return self
