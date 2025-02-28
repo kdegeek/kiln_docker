@@ -1,3 +1,4 @@
+from typing import Dict
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -484,12 +485,17 @@ async def test_run_job_success_task_run_eval(
         input="test input",
         input_source=data_source,
         output=TaskOutput(output="evaluated output"),
+        intermediate_outputs={"intermediate_output": "intermediate output"},
     )
     mock_scores = {"accuracy": 0.95}
 
     class MockEvaluator(BaseEval):
         async def run_task_and_eval(self, input_text):
-            return mock_result_run, mock_scores
+            return (
+                mock_result_run,
+                mock_scores,
+                {"intermediate_output": "intermediate output"},
+            )
 
     with patch(
         "kiln_ai.adapters.eval.eval_runner.eval_adapter_from_type",
@@ -508,6 +514,9 @@ async def test_run_job_success_task_run_eval(
     assert saved_run.scores == mock_scores
     assert saved_run.input == "test input"
     assert saved_run.output == "evaluated output"
+    assert saved_run.intermediate_outputs == {
+        "intermediate_output": "intermediate output"
+    }
     assert saved_run.parent_eval_config().id == mock_eval_config.id
     assert saved_run.eval_config_eval is False
 
@@ -544,8 +553,10 @@ async def test_run_job_success_eval_config_eval(
         async def run_task_and_eval(self, input_text):
             raise ValueError("Attempted to run task and eval for a config eval")
 
-        async def run_eval(self, task_run: TaskRun) -> EvalScores:
-            return mock_scores
+        async def run_eval(
+            self, task_run: TaskRun
+        ) -> tuple[EvalScores, Dict[str, str] | None]:
+            return mock_scores, {"intermediate_output": "intermediate output"}
 
     with patch(
         "kiln_ai.adapters.eval.eval_runner.eval_adapter_from_type",

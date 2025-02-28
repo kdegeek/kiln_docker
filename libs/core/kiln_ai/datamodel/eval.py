@@ -101,6 +101,10 @@ class EvalRun(KilnParentedModel):
     output: str = Field(
         description="The output of the task. JSON formatted for structured output, plaintext for unstructured output."
     )
+    intermediate_outputs: Dict[str, str] | None = Field(
+        default=None,
+        description="The intermediate outputs of the task.",
+    )
     scores: EvalScores = Field(
         description="The scores of the evaluator (specifically the EvalConfig this object is a child of)."
     )

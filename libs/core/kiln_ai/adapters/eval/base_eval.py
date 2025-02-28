@@ -1,5 +1,6 @@
 import json
 from abc import abstractmethod
+from typing import Dict
 
 from kiln_ai.adapters.adapter_registry import adapter_for_task
 from kiln_ai.adapters.ml_model_list import ModelProviderName
@@ -40,7 +41,9 @@ class BaseEval:
 
         return model_name, ModelProviderName(provider)
 
-    async def run_task_and_eval(self, input: str) -> tuple[TaskRun, EvalScores]:
+    async def run_task_and_eval(
+        self, input: str
+    ) -> tuple[TaskRun, EvalScores, Dict[str, str] | None]:
         if self.run_config is None:
             raise ValueError("Run config is required for run_task_and_eval")
 
@@ -59,14 +62,17 @@ class BaseEval:
         # we don't save by default here. We'll save manually after validating the output
         run_output = await run_adapter.invoke(parsed_input)
 
-        eval_output = await self.run_eval(run_output)
+        eval_output, intermediate_outputs = await self.run_eval(run_output)
         validate_schema(eval_output, self.score_schema)
 
-        return run_output, eval_output
+        return run_output, eval_output, intermediate_outputs
 
     @abstractmethod
-    # Runs the eval on the given task run and returns a dictionary of scores which should conform to the score schema
-    async def run_eval(self, task_run: TaskRun) -> EvalScores:
+    # Runs the eval on the given task run
+    # Returns a dictionary of scores which should conform to the score schema, and a dictionary of intermediate outputs
+    async def run_eval(
+        self, task_run: TaskRun
+    ) -> tuple[EvalScores, Dict[str, str] | None]:
         pass
 
     @classmethod

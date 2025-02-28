@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from dataclasses import dataclass
 from typing import AsyncGenerator, Dict, List, Literal, Set
 
@@ -9,6 +10,8 @@ from kiln_ai.datamodel.dataset_filters import dataset_filter_from_id
 from kiln_ai.datamodel.eval import EvalConfig, EvalRun, EvalScores
 from kiln_ai.datamodel.task import TaskRunConfig
 from kiln_ai.datamodel.task_run import TaskRun
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -227,15 +230,18 @@ class EvalRunner:
 
             task_output: str | None = None
             scores: EvalScores | None = None
+            intermediate_outputs: Dict[str, str] | None = None
             if job.type == "eval_config_eval":
                 # Eval config eval, we use the saved input from the task run, not invoking the task again
-                scores = await evaluator.run_eval(job.item)
+                scores, intermediate_outputs = await evaluator.run_eval(job.item)
                 task_output = job.item.output.output
             else:
                 # Task run eval, we invoke the task again to get a fresh output
-                result_task_run, scores = await evaluator.run_task_and_eval(
-                    job.item.input
-                )
+                (
+                    result_task_run,
+                    scores,
+                    intermediate_outputs,
+                ) = await evaluator.run_task_and_eval(job.item.input)
                 task_output = result_task_run.output.output
 
             # Save the job result
@@ -249,10 +255,11 @@ class EvalRunner:
                 scores=scores,
                 input=job.item.input,
                 output=task_output,
+                intermediate_outputs=intermediate_outputs,
             )
             eval_run.save_to_file()
 
             return True
         except Exception as e:
-            print(f"Error running eval job for dataset item {job.item.id}: {e}")
+            logger.error(f"Error running eval job for dataset item {job.item.id}: {e}")
             return False

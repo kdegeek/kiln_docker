@@ -88,7 +88,9 @@ class GEval(BaseEval):
 
         self.geval_task = GEvalTask(eval_config)
 
-    async def run_eval(self, task_run: TaskRun) -> EvalScores:
+    async def run_eval(
+        self, task_run: TaskRun
+    ) -> tuple[EvalScores, Dict[str, str] | None]:
         """
         Run this G-Eval on the given task run.
         """
@@ -128,9 +130,11 @@ The model produced the following output for the task:
         _, run_output = await adapter.invoke_returning_run_output(input)
 
         if self.eval_config.config_type == EvalConfigType.llm_as_judge:
-            return self.build_llm_as_judge_score(run_output)
+            return self.build_llm_as_judge_score(
+                run_output
+            ), run_output.intermediate_outputs
         else:
-            return self.build_g_eval_score(run_output)
+            return self.build_g_eval_score(run_output), run_output.intermediate_outputs
 
     def build_llm_as_judge_score(self, run_output: RunOutput) -> EvalScores:
         """

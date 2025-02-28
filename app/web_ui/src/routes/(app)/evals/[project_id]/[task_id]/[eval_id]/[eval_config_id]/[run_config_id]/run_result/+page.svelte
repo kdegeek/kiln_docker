@@ -6,6 +6,7 @@
     EvalRunResult,
     Eval,
     EvalConfig,
+    EvalRun,
     TaskRunConfig,
   } from "$lib/types"
   import { client } from "$lib/api_client"
@@ -29,6 +30,8 @@
   let results_error: KilnError | null = null
   let results_loading = true
   let peek_dialog: Dialog | null = null
+  let thinking_dialog: Dialog | null = null
+  let displayed_result: EvalRun | null = null
 
   onMount(async () => {
     peek_dialog?.show()
@@ -179,8 +182,8 @@
       <table class="table">
         <thead>
           <tr>
-            <th>Input</th>
-            <th>Output</th>
+            <th>Input & Output</th>
+            <th>Thinking</th>
             {#each results.eval.output_scores as score}
               <th class="text-center">
                 {score.name}
@@ -192,8 +195,47 @@
         <tbody>
           {#each results.results as result}
             <tr>
-              <td> {result.input} </td>
-              <td> {result.output} </td>
+              <td>
+                <div class="font-medium">Input:</div>
+                <div>
+                  {result.input}
+                </div>
+                <div class="font-medium mt-4">Output:</div>
+                <div>
+                  {result.output}
+                </div>
+              </td>
+              <td>
+                {#if result.intermediate_outputs?.reasoning || result.intermediate_outputs?.chain_of_thought}
+                  <div class="max-w-[600px] min-w-[200px]">
+                    <div class="max-h-[140px] overflow-y-hidden relative">
+                      {result.intermediate_outputs?.reasoning ||
+                        result.intermediate_outputs?.chain_of_thought ||
+                        "N/A"}
+                      <div class="absolute bottom-0 left-0 w-full">
+                        <div
+                          class="h-36 bg-gradient-to-t from-white to-transparent"
+                        ></div>
+                        <div
+                          class="text-center bg-white font-medium font-sm text-gray-500"
+                        >
+                          <button
+                            class="text-gray-500"
+                            on:click={() => {
+                              displayed_result = result
+                              thinking_dialog?.show()
+                            }}
+                          >
+                            See all
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                {:else}
+                  N/A
+                {/if}
+              </td>
               {#each results.eval.output_scores as score}
                 {@const score_value =
                   result.scores[string_to_json_key(score.name)]}
@@ -243,5 +285,22 @@
       Use our "Run" screen or fresh synthetic dataset generation if you want to
       explore what type of content a run method is generating.
     </div>
+  </div>
+</Dialog>
+
+<Dialog
+  bind:this={thinking_dialog}
+  title="Thinking Output"
+  action_buttons={[
+    {
+      label: "Close",
+      isCancel: true,
+    },
+  ]}
+>
+  <div class="font-light text-sm whitespace-pre-wrap">
+    {displayed_result?.intermediate_outputs?.reasoning ||
+      displayed_result?.intermediate_outputs?.chain_of_thought ||
+      "N/A"}
   </div>
 </Dialog>
