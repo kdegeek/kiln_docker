@@ -261,21 +261,21 @@
   ) {
     let label = ""
     if (score_type === "mae") {
-      label = "Mean absolute error"
+      label = "Mean absolute error. Lower is better."
     } else if (score_type === "mse") {
-      label = "Mean squared error"
+      label = "Mean squared error. Lower is better."
     } else if (score_type === "norm_mse") {
-      label = "Normalized mean squared error"
+      label = "Normalized mean squared error. Lower is better."
     } else if (score_type === "norm_mae") {
-      label = "Normalized mean absolute error"
+      label = "Normalized mean absolute error. Lower is better."
     } else if (score_type === "spearman") {
-      label = "Spearman's rank correlation"
+      label = "Spearman's rank correlation. Higher is better."
     } else if (score_type === "pearson") {
-      label = "Pearson's correlation"
+      label = "Pearson's correlation. Higher is better."
     } else if (score_type === "kendalltau") {
-      label = "Kendall Tau correlation"
+      label = "Kendall's Tau correlation. Higher is better."
     }
-    label += " for "
+    label += " For "
     if (rating_type === "five_star") {
       label += "1 to 5 star rating."
     } else if (rating_type === "pass_fail") {
@@ -365,13 +365,13 @@
               hide_label={true}
               inputType="select"
               select_options={[
-                ["norm_mse", "Normalized Mean Squared Error"],
-                ["norm_mae", "Normalized Mean Absolute Error"],
-                ["mse", "Mean Squared Error"],
-                ["mae", "Mean Absolute Error"],
+                ["kendalltau", "Kendall's Tau Correlation"],
                 ["spearman", "Spearman Rank Correlation"],
+                ["norm_mse", "Normalized Mean Squared Error"],
+                ["mse", "Mean Squared Error"],
+                ["norm_mae", "Normalized Mean Absolute Error"],
+                ["mae", "Mean Absolute Error"],
                 ["pearson", "Pearson Correlation"],
-                ["kendalltau", "Kendall Tau Correlation"],
               ]}
               bind:value={score_type}
             />
@@ -518,20 +518,35 @@
                         {:else if score_type === "norm_mae"}
                           {scores.mean_normalized_absolute_error.toFixed(3)}
                         {:else if score_type === "spearman"}
-                          {scores.spearman_correlation
-                            ? scores.spearman_correlation.toFixed(3)
-                            : "N/A"}
+                          {#if scores.spearman_correlation}
+                            {scores.spearman_correlation.toFixed(3)}
+                          {:else}
+                            N/A <InfoTooltip
+                              tooltip_text="There wasn't enough data, or variation in the data, to calculate a Spearman correlation. Add more data to your eval method dataset, focusing on values which are missing (for example, if all current items pass, add some which fail)."
+                            />
+                          {/if}
                         {:else if score_type === "pearson"}
-                          {scores.pearson_correlation
-                            ? scores.pearson_correlation.toFixed(3)
-                            : "N/A"}
+                          {#if scores.pearson_correlation}
+                            {scores.pearson_correlation.toFixed(3)}
+                          {:else}
+                            N/A <InfoTooltip
+                              tooltip_text="There wasn't enough data, or variation in the data, to calculate a Pearson correlation. Add more data to your eval method dataset, focusing on values which are missing (for example, if all current items pass, add some which fail)."
+                            />
+                          {/if}
                         {:else if score_type === "kendalltau"}
-                          {scores.kendalltau_correlation
-                            ? scores.kendalltau_correlation.toFixed(3)
-                            : "N/A"}
+                          {#if scores.kendalltau_correlation}
+                            {scores.kendalltau_correlation.toFixed(3)}
+                          {:else}
+                            N/A <InfoTooltip
+                              tooltip_text="There wasn't enough data, or variation in the data, to calculate a Kendall's Tau correlation. Add more data to your eval method dataset, focusing on values which are missing (for example, if all current items pass, add some which fail)."
+                            />
+                          {/if}
                         {/if}
                       {:else}
-                        unknown
+                        None
+                        <InfoTooltip
+                          tooltip_text="No scores were found for this eval method. Click 'Run Eval' to generate scores."
+                        />
                       {/if}
                     </td>
                   {/each}
@@ -571,26 +586,28 @@
   ]}
 >
   <div class="font-medium text-sm text-gray-500">
-    Each score is a correlation score between the evaluator's score and the
-    human score added through the dataset tab.
+    Each score is a correlation score between human ratings and the automated
+    eval method's scores. Use these scores to find the eval method which best
+    correlates to human ratings, and set it as your default eval method.
   </div>
-  <div class="m-8 font-light text-sm">
-    <div class="font-extrabold">TL;DR</div>
-    <div class="mb-2">
-      We suggest you use Kendall Tau correlation scores to compare results.
-    </div>
-    <div class="mb-2">
-      Higher values are better. 1.0 is a perfect correlation between the
-      evaluator and human scores. 0 is no correlation. -1.0 is perfect negative
-      correlation.
+  <div class="m-8 font-light text-sm flex flex-col gap-2">
+    <div class="font-extrabold text-xl">TL;DR</div>
+    <div>
+      We suggest you use Kendall's Tau correlation scores to compare results.
     </div>
     <div>
-      Subjective tasks will never reach a perfect 1.0 score, so don't worry if
-      your score isn't perfect.
+      Kendall's Tau scores range from -1.0 to 1. Higher values indicate higher
+      correlation between the human ratings and the automated eval method's
+      scores.
+    </div>
+    <div>
+      The absolute value of Kendall's Tau scores will vary depending on how
+      subjective your task is. Find the highest score for your task, and select
+      it as your default eval method.
     </div>
   </div>
   <div class="font-medium mt-5">
-    Spearman, Kendall Tau, and Pearson Correlation
+    Spearman, Kendall's Tau, and Pearson Correlation
   </div>
   <div class="text-sm text-gray-500 font-medium mb-1">
     From -1 to 1, higher is better
@@ -603,13 +620,10 @@
     be 'N/A' if there are too few samples or not enough variation in scores.
   </div>
   <ul class="list-disc text-sm text-gray-500 pl-5 pt-2">
+    <li>Spearman evaluates the rank of the scores, not the absolute values.</li>
     <li>
-      Spearman evaluates the rank of the scores and is less sensitive to
-      absolute values than Pearson.
-    </li>
-    <li>
-      Kendall Tau evaluates pair order, is more robust to outliers, and performs
-      better on small datasets.
+      Kendall's Tau evaluates pair order, is more robust to outliers, handles
+      ties better, and performs better on small datasets.
     </li>
     <li>Pearson evaluates linear correlation.</li>
   </ul>
