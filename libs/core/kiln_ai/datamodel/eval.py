@@ -36,11 +36,6 @@ class EvalTemplate(str, Enum):
     jailbreak = "jailbreak"
 
 
-class EvalState(str, Enum):
-    enabled = "enabled"
-    disabled = "disabled"
-
-
 class EvalConfigType(str, Enum):
     g_eval = "g_eval"
     llm_as_judge = "llm_as_judge"
@@ -252,10 +247,6 @@ class Eval(KilnParentedModel, KilnParentModel, parent_of={"configs": EvalConfig}
     name: str = NAME_FIELD
     description: str | None = Field(
         default=None, description="The description of the eval"
-    )
-    state: EvalState = Field(
-        default=EvalState.enabled,
-        description="The state of the eval: enabled or disabled.",
     )
     template: EvalTemplate | None = Field(
         default=None,

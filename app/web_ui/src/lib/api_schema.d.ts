@@ -1329,11 +1329,6 @@ export interface components {
              * @description The description of the eval
              */
             description?: string | null;
-            /**
-             * @description The state of the eval: enabled or disabled.
-             * @default enabled
-             */
-            state: components["schemas"]["EvalState"];
             /** @description The template selected when creating this eval. Useful for suggesting eval steps and output scores. */
             template?: components["schemas"]["EvalTemplate"] | null;
             /**
@@ -1544,11 +1539,6 @@ export interface components {
             eval_config: components["schemas"]["EvalConfig"];
             run_config: components["schemas"]["TaskRunConfig"];
         };
-        /**
-         * EvalState
-         * @enum {string}
-         */
-        EvalState: "enabled" | "disabled";
         /**
          * EvalTemplate
          * @description An eval template is a pre-defined eval that can be used as a starting point for a new eval.

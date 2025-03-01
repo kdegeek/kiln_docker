@@ -9,7 +9,6 @@ from kiln_ai.datamodel.eval import (
     EvalConfigType,
     EvalOutputScore,
     EvalRun,
-    EvalState,
 )
 from kiln_ai.datamodel.task import Task
 from kiln_ai.datamodel.task_output import (
@@ -20,12 +19,6 @@ from kiln_ai.datamodel.task_output import (
 @pytest.fixture
 def mock_task():
     return Task(name="Test Task", instruction="Test instruction")
-
-
-def test_eval_state_values():
-    assert EvalState.enabled == "enabled"
-    assert EvalState.disabled == "disabled"
-    assert len(EvalState) == 2
 
 
 @pytest.fixture
@@ -95,7 +88,6 @@ def test_eval_basic_properties():
     eval = Eval(
         name="Test Eval",
         description="Test Description",
-        state=EvalState.enabled,
         current_config_id="config123",
         eval_set_filter_id="tag::tag1",
         eval_configs_filter_id="tag::tag2",
@@ -109,7 +101,6 @@ def test_eval_basic_properties():
 
     assert eval.name == "Test Eval"
     assert eval.description == "Test Description"
-    assert eval.state == EvalState.enabled
     assert eval.current_config_id == "config123"
     assert eval.output_scores[0].name == "accuracy"
     assert eval.output_scores[0].type == TaskOutputRatingType.five_star
@@ -129,7 +120,6 @@ def test_eval_default_values():
     )
 
     assert eval.description is None
-    assert eval.state == EvalState.enabled
     assert eval.current_config_id is None
 
 
