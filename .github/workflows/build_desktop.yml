@@ -51,6 +51,15 @@ jobs:
         if: matrix.os == 'windows-latest'
         run: cp ./app/desktop/Output/kilnsetup.exe ./app/desktop/build/dist/Kiln.Windows.Installer.exe
 
+      # Print checksums, so anyone can verify the build
+      - name: Checksums (macOS)
+        if: runner.os == 'macOS'
+        run: find ./app/desktop/build/dist -type f -exec md5 {} \;
+
+      - name: Checksums (Linux and Windows)
+        if: runner.os == 'Linux' || runner.os == 'Windows'
+        run: find ./app/desktop/build/dist -type f -exec md5sum {} \;
+
       - name: Upload Build
         uses: actions/upload-artifact@v4
         with:
