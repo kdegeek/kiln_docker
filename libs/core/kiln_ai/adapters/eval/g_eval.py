@@ -25,7 +25,7 @@ TOKEN_TO_SCORE_MAP: Dict[str, float] = {
 
 class GEvalTask(Task, parent_of={}):
     """
-    Kiln task for executing a G-Eval. Can be run on any Kiln adapter.
+    Kiln task for executing a G-Eval. Can be run on any Kiln adapter which supports logprobs.
 
     Note G-Eval implements both G-Eval and LLM as Judge as they are very similar.
     """
@@ -54,7 +54,7 @@ class GEvalTask(Task, parent_of={}):
 
         # Build the output schema from the eval's target output scores.
         # We restrict the LLM's output scoring schema to discrete scores (pass/fail/critical/1-5) - allow_float_scores=False
-        # However, the final scores from the evaluator can be a float (see later logprob calculation, which requires integer scores)
+        # However, the final scores from the evaluator can be a float (see later logprob calculation, which requires discrete token outputs)
         output_schema = BaseEval.build_score_schema(eval, allow_float_scores=False)
 
         super().__init__(
@@ -73,6 +73,16 @@ class GEval(BaseEval):
     G-Eval is a method of evaluating the quality of a model's output. It is a weighted average of the scores of the tokens in the output. The weights are the log probabilities of the tokens in the output. https://arxiv.org/abs/2303.16634
 
     LLM as Judge is a method of evaluating the quality of a model's output. It simply asks the LLM to score, and uses the returned output (no logprobs needed). Also called direct evaluation.
+
+    @misc{liu2023gevalnlgevaluationusing,
+        title={G-Eval: NLG Evaluation using GPT-4 with Better Human Alignment},
+        author={Yang Liu and Dan Iter and Yichong Xu and Shuohang Wang and Ruochen Xu and Chenguang Zhu},
+        year={2023},
+        eprint={2303.16634},
+        archivePrefix={arXiv},
+        primaryClass={cs.CL},
+        url={https://arxiv.org/abs/2303.16634},
+    }
     """
 
     def __init__(self, eval_config: EvalConfig, run_config: RunConfig | None):
@@ -81,7 +91,7 @@ class GEval(BaseEval):
             and eval_config.config_type != EvalConfigType.llm_as_judge
         ):
             raise ValueError(
-                "GEval must be initialized with a GEval or LLM as Judge Config"
+                f"GEval must be initialized with a GEval or LLM as Judge config_type. Got {eval_config.config_type}"
             )
 
         super().__init__(eval_config, run_config)
@@ -92,7 +102,7 @@ class GEval(BaseEval):
         self, task_run: TaskRun
     ) -> tuple[EvalScores, Dict[str, str] | None]:
         """
-        Run this G-Eval on the given task run.
+        Run this eval on the given task run.
         """
 
         model_name, provider = self.model_and_provider()
@@ -107,9 +117,10 @@ class GEval(BaseEval):
             self.geval_task,
             model_name,
             provider,
-            # We always use Simple COT for G-Eval
+            # We always use Simple COT for G-Eval and LLM as Judge
             prompt_id=PromptGenerators.SIMPLE_CHAIN_OF_THOUGHT,
             base_adapter_config=AdapterConfig(
+                # Don't save this run into the task_runs. It will be saved into an eval_run where it belongs
                 allow_saving=False,
                 top_logprobs=top_logprobs,
             ),
@@ -148,7 +159,9 @@ The model produced the following output for the task:
         for metric, score in run_output.output.items():
             token_score = self.score_from_token_string(f"{score}")
             if token_score is None:
-                raise ValueError(f"No score found for metric: {metric}")
+                raise ValueError(
+                    f"No score found for metric: {metric}. The LLM failed to follow the scoring rubric/instructions/schema."
+                )
             scores[metric] = token_score
         return scores
 
@@ -185,7 +198,9 @@ The model produced the following output for the task:
                 run_output, metric, metric_offsets, raw_output
             )
             if score is None:
-                raise ValueError(f"No score found for metric: {metric}")
+                raise ValueError(
+                    f"No score found for metric: {metric}. The LLM failed to follow the scoring rubric/instructions/schema."
+                )
             final_scores[metric] = score
 
         return final_scores
@@ -218,7 +233,7 @@ The model produced the following output for the task:
             )
 
         # scan the tokens in the range, looking for the rating token
-        for i, chat_logprob in enumerate(run_output.output_logprobs.content):
+        for _, chat_logprob in enumerate(run_output.output_logprobs.content):
             if offset >= end_offset:
                 break
             if offset >= start_offset:
