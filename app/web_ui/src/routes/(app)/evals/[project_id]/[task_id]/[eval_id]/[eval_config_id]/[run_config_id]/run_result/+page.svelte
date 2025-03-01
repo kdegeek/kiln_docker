@@ -91,7 +91,7 @@
         run_config.run_config_properties?.model_provider_name,
       ),
       Prompt: prompt_name_from_id(run_config.run_config_properties?.prompt_id),
-      "Task Inputs Dataset": evaluator.eval_set_filter_id,
+      "Task Inputs From Dataset": evaluator.eval_set_filter_id,
     }
   }
 
@@ -267,7 +267,7 @@
 >
   <div class="font-light flex flex-col gap-4">
     <Warning
-      warning_message="We strongly suggest you don't look at these results! Looking at these results can bias your future iterations."
+      warning_message="We strongly suggest you don't look at these results! Looking at these results can bias future iteration."
     />
     <div>
       Viewing these evaluation results may lead to data leakage - a fundamental
