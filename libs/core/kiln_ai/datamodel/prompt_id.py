@@ -28,6 +28,7 @@ A pydantic type that validates strings containing a valid prompt ID.
 Prompt IDs can be one of:
 - A saved prompt ID
 - A fine-tune prompt ID
+- A task run config ID
 - A prompt generator name
 """
 
