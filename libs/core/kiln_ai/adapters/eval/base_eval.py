@@ -12,6 +12,12 @@ from kiln_ai.utils.exhaustive_error import raise_exhaustive_enum_error
 
 
 class BaseEval:
+    """
+    Base class for all evals/evaluators.
+
+    Should be subclassed, and the run_eval method implemented.
+    """
+
     def __init__(self, eval_config: EvalConfig, run_config: RunConfig | None):
         self.eval_config = eval_config
         eval = eval_config.parent_eval()
@@ -44,6 +50,9 @@ class BaseEval:
     async def run_task_and_eval(
         self, input: str
     ) -> tuple[TaskRun, EvalScores, Dict[str, str] | None]:
+        """
+        Runs the task on the provided run_config to generate fresh output, then runs the eval on that output.
+        """
         if self.run_config is None:
             raise ValueError("Run config is required for run_task_and_eval")
 
@@ -68,11 +77,14 @@ class BaseEval:
         return run_output, eval_output, intermediate_outputs
 
     @abstractmethod
-    # Runs the eval on the given task run
-    # Returns a dictionary of scores which should conform to the score schema, and a dictionary of intermediate outputs
     async def run_eval(
         self, task_run: TaskRun
     ) -> tuple[EvalScores, Dict[str, str] | None]:
+        """
+        Runs the eval on the given task run.
+
+        Returns a dictionary of scores which should conform to the score schema, and a dictionary of intermediate outputs (eval thinking).
+        """
         pass
 
     @classmethod
@@ -83,7 +95,7 @@ class BaseEval:
         We allow 2 modes: allow_float_scores=True and allow_float_scores=False.
 
         allow_float_scores=False is used for the call to the model, and forces the model into selecting into discrete rating options (int 1-5, pass-fail, etc).
-        allow_float_scores=True is used after we take a g-eval weighting of the model's logprobs. For example, a pass/fail rating might return 0.75 for likely pass (as opposed to 0.99 for near certain pass), or a 1-5 score might return 3.75.
+        allow_float_scores=True is used for final score output (for example, after we take a g-eval weighting of the model's logprobs). A pass/fail rating might return 0.75 for likely pass (as opposed to 0.99 for near certain pass), or a 1-5 score might return 3.75.
         """
 
         # Note: python maintains order, which is good as we want the user defined order, and overall last
