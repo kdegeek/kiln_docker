@@ -109,20 +109,6 @@ class TaskRunConfig(KilnParentedModel):
             prompt_id=self.run_config_properties.prompt_id,
         )
 
-    @model_validator(mode="after")
-    def validate_task(self) -> Self:
-        # Check that the task in the run config matches the parent task
-        return self
-        # TODO P0
-        parent_task = self.parent_task()
-        if parent_task is None:
-            raise ValueError("Run config must be parented to a task")
-        if self.run_config.task is None:
-            raise ValueError("Run config must have a task")
-        if self.run_config.task.id != parent_task.id:
-            raise ValueError("Run config task must match parent task")
-        return self
-
 
 class Task(
     KilnParentedModel,
