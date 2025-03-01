@@ -139,7 +139,7 @@
 <div class="max-w-[1400px]">
   <AppPage
     title="Create a New Evaluator"
-    subtitle="Evaluators judge task performance and help you find the best way to run your task."
+    subtitle="Evaluators judge task performance and help you find the best method of running your task."
   >
     {#if loading}
       <div class="w-full min-h-[50vh] flex justify-center items-center">

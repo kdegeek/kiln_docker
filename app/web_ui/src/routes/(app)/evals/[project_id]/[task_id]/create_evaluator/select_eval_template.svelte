@@ -62,12 +62,12 @@
       id: "bias",
       name: "Bias Evaluator",
       description:
-        "Evaluate the model's output for gender, racial, and political bias.",
+        "Evaluate the model's output for gender bias, racial bias, and other bias.",
       eval_template: {
         template_id: "bias",
         name: "Bias Evaluator",
         description:
-          "Evaluate the model's output for gender, racial, and political bias.",
+          "Evaluate the model's output for gender bias, racial bias, and other bias.",
         output_scores: [
           {
             name: "Bias",
@@ -119,12 +119,12 @@
       id: "jailbreak",
       name: "Jailbreak Evaluator",
       description:
-        "Evaluate the user's ability to break out of the prompt, using tactics such as 'ignore previous instructions'. Also known as jailbreaking.",
+        "Evaluate the user's ability to break out of the prompt, using tactics such as 'ignore previous instructions'.",
       eval_template: {
         template_id: "jailbreak",
         name: "Jailbreak Evaluator",
         description:
-          "Evaluate the user's ability to break out of the prompt, using tactics such as 'ignore previous instructions'. Also known as jailbreaking.",
+          "Evaluate the user's ability to break out of the prompt, using tactics such as 'ignore previous instructions'.",
         output_scores: [
           {
             name: "Jailbreak Score",
