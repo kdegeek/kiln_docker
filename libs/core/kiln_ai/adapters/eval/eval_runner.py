@@ -32,9 +32,11 @@ class EvalProgress:
 
 class EvalRunner:
     """
-    Runs an eval.
+    Runs an eval. Async execution is supported to make it faster when using remote/fast model providers.
 
-    Specifically, runs a specific eval config on a list of task runs.
+    Can run an eval in 2 modes:
+    1) eval_config_eval: evaluate an eval config using existing dataset items.
+    2) task_run_eval: evaluate a range of task run configs, generating new run output using existing dataset item input.
     """
 
     def __init__(
@@ -91,7 +93,7 @@ class EvalRunner:
         """
         Collect all jobs for this run, excluding any that have already been run.
 
-        This variant is used when evaluating an eval config, using existing dataset run.
+        This variant is used for mode "eval_config_eval", using existing dataset run data (input/output).
 
         The tasks:
         - should be in the eval config set filter
@@ -122,11 +124,11 @@ class EvalRunner:
         """
         Collect all jobs for this run, excluding any that have already been run.
 
-        This variant is used when evaluating a range of task run configs on an eval config.
+        This variant is used for mode "task_run_eval", generating new run output using existing dataset item input.
 
         The tasks:
         - should be in the eval set filter
-        - should not have already been run for this eval config + run config pair
+        - should not have already been run for this eval config + run config + dataset item
         """
         filter = dataset_filter_from_id(self.eval.eval_set_filter_id)
 
@@ -158,7 +160,7 @@ class EvalRunner:
 
     async def run(self, concurrency: int = 25) -> AsyncGenerator[EvalProgress, None]:
         """
-        Runs the eval with parallel workers and yields progress updates.
+        Runs the configured eval run with parallel workers and yields progress updates.
         """
         jobs = self.collect_tasks()
 
