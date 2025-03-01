@@ -1,7 +1,7 @@
 <script lang="ts">
   import AppPage from "../../../../app_page.svelte"
   import SelectEvalTemplate from "./select_eval_template.svelte"
-  import type { EvalOutputScore, EvalTemplate } from "$lib/types"
+  import type { EvalOutputScore, EvalTemplateId } from "$lib/types"
   import { type EvalTemplateResult } from "./eval_template"
   import FormContainer from "$lib/utils/form_container.svelte"
   import type { Task } from "$lib/types"
@@ -35,7 +35,7 @@
     }
   })
 
-  let selected_template: EvalTemplate | "none" | null = null
+  let selected_template: EvalTemplateId | "none" | null = null
   function on_selected_template(template: EvalTemplateResult) {
     // Populate out model from the template
     name = template.name
@@ -112,7 +112,7 @@
   }
 
   // Default tags for each eval template
-  const eval_set_default_tags: Record<EvalTemplate | "none", string> = {
+  const eval_set_default_tags: Record<EvalTemplateId | "none", string> = {
     kiln_requirements: "eval_set",
     toxicity: "toxicity_eval_set",
     bias: "bias_eval_set",
@@ -123,7 +123,7 @@
   }
   $: suggested_eval_set_tag =
     eval_set_default_tags[selected_template ?? "none"] || "eval_set"
-  const config_set_default_tags: Record<EvalTemplate | "none", string> = {
+  const config_set_default_tags: Record<EvalTemplateId | "none", string> = {
     kiln_requirements: "golden",
     toxicity: "toxicity_golden",
     bias: "bias_golden",

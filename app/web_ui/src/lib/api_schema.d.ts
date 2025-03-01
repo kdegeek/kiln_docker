@@ -793,7 +793,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/projects/{project_id}/tasks/{task_id}/eval/{eval_id}/eval_config/{eval_config_id}/run": {
+    "/api/projects/{project_id}/tasks/{task_id}/eval/{eval_id}/eval_config/{eval_config_id}/run_task_run_eval": {
         parameters: {
             query?: never;
             header?: never;
@@ -801,7 +801,7 @@ export interface paths {
             cookie?: never;
         };
         /** Run Eval Config */
-        get: operations["run_eval_config_api_projects__project_id__tasks__task_id__eval__eval_id__eval_config__eval_config_id__run_get"];
+        get: operations["run_eval_config_api_projects__project_id__tasks__task_id__eval__eval_id__eval_config__eval_config_id__run_task_run_eval_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1031,7 +1031,7 @@ export interface components {
             name: string;
             /** Description */
             description: string;
-            template: components["schemas"]["EvalTemplate"] | null;
+            template: components["schemas"]["EvalTemplateId"] | null;
             /** Output Scores */
             output_scores: components["schemas"]["EvalOutputScore"][];
             /** Eval Set Filter Id */
@@ -1330,7 +1330,7 @@ export interface components {
              */
             description?: string | null;
             /** @description The template selected when creating this eval. Useful for suggesting eval steps and output scores. */
-            template?: components["schemas"]["EvalTemplate"] | null;
+            template?: components["schemas"]["EvalTemplateId"] | null;
             /**
              * Current Config Id
              * @description The id of the current config to use for this eval. This can be changed over time to run the same eval with different configs.
@@ -1540,11 +1540,11 @@ export interface components {
             run_config: components["schemas"]["TaskRunConfig"];
         };
         /**
-         * EvalTemplate
+         * EvalTemplateId
          * @description An eval template is a pre-defined eval that can be used as a starting point for a new eval.
          * @enum {string}
          */
-        EvalTemplate: "kiln_requirements" | "toxicity" | "bias" | "maliciousness" | "factual_correctness" | "jailbreak";
+        EvalTemplateId: "kiln_requirements" | "toxicity" | "bias" | "maliciousness" | "factual_correctness" | "jailbreak";
         /**
          * FineTuneParameter
          * @description A parameter for a fine-tune. Hyperparameters, etc.
@@ -1818,7 +1818,7 @@ export interface components {
          *     Where models have instruct and raw versions, instruct is default and raw is specified.
          * @enum {string}
          */
-        ModelName: "llama_3_1_8b" | "llama_3_1_70b" | "llama_3_1_405b" | "llama_3_2_1b" | "llama_3_2_3b" | "llama_3_2_11b" | "llama_3_2_90b" | "llama_3_3_70b" | "gpt_4o_mini" | "gpt_4o" | "phi_3_5" | "phi_4" | "mistral_large" | "mistral_nemo" | "gemma_2_2b" | "gemma_2_9b" | "gemma_2_27b" | "claude_3_5_haiku" | "claude_3_5_sonnet" | "gemini_1_5_flash" | "gemini_1_5_flash_8b" | "gemini_1_5_pro" | "gemini_2_0_flash" | "nemotron_70b" | "mixtral_8x7b" | "qwen_2p5_7b" | "qwen_2p5_72b" | "deepseek_3" | "deepseek_r1" | "mistral_small_3" | "deepseek_r1_distill_qwen_32b" | "deepseek_r1_distill_llama_70b" | "deepseek_r1_distill_qwen_14b" | "deepseek_r1_distill_qwen_1p5b" | "deepseek_r1_distill_qwen_7b" | "deepseek_r1_distill_llama_8b" | "dolphin_2_9_8x22b";
+        ModelName: "llama_3_1_8b" | "llama_3_1_70b" | "llama_3_1_405b" | "llama_3_2_1b" | "llama_3_2_3b" | "llama_3_2_11b" | "llama_3_2_90b" | "llama_3_3_70b" | "gpt_4o_mini" | "gpt_4o" | "phi_3_5" | "phi_4" | "mistral_large" | "mistral_nemo" | "gemma_2_2b" | "gemma_2_9b" | "gemma_2_27b" | "claude_3_5_haiku" | "claude_3_5_sonnet" | "claude_3_7_sonnet" | "claude_3_7_sonnet_thinking" | "gemini_1_5_flash" | "gemini_1_5_flash_8b" | "gemini_1_5_pro" | "gemini_2_0_flash" | "nemotron_70b" | "mixtral_8x7b" | "qwen_2p5_7b" | "qwen_2p5_72b" | "deepseek_3" | "deepseek_r1" | "mistral_small_3" | "deepseek_r1_distill_qwen_32b" | "deepseek_r1_distill_llama_70b" | "deepseek_r1_distill_qwen_14b" | "deepseek_r1_distill_qwen_1p5b" | "deepseek_r1_distill_qwen_7b" | "deepseek_r1_distill_llama_8b" | "dolphin_2_9_8x22b";
         /**
          * ModelProviderName
          * @description Enumeration of supported AI model providers.
@@ -4262,7 +4262,7 @@ export interface operations {
             };
         };
     };
-    run_eval_config_api_projects__project_id__tasks__task_id__eval__eval_id__eval_config__eval_config_id__run_get: {
+    run_eval_config_api_projects__project_id__tasks__task_id__eval__eval_id__eval_config__eval_config_id__run_task_run_eval_get: {
         parameters: {
             query?: {
                 run_config_ids?: string[];

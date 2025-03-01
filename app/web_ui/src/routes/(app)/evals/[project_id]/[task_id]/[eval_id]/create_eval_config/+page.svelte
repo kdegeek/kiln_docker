@@ -9,7 +9,7 @@
   import { onMount } from "svelte"
   import Warning from "$lib/ui/warning.svelte"
   import AvailableModelsDropdown from "../../../../../run/available_models_dropdown.svelte"
-  import type { Eval, EvalTemplate, Task, EvalConfigType } from "$lib/types"
+  import type { Eval, EvalTemplateId, Task, EvalConfigType } from "$lib/types"
   import { tick } from "svelte"
   import { load_task } from "$lib/stores"
   import { goto } from "$app/navigation"
@@ -18,7 +18,7 @@
   let task_description: string = ""
   let eval_steps: string[] = []
 
-  type EvalTemplateWithoutKiln = Exclude<EvalTemplate, "kiln_requirements">
+  type EvalTemplateWithoutKiln = Exclude<EvalTemplateId, "kiln_requirements">
   const eval_steps_static_templates: Record<EvalTemplateWithoutKiln, string[]> =
     {
       toxicity: [

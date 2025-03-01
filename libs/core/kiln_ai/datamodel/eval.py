@@ -2,7 +2,7 @@ import json
 from enum import Enum
 from typing import TYPE_CHECKING, Any, Dict, List, Union
 
-from pydantic import BaseModel, Field, ValidationInfo, model_validator
+from pydantic import BaseModel, Field, model_validator
 from typing_extensions import Self
 
 from kiln_ai.datamodel.basemodel import (
@@ -14,7 +14,6 @@ from kiln_ai.datamodel.basemodel import (
 from kiln_ai.datamodel.datamodel_enums import TaskOutputRatingType
 from kiln_ai.datamodel.dataset_filters import DatasetFilterId
 from kiln_ai.datamodel.json_schema import string_to_json_key
-from kiln_ai.datamodel.task_output import DataSource, DataSourceType
 from kiln_ai.utils.exhaustive_error import raise_exhaustive_enum_error
 
 if TYPE_CHECKING:
@@ -23,7 +22,7 @@ if TYPE_CHECKING:
 EvalScores = Dict[str, float]
 
 
-class EvalTemplate(str, Enum):
+class EvalTemplateId(str, Enum):
     """
     An eval template is a pre-defined eval that can be used as a starting point for a new eval.
     """
@@ -248,7 +247,7 @@ class Eval(KilnParentedModel, KilnParentModel, parent_of={"configs": EvalConfig}
     description: str | None = Field(
         default=None, description="The description of the eval"
     )
-    template: EvalTemplate | None = Field(
+    template: EvalTemplateId | None = Field(
         default=None,
         description="The template selected when creating this eval. Useful for suggesting eval steps and output scores.",
     )

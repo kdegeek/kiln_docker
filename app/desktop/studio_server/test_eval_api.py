@@ -27,7 +27,7 @@ from kiln_ai.datamodel.eval import (
     EvalConfigType,
     EvalOutputScore,
     EvalRun,
-    EvalTemplate,
+    EvalTemplateId,
 )
 from kiln_ai.datamodel.task import RunConfigProperties, TaskRunConfig
 
@@ -87,7 +87,7 @@ def mock_eval(mock_task):
         id="eval1",
         name="Test Eval",
         description="Test Description",
-        template=EvalTemplate.bias,
+        template=EvalTemplateId.bias,
         output_scores=[
             EvalOutputScore(name="score1", description="desc1", type="five_star"),
             EvalOutputScore(
@@ -177,7 +177,7 @@ def test_get_eval_not_found(client, mock_task, mock_task_from_id):
     response = client.get("/api/projects/project1/tasks/task1/eval/non_existent")
 
     assert response.status_code == 404
-    assert response.json()["detail"] == "Task not found. ID: task1"
+    assert response.json()["detail"] == "Eval not found. ID: non_existent"
 
 
 @pytest.fixture
@@ -428,7 +428,7 @@ async def test_run_eval_config(
 
         # Make request with specific run_config_ids
         response = client.get(
-            "/api/projects/project1/tasks/task1/eval/eval1/eval_config/eval_config1/run",
+            "/api/projects/project1/tasks/task1/eval/eval1/eval_config/eval_config1/run_task_run_eval",
             params={"run_config_ids": ["run_config1", "run_config2"]},
         )
 
@@ -465,7 +465,7 @@ async def test_run_eval_config_no_run_configs_error(
 
         # Make request with no run_config_ids and all_run_configs=False
         response = client.get(
-            "/api/projects/project1/tasks/task1/eval/eval1/eval_config/eval_config1/run"
+            "/api/projects/project1/tasks/task1/eval/eval1/eval_config/eval_config1/run_task_run_eval"
         )
 
         assert response.status_code == 400

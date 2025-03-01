@@ -22,7 +22,7 @@ from kiln_ai.datamodel.eval import (
     EvalConfigType,
     EvalOutputScore,
     EvalRun,
-    EvalTemplate,
+    EvalTemplateId,
 )
 from kiln_ai.datamodel.json_schema import string_to_json_key
 from kiln_ai.datamodel.prompt_id import is_frozen_prompt
@@ -47,7 +47,7 @@ def eval_from_id(project_id: str, task_id: str, eval_id: str) -> Eval:
 
     raise HTTPException(
         status_code=404,
-        detail=f"Task not found. ID: {task_id}",
+        detail=f"Eval not found. ID: {eval_id}",
     )
 
 
@@ -79,9 +79,9 @@ def task_run_config_from_id(
     )
 
 
-# JS SSE client (EventSource) doesn't work with POST requests, so we use GET, even though post would be better
 async def run_eval_runner_with_status(eval_runner: EvalRunner) -> StreamingResponse:
-    # Async messages via server side events (SSE)
+    # Yields async messages designed to be used with server sent events (SSE)
+    # https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events
     async def event_generator():
         async for progress in eval_runner.run():
             data = {
@@ -103,7 +103,7 @@ async def run_eval_runner_with_status(eval_runner: EvalRunner) -> StreamingRespo
 class CreateEvaluatorRequest(BaseModel):
     name: str
     description: str
-    template: EvalTemplate | None
+    template: EvalTemplateId | None
     output_scores: list[EvalOutputScore]
     eval_set_filter_id: DatasetFilterId
     eval_configs_filter_id: DatasetFilterId
@@ -142,18 +142,18 @@ class EvalRunResult(BaseModel):
 
 class EvalResultSummary(BaseModel):
     # run_config_id -> output_score_id -> ScoreSummary
-    results: Dict[str, Dict[str, ScoreSummary]]
+    results: Dict[ID_TYPE, Dict[str, ScoreSummary]]
     # run_config_id -> percent of the dataset that has been processed
-    run_config_percent_complete: Dict[str, float]
+    run_config_percent_complete: Dict[ID_TYPE, float]
     # The total size of the dataset used for the eval
     dataset_size: int
 
 
 class EvalConfigCompareSummary(BaseModel):
     # Summary of results. eval_config_id -> output_score_id -> CorrelationResult
-    results: Dict[str, Dict[str, CorrelationResult]]
+    results: Dict[ID_TYPE, Dict[str, CorrelationResult]]
     # eval_config_id -> percent of the dataset that has been processed (run with eval scores)
-    eval_config_percent_complete: Dict[str, float]
+    eval_config_percent_complete: Dict[ID_TYPE, float]
     # The total size of the dataset used for the eval config comparisons (eval.eval_configs_filter_id set size)
     dataset_size: int
     # The number of dataset items which are fully rated, partially rated, or not rated at all.
@@ -180,9 +180,10 @@ def human_score_from_task_run(
     if score_key == "overall_rating":
         human_score = task_run.output.rating.value
     else:
-        req_rating = task_run.output.rating.requirement_ratings.get(
-            score_key_to_task_requirement_id[score_key], None
-        )
+        req_id = score_key_to_task_requirement_id.get(score_key, None)
+        if req_id is None:
+            return None
+        req_rating = task_run.output.rating.requirement_ratings.get(req_id, None)
         if req_rating is not None:
             human_score = req_rating.value
 
@@ -199,7 +200,6 @@ def count_human_evals(
     partially_rated_count: int = 0
     not_rated_count: int = 0
     for dataset_item in items:
-        # Check it has all scores
         has_all_scores = True
         has_any_scores = False
         for output_score in eval.output_scores:
@@ -346,8 +346,9 @@ def connect_evals_api(app: FastAPI):
         eval_config.save_to_file()
         return eval_config
 
+    # JS SSE client (EventSource) doesn't work with POST requests, so we use GET, even though post would be better
     @app.get(
-        "/api/projects/{project_id}/tasks/{task_id}/eval/{eval_id}/eval_config/{eval_config_id}/run"
+        "/api/projects/{project_id}/tasks/{task_id}/eval/{eval_id}/eval_config/{eval_config_id}/run_task_run_eval"
     )
     async def run_eval_config(
         project_id: str,
@@ -397,6 +398,7 @@ def connect_evals_api(app: FastAPI):
 
         return eval
 
+    # JS SSE client (EventSource) doesn't work with POST requests, so we use GET, even though post would be better
     @app.get(
         "/api/projects/{project_id}/tasks/{task_id}/eval/{eval_id}/run_eval_config_eval"
     )
@@ -440,6 +442,7 @@ def connect_evals_api(app: FastAPI):
             run_config=run_config,
         )
 
+    # This compares run_configs to each other on a given eval_config. Compare to below which compares eval_configs to each other.
     @app.get(
         "/api/projects/{project_id}/tasks/{task_id}/eval/{eval_id}/eval_config/{eval_config_id}/score_summary"
     )
@@ -463,29 +466,27 @@ def connect_evals_api(app: FastAPI):
             )
 
         # save a copy of the expected dataset ids for each run config, we'll update each as we process each eval run
-        remaining_expected_dataset_ids: Dict[str, Set[ID_TYPE]] = {
-            str(run_config.id): set(expected_dataset_ids)
-            for run_config in task_runs_configs
+        remaining_expected_dataset_ids: Dict[ID_TYPE, Set[ID_TYPE]] = {
+            run_config.id: set(expected_dataset_ids) for run_config in task_runs_configs
         }
         # Track how often we are missing scores in a eval_config. Should be 0 for a complete eval_config
-        partial_incomplete_counts: Dict[str, int] = {
-            str(run_config.id): 0 for run_config in task_runs_configs
+        partial_incomplete_counts: Dict[ID_TYPE, int] = {
+            run_config.id: 0 for run_config in task_runs_configs
         }
 
-        # task_run_config_id -> output_score_id -> score/total
-        total_scores: Dict[str, Dict[str, float]] = {}
-        score_counts: Dict[str, Dict[str, int]] = {}
+        # task_run_config_id -> output_score_json_key -> score/total for calculating the mean score
+        total_scores: Dict[ID_TYPE, Dict[str, float]] = {}
+        score_counts: Dict[ID_TYPE, Dict[str, int]] = {}
 
-        # important: readonly makes this much faster
         for eval_run in eval_config.runs(readonly=True):
             if eval_run.task_run_config_id is None:
-                # This eval_run is not associated with a run_config, so we can't count it
+                # This eval_run is not associated with a run_config, so we should not count it
                 continue
-            run_config_id = str(eval_run.task_run_config_id)
+            run_config_id = eval_run.task_run_config_id
 
             # Check if we should count this eval_run. Not every eval_run has to go into the stats:
             # - a dataset_id can be removed from the dataset filter (removed a tag)
-            # - this dataset_id was already counted (not great there are dupes, but really shouldn't be double counted)
+            # - this dataset_id was already counted (not great there are dupes, but shouldn't be double counted if there are)
             if eval_run.dataset_id not in remaining_expected_dataset_ids[run_config_id]:
                 continue
             else:
@@ -513,25 +514,25 @@ def connect_evals_api(app: FastAPI):
                 partial_incomplete_counts[run_config_id] += 1
 
         # Convert to score summaries
-        results: Dict[str, Dict[str, ScoreSummary]] = {}
+        results: Dict[ID_TYPE, Dict[str, ScoreSummary]] = {}
         for run_config_id, output_scores in total_scores.items():
             results[run_config_id] = {}
             for output_score_id, score in output_scores.items():
-                if score_counts[run_config_id][output_score_id] > 0:
+                count = score_counts[run_config_id][output_score_id]
+                if count > 0:
                     results[run_config_id][output_score_id] = ScoreSummary(
-                        mean_score=score / score_counts[run_config_id][output_score_id]
+                        mean_score=score / count
                     )
 
         # Calculate the percent of the dataset that has been processed
-        run_config_percent_complete: Dict[str, float] = {}
+        run_config_percent_complete: Dict[ID_TYPE, float] = {}
         for run_config in task_runs_configs:
-            run_config_id = str(run_config.id)
             # Partial incomplete (missing scores), and fully incomplete (no eval_run)
-            incomplete_count = partial_incomplete_counts[run_config_id] + len(
-                remaining_expected_dataset_ids[run_config_id]
+            incomplete_count = partial_incomplete_counts[run_config.id] + len(
+                remaining_expected_dataset_ids[run_config.id]
             )
             percent_incomplete = incomplete_count / len(expected_dataset_ids)
-            run_config_percent_complete[str(run_config.id)] = 1 - percent_incomplete
+            run_config_percent_complete[run_config.id] = 1 - percent_incomplete
 
         return EvalResultSummary(
             results=results,
@@ -573,18 +574,15 @@ def connect_evals_api(app: FastAPI):
                 not_rated_count=0,
             )
 
-        # save a copy of the expected dataset ids for each eval config, we'll update each as we process each eval run
-        remaining_expected_dataset_ids: Dict[str, Set[ID_TYPE]] = {
-            str(eval_config.id): set(expected_dataset_ids)
-            for eval_config in eval_configs
+        # save a copy of the expected dataset ids for each eval config id, we'll update each as we process each eval run
+        remaining_expected_dataset_ids: Dict[ID_TYPE, Set[ID_TYPE]] = {
+            eval_config.id: set(expected_dataset_ids) for eval_config in eval_configs
         }
 
-        # eval_config_id -> output_score_id -> correlation calculator
-        correlation_calculators: Dict[str, Dict[str, CorrelationCalculator]] = {}
+        # eval_config_id -> output_score_json_key -> correlation calculator
+        correlation_calculators: Dict[ID_TYPE, Dict[str, CorrelationCalculator]] = {}
 
-        # important: readonly makes this much faster
         for eval_config in eval_configs:
-            eval_config_id = str(eval_config.id)
             for eval_run in eval_config.runs(readonly=True):
                 dataset_item = expected_dataset_items.get(eval_run.dataset_id, None)
                 if dataset_item is None:
@@ -593,14 +591,14 @@ def connect_evals_api(app: FastAPI):
                     continue
 
                 # Check if we should count this eval_run. Not every eval_run has to go into the stats:
-                # Example: this dataset_id was already counted (not great there are dupes, but really shouldn't be double counted)
+                # Example: this dataset_id was already counted (not great there are dupes, but shouldn't be double counted if there are)
                 if (
                     eval_run.dataset_id
-                    not in remaining_expected_dataset_ids[eval_config_id]
+                    not in remaining_expected_dataset_ids[eval_config.id]
                 ):
                     continue
                 else:
-                    remaining_expected_dataset_ids[eval_config_id].remove(
+                    remaining_expected_dataset_ids[eval_config.id].remove(
                         eval_run.dataset_id
                     )
 
@@ -617,13 +615,15 @@ def connect_evals_api(app: FastAPI):
                         # This score doesn't have both a human eval and eval score, so we can't compare
                         continue
 
-                    if eval_config_id not in correlation_calculators:
-                        correlation_calculators[eval_config_id] = {}
+                    if eval_config.id not in correlation_calculators:
+                        correlation_calculators[eval_config.id] = {}
 
-                    if score_key not in correlation_calculators[eval_config_id]:
-                        correlation_calculators[eval_config_id][score_key] = (
-                            CorrelationCalculator()
-                        )
+                    calculator = correlation_calculators[eval_config.id].get(
+                        score_key, None
+                    )
+                    if calculator is None:
+                        calculator = CorrelationCalculator()
+                        correlation_calculators[eval_config.id][score_key] = calculator
 
                     normalized_eval_score = normalize_rating(
                         eval_score, output_score.type
@@ -631,7 +631,7 @@ def connect_evals_api(app: FastAPI):
                     normalized_human_score = normalize_rating(
                         human_score, output_score.type
                     )
-                    correlation_calculators[eval_config_id][score_key].add_score(
+                    calculator.add_score(
                         CorrelationScore(
                             measured_score=eval_score,
                             human_score=human_score,
@@ -641,27 +641,26 @@ def connect_evals_api(app: FastAPI):
                     )
 
         # Convert to score summaries
-        results: Dict[str, Dict[str, CorrelationResult]] = {}
+        results: Dict[ID_TYPE, Dict[str, CorrelationResult]] = {}
         for eval_config_id in correlation_calculators.keys():
             results[eval_config_id] = {}
             for score_key in correlation_calculators[eval_config_id].keys():
-                if not correlation_calculators[eval_config_id][score_key]:
+                calculator = correlation_calculators[eval_config_id].get(
+                    score_key, None
+                )
+                if calculator is None:
                     # No scores to calculate correlation for this pair
                     continue
 
-                correlation_result = correlation_calculators[eval_config_id][
-                    score_key
-                ].calculate_correlation()
+                correlation_result = calculator.calculate_correlation()
                 results[eval_config_id][score_key] = correlation_result
 
         # Calculate the percent of the dataset that has been processed
-        eval_config_percent_complete: Dict[str, float] = {}
+        eval_config_percent_complete: Dict[ID_TYPE, float] = {}
         for eval_config in eval_configs:
-            eval_config_id = str(eval_config.id)
-            # Partial incomplete (missing scores), and fully incomplete (no eval_run)
-            incomplete_count = len(remaining_expected_dataset_ids[eval_config_id])
+            incomplete_count = len(remaining_expected_dataset_ids[eval_config.id])
             percent_incomplete = incomplete_count / len(expected_dataset_ids)
-            eval_config_percent_complete[str(eval_config.id)] = 1 - percent_incomplete
+            eval_config_percent_complete[eval_config.id] = 1 - percent_incomplete
 
         # Count how many dataset items have human evals
         fully_rated_count, partially_rated_count, not_rated_count = count_human_evals(

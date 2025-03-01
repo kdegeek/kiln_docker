@@ -1,11 +1,11 @@
 <script lang="ts">
   import type { EvalTemplateResult } from "./eval_template"
-  import type { Task, EvalTemplate } from "$lib/types"
+  import type { Task, EvalTemplateId } from "$lib/types"
   export let selected_template_callback: (template: EvalTemplateResult) => void
   export let task: Task | null | undefined
 
   interface EvaluatorTemplateDescription {
-    id: EvalTemplate | "none"
+    id: EvalTemplateId | "none"
     name: string
     description: string
     recommended?: boolean
@@ -138,7 +138,7 @@
   ]
 
   function select_template(
-    template_id: EvalTemplate | "none",
+    template_id: EvalTemplateId | "none",
     template: EvalTemplateResult | undefined,
   ) {
     // No op

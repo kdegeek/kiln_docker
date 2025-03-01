@@ -336,7 +336,7 @@
     | "running"
     | "complete"
     | "complete_with_errors" = "not_started"
-  $: run_eval_url = `${base_url}/api/projects/${project_id}/tasks/${task_id}/eval/${eval_id}/eval_config/${current_eval_config_id}/run?all_run_configs=true`
+  $: run_eval_url = `${base_url}/api/projects/${project_id}/tasks/${task_id}/eval/${eval_id}/eval_config/${current_eval_config_id}/run_task_run_eval?all_run_configs=true`
 
   let task_run_config_model_name = ""
   let task_run_config_provider_name = ""
