@@ -44,7 +44,7 @@ class EvalOutputScore(BaseModel):
     """
     A definition of a score that an evaluator will produce.
 
-    Very similar to TaskRequirement, but conceptually different so separate models.
+    Very similar to TaskRequirement, but conceptually different keeping in a separate models.
     """
 
     name: str = Field(
@@ -59,28 +59,36 @@ class EvalOutputScore(BaseModel):
     )
 
     def json_key(self) -> str:
+        """
+        The JSON key for the score, used when running the evaluator with a LLM and we need JSON output.
+
+        For example, "Overall Rating" -> "overall_rating"
+        """
         return string_to_json_key(self.name)
 
     @model_validator(mode="after")
     def validate_type(self) -> Self:
         if self.type == TaskOutputRatingType.custom:
             raise ValueError(
-                f"Custom scores are not supported in evaluators. '{self.json_key}' was set to a custom score."
+                f"Custom scores are not supported in evaluators. Score '{self.name}' was set to a custom score."
             )
         return self
 
 
 class EvalRun(KilnParentedModel):
     """
-    The results of running an eval on a single dataset item, with a specific TaskRunConfig and EvalConfig.
+    The results of running an eval on a single dataset item.
+
+    This is a child of an EvalConfig, which specifies how the scores were generated.
+
+    Eval runs can be one of 2 types:
+    1) eval_config_eval=False: we were evaluating a task run (a method of running the task). We get the task input from the dataset_id.input, run the task with the task_run_config, then ran the evaluator on that output. task_run_config_id must be set. The output saved in this model is the output of the task run.
+    2) eval_config_eval=True: we were evaluating an eval config (a method of evaluating the task). We used the existing dataset item input/output, and ran the evaluator on it. task_run_config_id must be None. The input/output saved in this model is the input/output of the dataset item.
     """
 
     dataset_id: ID_TYPE = Field(
-        description="The ID of the dataset item that was used for this run (we only use it's input). Must belong to the same Task as this eval."
+        description="The ID of the dataset item that was used for this run. Must belong to the same Task as the grand-parent eval of this EvalRun."
     )
-    # Eval runs can be one of 2 types:
-    # 1) eval_config_eval=False: we were evaluating a task run (a method of running the task). We ran the task with the task_run_config, saved the output, then ran the evaluator on the output. task_run_config_id must be set.
-    # 2) eval_config_eval=True: we were evaluating an eval config (a method of evaluating the task). We used the existing dataset item input/output, and ran the evaluator on it. task_run_config_id must be None.
     task_run_config_id: ID_TYPE | None = Field(
         description="The ID of the TaskRunConfig that was run, if this eval run was based on a task run. Must belong to the same Task as this eval. Can be None if this eval run is based on an eval config."
     )
@@ -88,7 +96,7 @@ class EvalRun(KilnParentedModel):
         description="Whether this eval run to evaluate the parent eval config (evaluating the config using an existing dataset item). If true, task_run_config_id must be None, as we're not running the task.",
         default=False,
     )
-    # This may duplicate the dataset_id.input, but we're denormalizing intentionally.
+    # These two may duplicate the dataset_id.input/output, but we're denormalizing intentionally.
     input: str = Field(
         description="The input to the task. JSON formatted for structured input, plaintext for unstructured input."
     )
@@ -97,10 +105,10 @@ class EvalRun(KilnParentedModel):
     )
     intermediate_outputs: Dict[str, str] | None = Field(
         default=None,
-        description="The intermediate outputs of the task.",
+        description="The intermediate outputs of the task (example, eval thinking).",
     )
     scores: EvalScores = Field(
-        description="The scores of the evaluator (specifically the EvalConfig this object is a child of)."
+        description="The output scores of the evaluator (aligning to those required by the grand-parent Eval this object is a child of)."
     )
 
     def parent_eval_config(self) -> Union["EvalConfig", None]:
@@ -185,7 +193,7 @@ class EvalConfig(KilnParentedModel, KilnParentModel, parent_of={"runs": EvalRun}
     """
     A configuration for running an eval. This includes anything needed to run the eval on a dataset like the prompt, model, thresholds, etc.
 
-    A eval might have many configs, example running the same eval with 2 different models. Comparing eval results is only valid when the same eval is run with the same config.
+    A eval might have many configs, example running the same eval with 2 different models. Comparing eval results is only valid within the scope of the same config.
     """
 
     name: str = NAME_FIELD
