@@ -240,7 +240,7 @@ def test_score_schema_no_scores():
         BaseEval.build_score_schema(eval)
 
 
-class TestEval(BaseEval):
+class EvalTester(BaseEval):
     """Test implementation of BaseEval"""
 
     async def run_eval(self, task_run):
@@ -307,7 +307,7 @@ async def test_run_method():
         parent=task,
     )
 
-    evaluator = TestEval(eval_config, run_config.run_config())
+    evaluator = EvalTester(eval_config, run_config.run_config())
 
     # Run the evaluation
     task_run, eval_scores = await evaluator.run("test input")
