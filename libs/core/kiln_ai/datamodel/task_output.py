@@ -11,6 +11,7 @@ from kiln_ai.datamodel.basemodel import ID_TYPE, KilnBaseModel
 from kiln_ai.datamodel.datamodel_enums import TaskOutputRatingType
 from kiln_ai.datamodel.json_schema import validate_schema
 from kiln_ai.datamodel.strict_mode import strict_mode
+from kiln_ai.utils.exhaustive_error import raise_exhaustive_enum_error
 
 if TYPE_CHECKING:
     from kiln_ai.datamodel.task import Task
@@ -23,6 +24,27 @@ class RequirementRating(BaseModel):
         description="The rating value. Interpretation depends on rating type"
     )
     type: TaskOutputRatingType = Field(description="The type of rating")
+
+
+def normalize_rating(rating: float, rating_type: TaskOutputRatingType) -> float:
+    """Normalize a rating to a 0-1 scale. Simple normalization, not z-score."""
+    match rating_type:
+        case TaskOutputRatingType.five_star:
+            if rating < 1 or rating > 5:
+                raise ValueError("Five star rating must be between 1 and 5")
+            return (rating - 1) / 4
+        case TaskOutputRatingType.pass_fail:
+            if rating < 0 or rating > 1:
+                raise ValueError("Pass fail rating must 0 to 1")
+            return rating
+        case TaskOutputRatingType.pass_fail_critical:
+            if rating < -1 or rating > 1:
+                raise ValueError("Pass fail critical rating must -1 to 1")
+            return (rating + 1) / 2  # -1 to 1
+        case TaskOutputRatingType.custom:
+            raise ValueError("Custom rating type can not be normalized")
+        case _:
+            raise_exhaustive_enum_error(rating_type)
 
 
 class TaskOutputRating(KilnBaseModel):
@@ -205,13 +227,13 @@ class DataSource(BaseModel):
             not_allowed_for=[DataSourceType.human],
         ),
         DataSourceProperty(
+            # Legacy field -- allow loading from old runs, but we shouldn't be setting it.
             name="prompt_builder_name",
             type=str,
             not_allowed_for=[DataSourceType.human],
         ),
         DataSourceProperty(
-            # Optional: an ID within the scope of the prompt_builder_name.
-            # Used for prompt builders with IDs (like saved prompts, fine-tune prompts)
+            # The PromptId of the prompt. Can be a saved prompt, fine-tune, generator name, etc. See PromptId type for more details.
             name="prompt_id",
             type=str,
             not_allowed_for=[DataSourceType.human],

@@ -9,18 +9,19 @@ from openai.types.chat import (
 )
 
 import kiln_ai.datamodel as datamodel
-from kiln_ai.adapters.ml_model_list import StructuredOutputMode
+from kiln_ai.adapters.ml_model_list import ModelProviderName, StructuredOutputMode
 from kiln_ai.adapters.model_adapters.base_adapter import (
     COT_FINAL_ANSWER_PROMPT,
-    AdapterInfo,
+    AdapterConfig,
     BaseAdapter,
-    BasePromptBuilder,
     RunOutput,
 )
 from kiln_ai.adapters.model_adapters.openai_compatible_config import (
     OpenAICompatibleConfig,
 )
 from kiln_ai.adapters.parsers.json_parser import parse_json_string
+from kiln_ai.datamodel import PromptGenerators, PromptId
+from kiln_ai.datamodel.task import RunConfig
 from kiln_ai.utils.exhaustive_error import raise_exhaustive_enum_error
 
 
@@ -29,8 +30,8 @@ class OpenAICompatibleAdapter(BaseAdapter):
         self,
         config: OpenAICompatibleConfig,
         kiln_task: datamodel.Task,
-        prompt_builder: BasePromptBuilder | None = None,
-        tags: list[str] | None = None,
+        prompt_id: PromptId | None = None,
+        base_adapter_config: AdapterConfig | None = None,
     ):
         self.config = config
         self.client = AsyncOpenAI(
@@ -39,12 +40,16 @@ class OpenAICompatibleAdapter(BaseAdapter):
             default_headers=config.default_headers,
         )
 
-        super().__init__(
-            kiln_task,
+        run_config = RunConfig(
+            task=kiln_task,
             model_name=config.model_name,
             model_provider_name=config.provider_name,
-            prompt_builder=prompt_builder,
-            tags=tags,
+            prompt_id=prompt_id or PromptGenerators.SIMPLE,
+        )
+
+        super().__init__(
+            run_config=run_config,
+            config=base_adapter_config,
         )
 
     async def _run(self, input: Dict | str) -> RunOutput:
@@ -93,7 +98,8 @@ class OpenAICompatibleAdapter(BaseAdapter):
                 ]
             )
 
-        # OpenRouter specific options for reasoning models
+        # OpenRouter specific options for reasoning models and logprobs.
+        # TODO: this isn't a good place for this and I should refactor. But big usability improvement so keeping it here for now.
         extra_body = {}
         require_or_reasoning = (
             self.config.openrouter_style_reasoning and provider.reasoning_capable
@@ -108,6 +114,15 @@ class OpenAICompatibleAdapter(BaseAdapter):
                 # fp8 quants are awful
                 "ignore": ["DeepInfra"],
             }
+        elif (
+            self.run_config.model_provider_name == ModelProviderName.openrouter
+            and self.base_adapter_config.top_logprobs is not None
+        ):
+            # OpenRouter specific options related to logprobs. Bit of a hack but really does improve usability.
+            extra_body["provider"] = {
+                "require_parameters": True,
+                "ignore": ["DeepInfra"],
+            }
 
         # Main completion call
         response_format_options = await self.response_format_options()
@@ -115,6 +130,8 @@ class OpenAICompatibleAdapter(BaseAdapter):
             model=provider.provider_options["model"],
             messages=messages,
             extra_body=extra_body,
+            logprobs=self.base_adapter_config.top_logprobs is not None,
+            top_logprobs=self.base_adapter_config.top_logprobs,
             **response_format_options,
         )
 
@@ -133,6 +150,11 @@ class OpenAICompatibleAdapter(BaseAdapter):
             )
 
         message = response.choices[0].message
+        logprobs = response.choices[0].logprobs
+
+        # Check logprobs worked, if requested
+        if self.base_adapter_config.top_logprobs is not None and logprobs is None:
+            raise RuntimeError("Logprobs were required, but no logprobs were returned.")
 
         # Save reasoning if it exists (OpenRouter specific format)
         if require_or_reasoning:
@@ -164,26 +186,19 @@ class OpenAICompatibleAdapter(BaseAdapter):
         if not isinstance(response_content, str):
             raise RuntimeError(f"response is not a string: {response_content}")
 
+        # Parse to dict if we have structured output
+        output: Dict | str = response_content
         if self.has_structured_output():
-            structured_response = parse_json_string(response_content)
-            return RunOutput(
-                output=structured_response,
-                intermediate_outputs=intermediate_outputs,
-            )
+            output = parse_json_string(response_content)
 
         return RunOutput(
-            output=response_content,
+            output=output,
             intermediate_outputs=intermediate_outputs,
+            output_logprobs=logprobs,
         )
 
-    def adapter_info(self) -> AdapterInfo:
-        return AdapterInfo(
-            model_name=self.model_name,
-            model_provider=self.model_provider_name,
-            adapter_name="kiln_openai_compatible_adapter",
-            prompt_builder_name=self.prompt_builder.__class__.prompt_builder_name(),
-            prompt_id=self.prompt_builder.prompt_id(),
-        )
+    def adapter_name(self) -> str:
+        return "kiln_openai_compatible_adapter"
 
     async def response_format_options(self) -> dict[str, Any]:
         # Unstructured if task isn't structured
@@ -195,7 +210,7 @@ class OpenAICompatibleAdapter(BaseAdapter):
             case StructuredOutputMode.json_mode:
                 return {"response_format": {"type": "json_object"}}
             case StructuredOutputMode.json_schema:
-                output_schema = self.kiln_task.output_schema()
+                output_schema = self.task().output_schema()
                 return {
                     "response_format": {
                         "type": "json_schema",
@@ -205,8 +220,10 @@ class OpenAICompatibleAdapter(BaseAdapter):
                         },
                     }
                 }
+            case StructuredOutputMode.function_calling_weak:
+                return self.tool_call_params(strict=False)
             case StructuredOutputMode.function_calling:
-                return self.tool_call_params()
+                return self.tool_call_params(strict=True)
             case StructuredOutputMode.json_instructions:
                 # JSON done via instructions in prompt, not the API response format. Do not ask for json_object (see option below).
                 return {}
@@ -215,28 +232,32 @@ class OpenAICompatibleAdapter(BaseAdapter):
                 return {"response_format": {"type": "json_object"}}
             case StructuredOutputMode.default:
                 # Default to function calling -- it's older than the other modes. Higher compatibility.
-                return self.tool_call_params()
+                return self.tool_call_params(strict=True)
             case _:
                 raise_exhaustive_enum_error(provider.structured_output_mode)
 
-    def tool_call_params(self) -> dict[str, Any]:
+    def tool_call_params(self, strict: bool) -> dict[str, Any]:
         # Add additional_properties: false to the schema (OpenAI requires this for some models)
-        output_schema = self.kiln_task.output_schema()
+        output_schema = self.task().output_schema()
         if not isinstance(output_schema, dict):
             raise ValueError(
                 "Invalid output schema for this task. Can not use tool calls."
             )
         output_schema["additionalProperties"] = False
 
+        function_params = {
+            "name": "task_response",
+            "parameters": output_schema,
+        }
+        # This should be on, but we allow setting function_calling_weak for APIs that don't support it.
+        if strict:
+            function_params["strict"] = True
+
         return {
             "tools": [
                 {
                     "type": "function",
-                    "function": {
-                        "name": "task_response",
-                        "parameters": output_schema,
-                        "strict": True,
-                    },
+                    "function": function_params,
                 }
             ],
             "tool_choice": {

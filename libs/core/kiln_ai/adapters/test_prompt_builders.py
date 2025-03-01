@@ -3,7 +3,7 @@ import logging
 
 import pytest
 
-from kiln_ai.adapters.model_adapters.base_adapter import AdapterInfo, BaseAdapter
+from kiln_ai.adapters.model_adapters.base_adapter import BaseAdapter
 from kiln_ai.adapters.model_adapters.test_structured_output import (
     build_structured_output_test_task,
 )
@@ -17,8 +17,9 @@ from kiln_ai.adapters.prompt_builders import (
     SavedPromptBuilder,
     SimpleChainOfThoughtPromptBuilder,
     SimplePromptBuilder,
+    TaskRunConfigPromptBuilder,
     chain_of_thought_prompt,
-    prompt_builder_from_ui_name,
+    prompt_builder_from_id,
 )
 from kiln_ai.adapters.test_prompt_adaptors import build_test_task
 from kiln_ai.datamodel import (
@@ -33,6 +34,7 @@ from kiln_ai.datamodel import (
     TaskOutputRating,
     TaskRun,
 )
+from kiln_ai.datamodel.task import RunConfigProperties, TaskRunConfig
 
 logger = logging.getLogger(__name__)
 
@@ -60,12 +62,8 @@ class MockAdapter(BaseAdapter):
     def _run(self, input: str) -> str:
         return "mock response"
 
-    def adapter_info(self) -> AdapterInfo:
-        return AdapterInfo(
-            adapter_name="mock_adapter",
-            model_name="mock_model",
-            model_provider="mock_provider",
-        )
+    def adapter_name(self) -> str:
+        return "mock_adapter"
 
 
 def test_simple_prompt_builder_structured_output(tmp_path):
@@ -316,54 +314,53 @@ def check_example_outputs(task: Task, count: int):
         assert f"## Example {count}" in prompt
 
 
-def test_prompt_builder_name():
-    assert SimplePromptBuilder.prompt_builder_name() == "simple_prompt_builder"
-    assert MultiShotPromptBuilder.prompt_builder_name() == "multi_shot_prompt_builder"
-    assert RepairsPromptBuilder.prompt_builder_name() == "repairs_prompt_builder"
-
-
-def test_prompt_builder_from_ui_name(task_with_examples):
+def test_prompt_builder_from_id(task_with_examples):
     task = task_with_examples
-    assert isinstance(prompt_builder_from_ui_name("basic", task), SimplePromptBuilder)
     assert isinstance(
-        prompt_builder_from_ui_name("few_shot", task), FewShotPromptBuilder
+        prompt_builder_from_id("simple_prompt_builder", task), SimplePromptBuilder
     )
     assert isinstance(
-        prompt_builder_from_ui_name("many_shot", task), MultiShotPromptBuilder
+        prompt_builder_from_id("few_shot_prompt_builder", task),
+        FewShotPromptBuilder,
     )
     assert isinstance(
-        prompt_builder_from_ui_name("repairs", task), RepairsPromptBuilder
+        prompt_builder_from_id("multi_shot_prompt_builder", task),
+        MultiShotPromptBuilder,
     )
     assert isinstance(
-        prompt_builder_from_ui_name("simple_chain_of_thought", task),
+        prompt_builder_from_id("repairs_prompt_builder", task),
+        RepairsPromptBuilder,
+    )
+    assert isinstance(
+        prompt_builder_from_id("simple_chain_of_thought_prompt_builder", task),
         SimpleChainOfThoughtPromptBuilder,
     )
     assert isinstance(
-        prompt_builder_from_ui_name("few_shot_chain_of_thought", task),
+        prompt_builder_from_id("few_shot_chain_of_thought_prompt_builder", task),
         FewShotChainOfThoughtPromptBuilder,
     )
     assert isinstance(
-        prompt_builder_from_ui_name("multi_shot_chain_of_thought", task),
+        prompt_builder_from_id("multi_shot_chain_of_thought_prompt_builder", task),
         MultiShotChainOfThoughtPromptBuilder,
     )
 
-    with pytest.raises(ValueError, match="Unknown prompt builder: invalid_name"):
-        prompt_builder_from_ui_name("invalid_name", task)
+    with pytest.raises(ValueError, match="Unknown prompt generator: invalid_name"):
+        prompt_builder_from_id("invalid_name", task)
 
     with pytest.raises(ValueError, match="Prompt ID not found: 123"):
-        prompt_builder_from_ui_name("id::123", task)
+        prompt_builder_from_id("id::123", task)
 
     with pytest.raises(
         ValueError,
         match="Invalid fine-tune ID format. Expected 'project_id::task_id::fine_tune_id'",
     ):
-        prompt_builder_from_ui_name("fine_tune_prompt::123", task)
+        prompt_builder_from_id("fine_tune_prompt::123", task)
 
     with pytest.raises(
         ValueError,
         match="Fine-tune ID not found",
     ):
-        prompt_builder_from_ui_name("fine_tune_prompt::123::456::789", task)
+        prompt_builder_from_id("fine_tune_prompt::123::456::789", task)
 
     prompt = Prompt(
         name="test_prompt_name",
@@ -372,7 +369,7 @@ def test_prompt_builder_from_ui_name(task_with_examples):
         parent=task,
     )
     prompt.save_to_file()
-    pb = prompt_builder_from_ui_name("id::" + prompt.id, task)
+    pb = prompt_builder_from_id("id::" + prompt.id, task)
     assert isinstance(pb, SavedPromptBuilder)
     assert pb.prompt_id() == prompt.id
     assert pb.build_prompt(include_json_instructions=False) == "test_prompt"
@@ -392,7 +389,7 @@ def test_prompt_builder_from_ui_name(task_with_examples):
     nested_fine_tune_id = (
         task_with_examples.parent.id + "::" + task_with_examples.id + "::" + finetune.id
     )
-    pb = prompt_builder_from_ui_name(
+    pb = prompt_builder_from_id(
         "fine_tune_prompt::" + nested_fine_tune_id,
         task_with_examples,
     )
@@ -589,3 +586,64 @@ def test_build_prompt_with_json_instructions(tmp_path):
     assert task.instruction in prompt_with_json
     for requirement in task.requirements:
         assert requirement.instruction in prompt_with_json
+
+
+def test_task_run_config_prompt_builder(tmp_path):
+    task = build_test_task(tmp_path)
+
+    run_config = TaskRunConfig(
+        name="test_run_config",
+        parent=task,
+        run_config_properties=RunConfigProperties(
+            model_name="gpt-4",
+            model_provider_name="openai",
+            prompt_id="simple_prompt_builder",
+        ),
+        prompt=Prompt(
+            name="test prompt name",
+            prompt="test prompt content",
+            chain_of_thought_instructions="test step by step",
+        ),
+    )
+    run_config.save_to_file()
+
+    # Construct the eval prompt ID
+    run_config_prompt_id = (
+        f"task_run_config::{task.parent.id}::{task.id}::{run_config.id}"
+    )
+
+    # Test successful creation 2 ways: constructor and ID creation
+    builders = [
+        TaskRunConfigPromptBuilder(
+            task=task, run_config_prompt_id=run_config_prompt_id
+        ),
+        prompt_builder_from_id(run_config_prompt_id, task),
+    ]
+
+    for builder in builders:
+        assert (
+            builder.build_prompt(include_json_instructions=False)
+            == "test prompt content"
+        )
+        assert builder.chain_of_thought_prompt() == "test step by step"
+        assert builder.prompt_id() == run_config_prompt_id
+
+
+def test_task_run_config_prompt_builder_validation_errors(tmp_path):
+    task = build_test_task(tmp_path)
+
+    # Test invalid format
+    with pytest.raises(ValueError, match="Invalid task run config prompt ID"):
+        TaskRunConfigPromptBuilder(
+            task=task, run_config_prompt_id="task_run_config::wrong::format"
+        )
+
+    # Test task ID mismatch
+    wrong_task_id = f"task_run_config::{task.parent.id}::wrong_task_id::config_id"
+    with pytest.raises(ValueError, match="Task ID mismatch"):
+        TaskRunConfigPromptBuilder(task=task, run_config_prompt_id=wrong_task_id)
+
+    # Test eval not found
+    nonexistent_eval = f"task_run_config::{task.parent.id}::{task.id}::nonexistent_id"
+    with pytest.raises(ValueError, match="Task run config ID not found"):
+        TaskRunConfigPromptBuilder(task=task, run_config_prompt_id=nonexistent_eval)

@@ -3,7 +3,7 @@
   import FormContainer from "$lib/utils/form_container.svelte"
   import FormElement from "$lib/utils/form_element.svelte"
   import { page } from "$app/stores"
-  import { client } from "$lib/api_client"
+  import { client, base_url } from "$lib/api_client"
   import { KilnError, createKilnError } from "$lib/utils/error_handlers"
   import { onMount } from "svelte"
   import { formatDate } from "$lib/utils/formatters"
@@ -31,7 +31,7 @@
   let finetune_custom_system_prompt = ""
   let finetune_custom_thinking_instructions =
     "Think step by step, explaining your reasoning."
-  let system_prompt_method = "basic"
+  let system_prompt_method = "simple_prompt_builder"
 
   $: project_id = $page.params.project_id
   $: task_id = $page.params.task_id
@@ -298,8 +298,7 @@
             body: {
               // @ts-expect-error types are validated by the server
               dataset_split_type: new_dataset_split,
-              // @ts-expect-error types are validated by the server
-              filter_type: new_dataset_filter,
+              filter_id: new_dataset_filter,
             },
           },
         )
@@ -474,9 +473,7 @@
       .map(([key, value]) => `${key}=${encodeURIComponent(value || "")}`)
       .join("&")
 
-    window.open(
-      "http://localhost:8757/api/download_dataset_jsonl?" + query_string,
-    )
+    window.open(base_url + "/api/download_dataset_jsonl?" + query_string)
   }
 </script>
 

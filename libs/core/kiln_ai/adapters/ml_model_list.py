@@ -43,6 +43,7 @@ class ModelFamily(str, Enum):
     mixtral = "mixtral"
     qwen = "qwen"
     deepseek = "deepseek"
+    dolphin = "dolphin"
 
 
 # Where models have instruct and raw versions, instruct is default and raw is specified
@@ -90,6 +91,7 @@ class ModelName(str, Enum):
     deepseek_r1_distill_qwen_1p5b = "deepseek_r1_distill_qwen_1p5b"
     deepseek_r1_distill_qwen_7b = "deepseek_r1_distill_qwen_7b"
     deepseek_r1_distill_llama_8b = "deepseek_r1_distill_llama_8b"
+    dolphin_2_9_8x22b = "dolphin_2_9_8x22b"
 
 
 class ModelParserID(str, Enum):
@@ -125,6 +127,7 @@ class KilnModelProvider(BaseModel):
     structured_output_mode: StructuredOutputMode = StructuredOutputMode.default
     parser: ModelParserID | None = None
     reasoning_capable: bool = False
+    supports_logprobs: bool = False
 
 
 class KilnModel(BaseModel):
@@ -157,11 +160,13 @@ built_in_models: List[KilnModel] = [
                 provider_options={"model": "gpt-4o-mini"},
                 provider_finetune_id="gpt-4o-mini-2024-07-18",
                 structured_output_mode=StructuredOutputMode.json_schema,
+                supports_logprobs=True,
             ),
             KilnModelProvider(
                 name=ModelProviderName.openrouter,
                 provider_options={"model": "openai/gpt-4o-mini"},
                 structured_output_mode=StructuredOutputMode.json_schema,
+                supports_logprobs=True,
             ),
         ],
     ),
@@ -176,11 +181,13 @@ built_in_models: List[KilnModel] = [
                 provider_options={"model": "gpt-4o"},
                 provider_finetune_id="gpt-4o-2024-08-06",
                 structured_output_mode=StructuredOutputMode.json_schema,
+                supports_logprobs=True,
             ),
             KilnModelProvider(
                 name=ModelProviderName.openrouter,
                 provider_options={"model": "openai/gpt-4o"},
                 structured_output_mode=StructuredOutputMode.json_schema,
+                supports_logprobs=True,
             ),
         ],
     ),
@@ -192,7 +199,7 @@ built_in_models: List[KilnModel] = [
         providers=[
             KilnModelProvider(
                 name=ModelProviderName.openrouter,
-                structured_output_mode=StructuredOutputMode.function_calling,
+                structured_output_mode=StructuredOutputMode.json_instruction_and_object,
                 provider_options={"model": "anthropic/claude-3-5-haiku"},
             ),
         ],
@@ -205,7 +212,7 @@ built_in_models: List[KilnModel] = [
         providers=[
             KilnModelProvider(
                 name=ModelProviderName.openrouter,
-                structured_output_mode=StructuredOutputMode.function_calling,
+                structured_output_mode=StructuredOutputMode.json_instruction_and_object,
                 provider_options={"model": "anthropic/claude-3.5-sonnet"},
             ),
         ],
@@ -416,8 +423,10 @@ built_in_models: List[KilnModel] = [
             KilnModelProvider(
                 name=ModelProviderName.openrouter,
                 supports_data_gen=False,
-                structured_output_mode=StructuredOutputMode.function_calling,
+                # Need to not pass "strict=True" to the function call to get this to work with logprobs for some reason. Openrouter issue.
+                structured_output_mode=StructuredOutputMode.function_calling_weak,
                 provider_options={"model": "meta-llama/llama-3.1-70b-instruct"},
+                supports_logprobs=True,
             ),
             KilnModelProvider(
                 name=ModelProviderName.ollama,
@@ -982,6 +991,28 @@ built_in_models: List[KilnModel] = [
                 reasoning_capable=True,
                 structured_output_mode=StructuredOutputMode.json_instructions,
                 provider_options={"model": "deepseek-r1:1.5b"},
+            ),
+        ],
+    ),
+    # Dolphin 2.9 Mixtral 8x22B
+    KilnModel(
+        family=ModelFamily.dolphin,
+        name=ModelName.dolphin_2_9_8x22b,
+        friendly_name="Dolphin 2.9 8x22B",
+        providers=[
+            KilnModelProvider(
+                name=ModelProviderName.ollama,
+                structured_output_mode=StructuredOutputMode.json_schema,
+                supports_data_gen=True,
+                provider_options={"model": "dolphin-mixtral:8x22b"},
+            ),
+            KilnModelProvider(
+                name=ModelProviderName.openrouter,
+                provider_options={
+                    "model": "cognitivecomputations/dolphin-mixtral-8x22b"
+                },
+                supports_data_gen=True,
+                structured_output_mode=StructuredOutputMode.json_instruction_and_object,
             ),
         ],
     ),
