@@ -55,7 +55,7 @@ jobs:
 
       - name: Checksums (macOS)
         if: runner.os == 'macOS'
-        run: find ./app/desktop/build/dist -type f -exec shasum -a 256 {} \;
+        run: find ./app/desktop/build/dist/Kiln.app ! -iname "./app/desktop/build/dist/Kiln.app/Contents/Resources/botocore/data/*" -type f -exec md5 {} \;
 
       - name: Checksums (Linux)
         if: runner.os == 'Linux'
@@ -63,7 +63,9 @@ jobs:
 
       - name: Checksums (Windows)
         if: runner.os == 'Windows'
-        run: Get-ChildItem -Path ./app/desktop/build/dist -Recurse -File | ForEach-Object { Get-FileHash -Path $_.FullName -Algorithm SHA256 | Select-Object Path,Hash }
+        run: |
+          certutil -hashfile ./app/desktop/build/dist/Kiln.Windows.Installer.exe SHA256
+          certutil -hashfile ./app/desktop/build/dist/Kiln/Kiln.exe SHA256
 
       - name: Upload Build
         uses: actions/upload-artifact@v4
