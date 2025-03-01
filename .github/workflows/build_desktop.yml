@@ -39,7 +39,7 @@ jobs:
 
       # Compress MacOS app param ignored on other platforms
       - name: Build Desktop App
-        run: uv run bash ./app/desktop/build_desktop_app.sh --compress-mac-app
+        run: uv run bash ./app/desktop/build_desktop_app.sh
 
       - name: Build Windows Installer
         if: matrix.os == 'windows-latest'
@@ -55,7 +55,7 @@ jobs:
 
       - name: Checksums (macOS)
         if: runner.os == 'macOS'
-        run: find ./app/desktop/build/dist/Kiln.app ! -iname "./app/desktop/build/dist/Kiln.app/Contents/Resources/botocore/data/*" -type f -exec md5 {} \;
+        run: find ./app/desktop/build/dist/Kiln.app -type f -not -path "*/Contents/Resources/botocore/data/*" -exec md5 {} \;
 
       - name: Checksums (Linux)
         if: runner.os == 'Linux'
@@ -66,6 +66,15 @@ jobs:
         run: |
           certutil -hashfile ./app/desktop/build/dist/Kiln.Windows.Installer.exe SHA256
           certutil -hashfile ./app/desktop/build/dist/Kiln/Kiln.exe SHA256
+
+      # MacOS apps have symlinks, and GitHub artifact upload zip will break them. Tar instead.
+      - name: Compress MacOS App
+        if: runner.os == 'macOS'
+        working-directory: ./app/desktop/build/dist
+        run: |
+          echo "Compressing MacOS app"
+          tar czpvf Kiln.app.tgz Kiln.app
+          rm -r Kiln.app
 
       - name: Upload Build
         uses: actions/upload-artifact@v4
