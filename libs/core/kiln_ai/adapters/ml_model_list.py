@@ -44,6 +44,7 @@ class ModelFamily(str, Enum):
     qwen = "qwen"
     deepseek = "deepseek"
     dolphin = "dolphin"
+    grok = "grok"
 
 
 # Where models have instruct and raw versions, instruct is default and raw is specified
@@ -92,6 +93,7 @@ class ModelName(str, Enum):
     deepseek_r1_distill_qwen_7b = "deepseek_r1_distill_qwen_7b"
     deepseek_r1_distill_llama_8b = "deepseek_r1_distill_llama_8b"
     dolphin_2_9_8x22b = "dolphin_2_9_8x22b"
+    grok_2 = "grok_2"
 
 
 class ModelParserID(str, Enum):
@@ -1013,6 +1015,21 @@ built_in_models: List[KilnModel] = [
                 },
                 supports_data_gen=True,
                 structured_output_mode=StructuredOutputMode.json_instruction_and_object,
+            ),
+        ],
+    ),
+    # Grok 2
+    KilnModel(
+        family=ModelFamily.grok,
+        name=ModelName.grok_2,
+        friendly_name="Grok 2",
+        providers=[
+            KilnModelProvider(
+                name=ModelProviderName.openrouter,
+                provider_options={"model": "x-ai/grok-2-1212"},
+                supports_structured_output=True,
+                supports_data_gen=True,
+                structured_output_mode=StructuredOutputMode.json_schema,
             ),
         ],
     ),
