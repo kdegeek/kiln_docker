@@ -93,6 +93,9 @@
           "Given prior thinking and priorities, what would be an appropriate overall score for this task, from 1 to 5, with 1 being the worst and 5 being the best?",
         )
       }
+
+      // Use the task instruction as the task description starter point
+      task_description = task.instruction
     } catch (e) {
       loading_task_error = createKilnError(e)
     } finally {
@@ -323,8 +326,8 @@
               <div>
                 Include a short description of what this task does. The
                 evaluator will use this for context. Keep it short, ideally one
-                sentence. Include requirements for the eval below, not in this
-                description.
+                or two sentences. Include requirements for the eval below, not
+                in this description.
               </div>
             </div>
           </div>
