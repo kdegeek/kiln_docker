@@ -51,9 +51,9 @@
   let score_summary: EvalResultSummary | null = null
   let score_summary_error: KilnError | null = null
 
+  // Note: not including score_summary_error, because it's not a critical error we should block the UI for
   $: loading = eval_loading || eval_configs_loading || task_run_configs_loading
   $: error = eval_error || eval_configs_error || task_run_configs_error
-  // Note: not including score_summary_error, because it's not a critical error we should block the UI for
 
   onMount(async () => {
     // Wait for page params to load
@@ -64,11 +64,11 @@
       load_available_prompts(),
       load_available_models(),
     ])
-    // Get the eval first (want it to set the current config id), then the rest in parallel
+    // Get the eval first (want it to set the current config id before the other two load)
     await get_eval()
     // These two can be parallel
     await Promise.all([get_eval_configs(), get_task_run_configs()])
-    // This needs the selected eval config id
+    // This needs the selected eval config id, set from above requests
     get_score_summary()
   })
 
@@ -91,7 +91,7 @@
         throw error
       }
       evaluator = data
-      // Set the selected eval config: prefer query params, then eval's default, then
+      // Set the selected eval config: prefer query params, then eval's default, then first eval config (set below in load_eval_configs)
       current_eval_config_id =
         $page.url.searchParams.get("selected_eval_config") ||
         evaluator.current_config_id ||
@@ -122,7 +122,7 @@
         throw error
       }
       eval_configs = data
-      // This may be already set by evaluator loading, if so we prioritize that, but fallback to first
+      // Fallback to first eval config if no current eval config id is set from load_eval()
       if (
         !current_eval_config_id &&
         eval_configs.length > 0 &&
@@ -192,11 +192,11 @@
     }
   }
 
-  // Watches the current eval config id
+  // Watches the current eval config id, performing actions based on it
   $: watch_selected_eval_config(current_eval_config_id)
   function watch_selected_eval_config(selected_id: string | null) {
     if (selected_id === "add_config") {
-      // if it's "add_config" then navigates to the create eval config page
+      // if it's the "add_config" special value, navigate to the create eval config page
       goto(`/evals/${project_id}/${task_id}/${eval_id}/create_eval_config`)
       return
     }
@@ -212,8 +212,8 @@
     value: string
   }
 
-  // A name for the eval config that is human readable and helpful
-  // Combine's it's memorable name with it's properties
+  // A dropdown name for the eval config that is human readable and helpful
+  // Combine's it's name with it's properties
   function get_eval_config_name(
     eval_config: EvalConfig,
     model_info: ProviderModels | null,
@@ -469,7 +469,7 @@
           />
           {#if !has_default_eval_config}
             <Warning
-              warning_message="No default evaluation method selected. We recommend using 'Compare Evaluation Methods' and selecting one as the default."
+              warning_message="No default evaluation method selected. We recommend using 'Compare Evaluation Methods' and selecting the best performing method as the default."
               warning_color="warning"
               tight={true}
             />
@@ -508,7 +508,7 @@
           <div class="grow">
             <div class="text-xl font-bold">Compare Run Methods</div>
             <div class="text-xs text-gray-500">
-              Find the best method of running your task including various
+              Find the best method of running your task comparing various
               prompts, models, fine-tunes, and more.
             </div>
             <div class="text-xs text-gray-500 pt-2">
@@ -549,7 +549,7 @@
           <div class="mt-6 mb-4">
             <button
               class="tooltip tooltip-top cursor-pointer"
-              data-tip="Running evals will update any missing dataset items, without re-running complete items. If some evals consistently fail, check the logs; it is likely that the model is failing on the task or the eval."
+              data-tip="Running evals will update any missing dataset items, without re-running complete items. If some evals consistently fail, check the logs for error details."
             >
               <Warning
                 warning_message={`Some evals are incomplete and should be excluded from analysis. Click 'Run Eval' to generate missing results.`}
@@ -652,8 +652,8 @@
       {:else}
         <div class="text-xl font-bold">Compare Run Methods</div>
         <div class="text-sm text-gray-500">
-          Find the best method of running your task including various prompts,
-          models, fine-tunes, and more. Add one or more task run method to get
+          Find the best method of running your task comparing various prompts,
+          models, fine-tunes, and more. Add one or more task run methods to get
           started.
         </div>
 
@@ -691,8 +691,8 @@
     Define a method of running this task (model+prompt).
   </h4>
   <h4 class="text-sm text-gray-500 mt-1">
-    Your evaluator can compare multiple run methods to find the best one for
-    running this task.
+    Your evaluator can compare multiple run methods to find which one produces
+    the highest scores on your eval dataset.
   </h4>
   <div class="flex flex-col gap-2 pt-6">
     <AvailableModelsDropdown
