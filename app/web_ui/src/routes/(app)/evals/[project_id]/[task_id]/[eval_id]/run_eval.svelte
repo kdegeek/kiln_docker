@@ -56,9 +56,9 @@
           eval_state = "running"
         }
       } catch (error) {
+        eventSource.close()
         eval_run_error = createKilnError(error)
         eval_state = "complete_with_errors"
-
         on_run_complete()
       }
     }
