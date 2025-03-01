@@ -290,7 +290,15 @@
 <AppPage
   title="Compare Evaluation Methods"
   subtitle="Find the evaluation method that best matches human-ratings"
+  sub_subtitle="Read the docs"
+  sub_subtitle_link="https://docs.getkiln.ai/docs/evaluations#finding-the-ideal-eval-method"
   action_buttons={[
+    {
+      label: "Instructions",
+      handler: () => {
+        score_legend_dialog?.show()
+      },
+    },
     {
       label: "Add Eval Method",
       href: `/evals/${$page.params.project_id}/${$page.params.task_id}/${$page.params.eval_id}/create_eval_config?next_page=eval_configs`,
@@ -327,7 +335,7 @@
         {#if score_summary && score_summary.dataset_size > 0 && score_summary.dataset_size < 25}
           <div class="mt-4">
             <Warning
-              warning_message={`There are only ${score_summary.dataset_size} item(s) in your Eval Method Dataset. This is generally too small to get a good sense of how well your eval-configs perform.`}
+              warning_message={`There are only ${score_summary.dataset_size} item(s) in your Eval Method Dataset. This is generally too small to get a sense of how eval methods perform.`}
               warning_color="warning"
               tight={true}
             />
@@ -341,15 +349,8 @@
           <div class="grow">
             <div class="text-xl font-bold">Correlation to Human Ratings</div>
             <div class="text-xs text-gray-500">
-              How each eval method correlates to human ratings.
-              <button
-                class="link"
-                on:click={() => {
-                  score_legend_dialog?.show()
-                }}
-              >
-                Learn about score types.
-              </button>
+              Each score in this table is a measure for how much the eval method
+              correlates to human ratings, using the selected scoring metric.
             </div>
             {#if score_summary_error}
               <div class="text-error text-sm">
@@ -559,7 +560,7 @@
 
 <Dialog
   bind:this={eval_config_instructions_dialog}
-  title="Eval Method Instructions: {displayed_eval_config?.name}"
+  title="Instructions for Eval Method '{displayed_eval_config?.name}'"
   action_buttons={[
     {
       label: "Close",
@@ -572,7 +573,7 @@
 
 <Dialog
   bind:this={score_legend_dialog}
-  title="Score Types Explained"
+  title="How to Compare Evaluation Methods"
   action_buttons={[
     {
       label: "Close",
@@ -583,70 +584,35 @@
   <div class="font-medium text-sm text-gray-500">
     Each score is a correlation score between human ratings and the automated
     eval method's scores. Use these scores to find the eval method which best
-    correlates to human ratings, and set it as your default eval method.
+    matches human ratings, and set it as your default eval method.
   </div>
   <div class="m-8 font-light text-sm flex flex-col gap-2">
-    <div class="font-extrabold text-xl">TL;DR</div>
+    <div class="font-bold text-xl">Quick Start</div>
+    <div>
+      Add a variety of eval methods with different options (model, algorithm,
+      instructions). Then click 'Run Eval' to generate scores from each eval
+      method on your eval method dataset.
+    </div>
     <div>
       We suggest you use Kendall's Tau correlation scores to compare results.
-    </div>
-    <div>
       Kendall's Tau scores range from -1.0 to 1. Higher values indicate higher
       correlation between the human ratings and the automated eval method's
-      scores.
+      scores. The absolute value of Kendall's Tau scores will vary depending on
+      how subjective your task is.
     </div>
     <div>
-      The absolute value of Kendall's Tau scores will vary depending on how
-      subjective your task is. Find the highest score for your task, and select
-      it as your default eval method.
+      Finally, set the eval method with the highest Kendall's Tau score as your
+      default eval method.
     </div>
-  </div>
-  <div class="font-medium mt-5">
-    Spearman, Kendall's Tau, and Pearson Correlation
-  </div>
-  <div class="text-sm text-gray-500 font-medium mb-1">
-    From -1 to 1, higher is better
-  </div>
-  <div class="font-light text-sm">
-    These are three scientific correlation coefficients. For all three, The
-    value tends to be high (close to 1) for samples with a strongly positive
-    correlation, low (close to -1) for samples with a strongly negative
-    correlation, and close to zero for samples with weak correlation. Scores may
-    be 'N/A' if there are too few samples or not enough variation in scores.
-  </div>
-  <ul class="list-disc text-sm text-gray-500 pl-5 pt-2">
-    <li>Spearman evaluates the rank of the scores, not the absolute values.</li>
-    <li>
-      Kendall's Tau evaluates pair order, is more robust to outliers, handles
-      ties better, and performs better on small datasets.
-    </li>
-    <li>Pearson evaluates linear correlation.</li>
-  </ul>
-  <div class="font-medium mt-5">Mean Absolute Error</div>
-  <div class="text-sm text-gray-500 font-medium mb-1">Lower is better</div>
-  <div class="font-light text-sm">
-    Example: If a human scores an item a 3, and the eval scores it a 5, the
-    absolute error would be 2 [abs(3-5)]. The overall score is the mean of all
-    absolute errors.
-  </div>
-  <div class="font-medium mt-6">Normalized Mean Absolute Error</div>
-  <div class="text-sm text-gray-500 font-medium mb-1">Lower is better</div>
-  <div class="font-light text-sm">
-    Like mean absolute error, but scores are normalized to the range 0-1. For
-    example, for a 1-5 star rating, 1-star is score 0 and 5-star is score 1.
-  </div>
-  <div class="font-medium mt-6">Mean Squared Error</div>
-  <div class="text-sm text-gray-500 font-medium mb-1">Lower is better</div>
-  <div class="font-light text-sm">
-    Example: If a human scores an item a 3, and the eval scores it a 5, the
-    squared error would be 4 [(3-5)^2]. The overall score is the mean of all
-    squared errors. This imporoves over absolute error as it penalizes larger
-    errors more.
-  </div>
-  <div class="font-medium mt-6">Normalized Mean Squared Error</div>
-  <div class="text-sm text-gray-500 font-medium mb-1">Lower is better</div>
-  <div class="font-light text-sm">
-    Like mean squared error, but scores are normalized to the range 0-1. For
-    example, for a 1-5 star rating, 1-star is score 0 and 5-star is score 1.
+
+    <div class="font-bold text-xl mt-6">Detailed Instructions</div>
+    <div>
+      <a
+        href="https://docs.getkiln.ai/docs/evaluations#finding-the-ideal-eval-method"
+        target="_blank"
+        class="link">Read the docs</a
+      > for more information, a detailed walkthrough, and technical details about
+      each scoring metric.
+    </div>
   </div>
 </Dialog>

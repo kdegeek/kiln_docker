@@ -86,7 +86,7 @@
   >
 {:else}
   <button
-    class="btn btn-mid"
+    class="btn {btn_size === 'mid' ? 'btn-mid' : ''}"
     on:click={() => {
       running_progress_dialog?.show()
     }}
@@ -106,7 +106,7 @@
 
 <Dialog
   bind:this={running_progress_dialog}
-  title="Eval Progress"
+  title=""
   action_buttons={eval_state === "complete" ||
   eval_state === "complete_with_errors"
     ? [
@@ -121,13 +121,20 @@
   <div
     class="mt-12 mb-6 flex flex-col items-center justify-center min-h-[100px] text-center"
   >
-    {#if eval_state === "complete"}
-      <div class="font-medium">Eval Complete 🎉</div>
-      {#if eval_total_count == 0}
-        <div class="text-gray-500 text-sm mt-2">
-          No evals were run, because everything was already up to date!
+    {#if eval_state === "complete" && eval_complete_count == 0}
+      <div class="font-medium">No Data Needed to be Evaluated</div>
+      <div class="text-gray-500 text-sm mt-2 flex flex-col gap-2">
+        <div>
+          If you want to add more data to your eval,
+          <a
+            href="https://docs.getkiln.ai/docs/evaluations#create-your-eval-datasets"
+            target="_blank"
+            class="link">read the docs</a
+          > for instructions.
         </div>
-      {/if}
+      </div>
+    {:else if eval_state === "complete"}
+      <div class="font-medium">Eval Complete 🎉</div>
     {:else if eval_state === "complete_with_errors"}
       <div class="font-medium">Eval Complete with Errors</div>
     {:else if eval_state === "running"}
