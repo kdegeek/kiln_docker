@@ -165,7 +165,7 @@
   async function get_score_summary() {
     score_summary = null
     if (!current_eval_config_id) {
-      score_summary_error = new KilnError("No eval config selected", null)
+      score_summary_error = new KilnError("No evaluation method selected", null)
       return
     }
     try {
@@ -325,9 +325,9 @@
 
     const results: [string, [unknown, string][]][] = []
     if (configs_options.length > 0) {
-      results.push(["Select Eval Config", configs_options])
+      results.push(["Select Eval Method", configs_options])
     }
-    results.push(["Manage Eval Configs", [["add_config", "Add Eval Config"]]])
+    results.push(["Manage Eval Methods", [["add_config", "Add Eval Method"]]])
     return results
   }
 
@@ -460,7 +460,7 @@
           <FormElement
             hide_label={true}
             id="eval_config_select"
-            label="Eval Config"
+            label="Eval Method"
             inputType="select"
             bind:value={current_eval_config_id}
             select_options_grouped={get_eval_config_select_options(
@@ -665,7 +665,7 @@
             add_task_config_dialog?.show()
           }}
         >
-          Add Task Config
+          Add Run Method
         </button>
       {/if}
     </div>
