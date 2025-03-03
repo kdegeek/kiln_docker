@@ -254,7 +254,7 @@
     {:else}
       <FormContainer
         submit_visible={!!(selected_algo && combined_model_name)}
-        submit_label="Create Eval Config"
+        submit_label="Create Eval Method"
         on:submit={create_evaluator}
         bind:error={create_evaluator_error}
         bind:submitting={create_evaluator_loading}
