@@ -34,7 +34,6 @@ def adapter_for_task(
                     api_key=Config.shared().open_router_api_key,
                     model_name=model_name,
                     provider_name=provider,
-                    openrouter_style_reasoning=True,
                     default_headers={
                         "HTTP-Referer": "https://getkiln.ai/openrouter",
                         "X-Title": "KilnAI",

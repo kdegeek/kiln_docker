@@ -9,7 +9,11 @@ from openai.types.chat import (
 )
 
 import kiln_ai.datamodel as datamodel
-from kiln_ai.adapters.ml_model_list import ModelProviderName, StructuredOutputMode
+from kiln_ai.adapters.ml_model_list import (
+    KilnModelProvider,
+    ModelProviderName,
+    StructuredOutputMode,
+)
 from kiln_ai.adapters.model_adapters.base_adapter import (
     COT_FINAL_ANSWER_PROMPT,
     AdapterConfig,
@@ -98,31 +102,8 @@ class OpenAICompatibleAdapter(BaseAdapter):
                 ]
             )
 
-        # OpenRouter specific options for reasoning models and logprobs.
-        # TODO: this isn't a good place for this and I should refactor. But big usability improvement so keeping it here for now.
-        extra_body = {}
-        require_or_reasoning = (
-            self.config.openrouter_style_reasoning and provider.reasoning_capable
-        )
-        if require_or_reasoning:
-            extra_body["include_reasoning"] = True
-            # Filter to providers that support the reasoning parameter
-            extra_body["provider"] = {
-                "require_parameters": True,
-                # Ugly to have these here, but big range of quality of R1 providers
-                "order": ["Fireworks", "Together"],
-                # fp8 quants are awful
-                "ignore": ["DeepInfra"],
-            }
-        elif (
-            self.run_config.model_provider_name == ModelProviderName.openrouter
-            and self.base_adapter_config.top_logprobs is not None
-        ):
-            # OpenRouter specific options related to logprobs. Bit of a hack but really does improve usability.
-            extra_body["provider"] = {
-                "require_parameters": True,
-                "ignore": ["DeepInfra"],
-            }
+        # Build custom request params based on model provider
+        extra_body = self.build_extra_body(provider)
 
         # Main completion call
         response_format_options = await self.response_format_options()
@@ -156,8 +137,8 @@ class OpenAICompatibleAdapter(BaseAdapter):
         if self.base_adapter_config.top_logprobs is not None and logprobs is None:
             raise RuntimeError("Logprobs were required, but no logprobs were returned.")
 
-        # Save reasoning if it exists (OpenRouter specific format)
-        if require_or_reasoning:
+        # Save reasoning if it exists (OpenRouter specific api response field)
+        if provider.require_openrouter_reasoning:
             if (
                 hasattr(message, "reasoning") and message.reasoning  # pyright: ignore
             ):
@@ -265,3 +246,44 @@ class OpenAICompatibleAdapter(BaseAdapter):
                 "function": {"name": "task_response"},
             },
         }
+
+    def build_extra_body(self, provider: KilnModelProvider) -> dict[str, Any]:
+        # TODO P1: Don't love having this logic here. But it's a usability improvement
+        # so better to keep it than exclude it. Should figure out how I want to isolate
+        # this sort of logic so it's config driven and can be overridden
+
+        extra_body = {}
+        provider_options = {}
+
+        if provider.require_openrouter_reasoning:
+            # https://openrouter.ai/docs/use-cases/reasoning-tokens
+            extra_body["reasoning"] = {
+                "exclude": False,
+            }
+
+        if provider.r1_openrouter_options:
+            # Require providers that support the reasoning parameter
+            provider_options["require_parameters"] = True
+            # Prefer R1 providers with reasonable perf/quants
+            provider_options["order"] = ["Fireworks", "Together"]
+            # R1 providers with unreasonable quants
+            provider_options["ignore"] = ["DeepInfra"]
+
+        # Only set of this request is to get logprobs.
+        if (
+            provider.logprobs_openrouter_options
+            and self.base_adapter_config.top_logprobs is not None
+        ):
+            # Don't let OpenRouter choose a provider that doesn't support logprobs.
+            provider_options["require_parameters"] = True
+            # DeepInfra silently fails to return logprobs consistently.
+            provider_options["ignore"] = ["DeepInfra"]
+
+        if provider.openrouter_skip_required_parameters:
+            # Oddball case, R1 14/8/1.5B fail with this param, even though they support thinking params.
+            provider_options["require_parameters"] = False
+
+        if len(provider_options) > 0:
+            extra_body["provider"] = provider_options
+
+        return extra_body

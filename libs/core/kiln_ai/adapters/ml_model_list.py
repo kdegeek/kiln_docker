@@ -131,6 +131,14 @@ class KilnModelProvider(BaseModel):
     reasoning_capable: bool = False
     supports_logprobs: bool = False
 
+    # TODO P1: Need a more generalized way to handle custom provider parameters.
+    # Making them quite declarative here for now, isolating provider specific logic
+    # to this file. Later I should be able to override anything in this file via config.
+    r1_openrouter_options: bool = False
+    require_openrouter_reasoning: bool = False
+    logprobs_openrouter_options: bool = False
+    openrouter_skip_required_parameters: bool = False
+
 
 class KilnModel(BaseModel):
     """
@@ -169,6 +177,7 @@ built_in_models: List[KilnModel] = [
                 provider_options={"model": "openai/gpt-4o-mini"},
                 structured_output_mode=StructuredOutputMode.json_schema,
                 supports_logprobs=True,
+                logprobs_openrouter_options=True,
             ),
         ],
     ),
@@ -190,6 +199,7 @@ built_in_models: List[KilnModel] = [
                 provider_options={"model": "openai/gpt-4o"},
                 structured_output_mode=StructuredOutputMode.json_schema,
                 supports_logprobs=True,
+                logprobs_openrouter_options=True,
             ),
         ],
     ),
@@ -244,56 +254,7 @@ built_in_models: List[KilnModel] = [
                 reasoning_capable=True,
                 # For reasoning models, we need to use json_instructions with OpenRouter
                 structured_output_mode=StructuredOutputMode.json_instructions,
-            ),
-        ],
-    ),
-    # DeepSeek 3
-    KilnModel(
-        family=ModelFamily.deepseek,
-        name=ModelName.deepseek_3,
-        friendly_name="DeepSeek v3",
-        providers=[
-            KilnModelProvider(
-                name=ModelProviderName.openrouter,
-                provider_options={"model": "deepseek/deepseek-chat"},
-                structured_output_mode=StructuredOutputMode.function_calling,
-            ),
-            KilnModelProvider(
-                name=ModelProviderName.fireworks_ai,
-                provider_options={"model": "accounts/fireworks/models/deepseek-v3"},
-                structured_output_mode=StructuredOutputMode.json_mode,
-                supports_structured_output=True,
-                supports_data_gen=False,
-            ),
-        ],
-    ),
-    # DeepSeek R1
-    KilnModel(
-        family=ModelFamily.deepseek,
-        name=ModelName.deepseek_r1,
-        friendly_name="DeepSeek R1",
-        providers=[
-            KilnModelProvider(
-                name=ModelProviderName.openrouter,
-                provider_options={"model": "deepseek/deepseek-r1"},
-                # No custom parser -- openrouter implemented it themselves
-                structured_output_mode=StructuredOutputMode.json_instructions,
-                reasoning_capable=True,
-            ),
-            KilnModelProvider(
-                name=ModelProviderName.fireworks_ai,
-                provider_options={"model": "accounts/fireworks/models/deepseek-r1"},
-                parser=ModelParserID.r1_thinking,
-                structured_output_mode=StructuredOutputMode.json_instructions,
-                reasoning_capable=True,
-            ),
-            KilnModelProvider(
-                # I want your RAM
-                name=ModelProviderName.ollama,
-                provider_options={"model": "deepseek-r1:671b"},
-                parser=ModelParserID.r1_thinking,
-                structured_output_mode=StructuredOutputMode.json_instructions,
-                reasoning_capable=True,
+                require_openrouter_reasoning=True,
             ),
         ],
     ),
@@ -429,6 +390,7 @@ built_in_models: List[KilnModel] = [
                 structured_output_mode=StructuredOutputMode.function_calling_weak,
                 provider_options={"model": "meta-llama/llama-3.1-70b-instruct"},
                 supports_logprobs=True,
+                logprobs_openrouter_options=True,
             ),
             KilnModelProvider(
                 name=ModelProviderName.ollama,
@@ -867,6 +829,58 @@ built_in_models: List[KilnModel] = [
             ),
         ],
     ),
+    # DeepSeek 3
+    KilnModel(
+        family=ModelFamily.deepseek,
+        name=ModelName.deepseek_3,
+        friendly_name="DeepSeek V3",
+        providers=[
+            KilnModelProvider(
+                name=ModelProviderName.openrouter,
+                provider_options={"model": "deepseek/deepseek-chat"},
+                structured_output_mode=StructuredOutputMode.function_calling,
+            ),
+            KilnModelProvider(
+                name=ModelProviderName.fireworks_ai,
+                provider_options={"model": "accounts/fireworks/models/deepseek-v3"},
+                structured_output_mode=StructuredOutputMode.json_mode,
+                supports_structured_output=True,
+                supports_data_gen=False,
+            ),
+        ],
+    ),
+    # DeepSeek R1
+    KilnModel(
+        family=ModelFamily.deepseek,
+        name=ModelName.deepseek_r1,
+        friendly_name="DeepSeek R1",
+        providers=[
+            KilnModelProvider(
+                name=ModelProviderName.openrouter,
+                provider_options={"model": "deepseek/deepseek-r1"},
+                # No custom parser -- openrouter implemented it themselves
+                structured_output_mode=StructuredOutputMode.json_instructions,
+                reasoning_capable=True,
+                r1_openrouter_options=True,
+                require_openrouter_reasoning=True,
+            ),
+            KilnModelProvider(
+                name=ModelProviderName.fireworks_ai,
+                provider_options={"model": "accounts/fireworks/models/deepseek-r1"},
+                parser=ModelParserID.r1_thinking,
+                structured_output_mode=StructuredOutputMode.json_instructions,
+                reasoning_capable=True,
+            ),
+            KilnModelProvider(
+                # I want your RAM
+                name=ModelProviderName.ollama,
+                provider_options={"model": "deepseek-r1:671b"},
+                parser=ModelParserID.r1_thinking,
+                structured_output_mode=StructuredOutputMode.json_instructions,
+                reasoning_capable=True,
+            ),
+        ],
+    ),
     # DeepSeek R1 Distill Qwen 32B
     KilnModel(
         family=ModelFamily.deepseek,
@@ -878,6 +892,8 @@ built_in_models: List[KilnModel] = [
                 reasoning_capable=True,
                 structured_output_mode=StructuredOutputMode.json_instructions,
                 provider_options={"model": "deepseek/deepseek-r1-distill-qwen-32b"},
+                r1_openrouter_options=True,
+                require_openrouter_reasoning=True,
             ),
             KilnModelProvider(
                 name=ModelProviderName.ollama,
@@ -899,6 +915,8 @@ built_in_models: List[KilnModel] = [
                 reasoning_capable=True,
                 structured_output_mode=StructuredOutputMode.json_instructions,
                 provider_options={"model": "deepseek/deepseek-r1-distill-llama-70b"},
+                r1_openrouter_options=True,
+                require_openrouter_reasoning=True,
             ),
             KilnModelProvider(
                 name=ModelProviderName.ollama,
@@ -922,6 +940,9 @@ built_in_models: List[KilnModel] = [
                 reasoning_capable=True,
                 structured_output_mode=StructuredOutputMode.json_instructions,
                 provider_options={"model": "deepseek/deepseek-r1-distill-qwen-14b"},
+                r1_openrouter_options=True,
+                require_openrouter_reasoning=True,
+                openrouter_skip_required_parameters=True,
             ),
             KilnModelProvider(
                 name=ModelProviderName.ollama,
@@ -945,6 +966,9 @@ built_in_models: List[KilnModel] = [
                 reasoning_capable=True,
                 structured_output_mode=StructuredOutputMode.json_instructions,
                 provider_options={"model": "deepseek/deepseek-r1-distill-llama-8b"},
+                r1_openrouter_options=True,
+                require_openrouter_reasoning=True,
+                openrouter_skip_required_parameters=True,
             ),
             KilnModelProvider(
                 name=ModelProviderName.ollama,
@@ -985,6 +1009,9 @@ built_in_models: List[KilnModel] = [
                 reasoning_capable=True,
                 structured_output_mode=StructuredOutputMode.json_instructions,
                 provider_options={"model": "deepseek/deepseek-r1-distill-qwen-1.5b"},
+                r1_openrouter_options=True,
+                require_openrouter_reasoning=True,
+                openrouter_skip_required_parameters=True,
             ),
             KilnModelProvider(
                 name=ModelProviderName.ollama,
