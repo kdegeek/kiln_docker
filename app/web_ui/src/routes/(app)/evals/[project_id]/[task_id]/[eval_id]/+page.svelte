@@ -341,6 +341,7 @@
   let task_run_config_model_name = ""
   let task_run_config_provider_name = ""
   let task_run_config_prompt_method = "simple_prompt_builder"
+  let task_run_config_long_prompt_name_provider = ""
 
   let add_task_config_dialog: Dialog | null = null
   let add_task_config_error: KilnError | null = null
@@ -698,8 +699,12 @@
     <AvailableModelsDropdown
       bind:model_name={task_run_config_model_name}
       bind:provider_name={task_run_config_provider_name}
+      bind:model={task_run_config_long_prompt_name_provider}
     />
-    <PromptTypeSelector bind:prompt_method={task_run_config_prompt_method} />
+    <PromptTypeSelector
+      bind:prompt_method={task_run_config_prompt_method}
+      bind:linked_model_selection={task_run_config_long_prompt_name_provider}
+    />
     {#if add_task_config_error}
       <div class="text-error text-sm">
         {add_task_config_error.getMessage() || "An unknown error occurred"}
