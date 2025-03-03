@@ -220,6 +220,17 @@ export function model_name(
     return model.name
   }
 
+  // Find the model in the available models list which has fine-tunes and custom models
+  const available_model = get(available_models) || {}
+  for (const provider of available_model) {
+    const models = provider.models || []
+    for (const model of models) {
+      if (model.id === model_id && model.name) {
+        return model.name
+      }
+    }
+  }
+
   return "Model ID: " + model_id
 }
 
