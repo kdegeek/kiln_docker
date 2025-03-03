@@ -216,7 +216,11 @@ export function model_name(
   // Could be a number, so convert to string
   model_id = "" + model_id
   const model = provider_models?.models[model_id]
-  return model?.name || model_id
+  if (model?.name) {
+    return model.name
+  }
+
+  return "Model ID: " + model_id
 }
 
 export function provider_name_from_id(provider_id: string): string {
