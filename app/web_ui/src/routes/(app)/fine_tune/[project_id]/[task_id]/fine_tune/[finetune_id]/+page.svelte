@@ -9,6 +9,7 @@
   import { formatDate } from "$lib/utils/formatters"
   import InfoTooltip from "$lib/ui/info_tooltip.svelte"
   import Output from "../../../../../run/output.svelte"
+  import EditDialog from "$lib/ui/edit_dialog.svelte"
 
   $: project_id = $page.params.project_id
   $: task_id = $page.params.task_id
@@ -153,6 +154,8 @@
         return data_strategy
     }
   }
+
+  let edit_dialog: EditDialog | null = null
 </script>
 
 <div class="max-w-[1400px]">
@@ -160,6 +163,12 @@
     title="Fine Tune"
     subtitle={finetune_loading ? undefined : `Name: ${finetune?.finetune.name}`}
     action_buttons={[
+      {
+        label: "Edit",
+        handler: () => {
+          edit_dialog?.show()
+        },
+      },
       {
         label: "Reload Status",
         handler: () => {
@@ -272,3 +281,26 @@
     {/if}
   </AppPage>
 </div>
+
+<EditDialog
+  bind:this={edit_dialog}
+  name="Fine Tune"
+  patch_url={`/api/projects/${project_id}/tasks/${task_id}/finetunes/${finetune_id}`}
+  fields={[
+    {
+      label: "Fine Tune Name",
+      description: "A name to identify this fine tune.",
+      api_name: "name",
+      value: finetune?.finetune.name || "",
+      input_type: "input",
+    },
+    {
+      label: "Description",
+      description: "A description of the fine tune for you and your team.",
+      api_name: "description",
+      value: finetune?.finetune.description || "",
+      input_type: "textarea",
+      optional: true,
+    },
+  ]}
+/>
