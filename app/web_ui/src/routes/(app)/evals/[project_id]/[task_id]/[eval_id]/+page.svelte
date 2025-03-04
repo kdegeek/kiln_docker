@@ -726,6 +726,7 @@
   bind:this={edit_dialog}
   name="Eval"
   patch_url={`/api/projects/${project_id}/tasks/${task_id}/eval/${eval_id}`}
+  delete_url={`/api/projects/${project_id}/tasks/${task_id}/eval/${eval_id}`}
   fields={[
     {
       label: "Eval Name",

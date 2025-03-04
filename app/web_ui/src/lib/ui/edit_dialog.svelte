@@ -1,16 +1,18 @@
 <script lang="ts">
   import Dialog from "./dialog.svelte"
+  import DeleteDialog from "./delete_dialog.svelte"
   import FormContainer from "$lib/utils/form_container.svelte"
   import FormElement from "$lib/utils/form_element.svelte"
   import { KilnError, createKilnError } from "$lib/utils/error_handlers"
   import { base_url } from "$lib/api_client"
 
   export let name: string
+  export let patch_url: string
+  export let delete_url: string | undefined = undefined
   export let after_save: () => void = () => {
     // The parent page can override this, but reload the page by default
     window.location.reload()
   }
-  export let patch_url: string
 
   type EditField = {
     label: string
@@ -72,9 +74,27 @@
   export function show() {
     dialog?.show()
   }
+
+  let delete_dialog: DeleteDialog | null = null
+  function showDeleteDialog() {
+    dialog?.close()
+    delete_dialog?.show()
+  }
 </script>
 
-<Dialog title={"Edit " + name} bind:this={dialog}>
+<Dialog
+  title={"Edit " + name}
+  bind:this={dialog}
+  header_buttons={delete_url
+    ? [
+        {
+          image_path: "/images/delete.svg",
+          alt_text: "Delete",
+          action: () => showDeleteDialog(),
+        },
+      ]
+    : []}
+>
   <div class="mt-6">
     <FormContainer
       submit_label="Save"
@@ -99,3 +119,12 @@
     </FormContainer>
   </div>
 </Dialog>
+
+{#if delete_url}
+  <DeleteDialog
+    bind:this={delete_dialog}
+    {name}
+    {delete_url}
+    after_delete={after_save}
+  />
+{/if}
