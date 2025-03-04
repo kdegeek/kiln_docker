@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from kiln_ai.datamodel import BasePrompt, Prompt, PromptId
 from pydantic import BaseModel
 
@@ -32,6 +32,11 @@ class PromptGenerator(BaseModel):
 class PromptResponse(BaseModel):
     generators: list[PromptGenerator]
     prompts: list[ApiPrompt]
+
+
+class PromptUpdateRequest(BaseModel):
+    name: str
+    description: str | None = None
 
 
 def connect_prompt_api(app: FastAPI):
@@ -75,6 +80,25 @@ def connect_prompt_api(app: FastAPI):
             generators=_prompt_generators,
             prompts=prompts,
         )
+
+    @app.patch("/api/projects/{project_id}/tasks/{task_id}/prompts/{prompt_id}")
+    async def update_prompt(
+        project_id: str, task_id: str, prompt_id: str, prompt_data: PromptUpdateRequest
+    ) -> Prompt:
+        parent_task = task_from_id(project_id, task_id)
+        if not prompt_id.startswith("id::"):
+            raise HTTPException(
+                status_code=400,
+                detail="Only custom prompts can be updated. Automatically frozen prompts can no be edited.",
+            )
+        id = prompt_id[4:]
+        prompt = next((p for p in parent_task.prompts() if p.id == id), None)
+        if not prompt:
+            raise HTTPException(status_code=404, detail="Prompt not found")
+        prompt.name = prompt_data.name
+        prompt.description = prompt_data.description
+        prompt.save_to_file()
+        return prompt
 
 
 # User friendly descriptions of the prompt generators
