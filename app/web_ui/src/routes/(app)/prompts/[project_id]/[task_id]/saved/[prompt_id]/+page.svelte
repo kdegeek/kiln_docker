@@ -107,6 +107,7 @@
   bind:this={edit_dialog}
   name="Prompt"
   patch_url={`/api/projects/${$current_project?.id}/tasks/${task_id}/prompts/${prompt_id}`}
+  delete_url={`/api/projects/${$current_project?.id}/tasks/${task_id}/prompts/${prompt_id}`}
   fields={[
     {
       label: "Prompt Name",

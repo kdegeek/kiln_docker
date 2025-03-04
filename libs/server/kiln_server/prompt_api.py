@@ -7,6 +7,23 @@ from pydantic import BaseModel
 from kiln_server.task_api import task_from_id
 
 
+def editable_prompt_from_id(project_id: str, task_id: str, prompt_id: str) -> Prompt:
+    """
+    Only custom prompts can be updated. Automatically frozen prompts can not be edited/deleted as they are required to be static by evals and other parts of the system.
+    """
+    parent_task = task_from_id(project_id, task_id)
+    if not prompt_id.startswith("id::"):
+        raise HTTPException(
+            status_code=400,
+            detail="Only custom prompts can be updated. Automatically frozen prompts can not be edited or deleted.",
+        )
+    id = prompt_id[4:]
+    prompt = next((p for p in parent_task.prompts() if p.id == id), None)
+    if not prompt:
+        raise HTTPException(status_code=404, detail="Prompt not found")
+    return prompt
+
+
 # This is a wrapper around the Prompt datamodel that adds an id field which represents the PromptID and not the data model ID.
 class ApiPrompt(BasePrompt):
     id: PromptId
@@ -85,20 +102,16 @@ def connect_prompt_api(app: FastAPI):
     async def update_prompt(
         project_id: str, task_id: str, prompt_id: str, prompt_data: PromptUpdateRequest
     ) -> Prompt:
-        parent_task = task_from_id(project_id, task_id)
-        if not prompt_id.startswith("id::"):
-            raise HTTPException(
-                status_code=400,
-                detail="Only custom prompts can be updated. Automatically frozen prompts can no be edited.",
-            )
-        id = prompt_id[4:]
-        prompt = next((p for p in parent_task.prompts() if p.id == id), None)
-        if not prompt:
-            raise HTTPException(status_code=404, detail="Prompt not found")
+        prompt = editable_prompt_from_id(project_id, task_id, prompt_id)
         prompt.name = prompt_data.name
         prompt.description = prompt_data.description
         prompt.save_to_file()
         return prompt
+
+    @app.delete("/api/projects/{project_id}/tasks/{task_id}/prompts/{prompt_id}")
+    async def delete_prompt(project_id: str, task_id: str, prompt_id: str) -> None:
+        prompt = editable_prompt_from_id(project_id, task_id, prompt_id)
+        prompt.delete()
 
 
 # User friendly descriptions of the prompt generators

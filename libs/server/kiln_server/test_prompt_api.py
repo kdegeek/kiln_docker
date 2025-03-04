@@ -205,3 +205,40 @@ def test_update_prompt_non_custom(client, project_and_task):
 
     assert response.status_code == 400
     assert "Only custom prompts can be updated" in response.json()["message"]
+
+
+def test_delete_prompt_success(client, project_and_task):
+    project, task = project_and_task
+
+    # First create a prompt
+    test_prompt = Prompt(
+        name="Test Prompt",
+        prompt="This is a test prompt",
+        description="This is a test prompt description",
+        parent=task,
+    )
+    test_prompt.save_to_file()
+
+    # Verify the prompt exists
+    prompts_before = task.prompts()
+    assert len(prompts_before) == 1
+    assert prompts_before[0].id == test_prompt.id
+
+    # Store the path to check if file is deleted
+    prompt_path = test_prompt.path
+
+    with patch("kiln_server.prompt_api.task_from_id") as mock_task_from_id:
+        mock_task_from_id.return_value = task
+        response = client.delete(
+            f"/api/projects/{project.id}/tasks/{task.id}/prompts/id::{test_prompt.id}"
+        )
+
+    assert response.status_code == 200
+
+    # Verify the prompt was deleted from the task
+    prompts_after = task.prompts()
+    assert len(prompts_after) == 0
+
+    # Verify the file was actually deleted, including the parent directory
+    assert not prompt_path.exists()
+    assert not prompt_path.parent.exists()
