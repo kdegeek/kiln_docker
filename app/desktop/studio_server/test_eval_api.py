@@ -1037,3 +1037,43 @@ async def test_set_current_eval_config(
     # Verify the change persists by fetching the eval again
     eval_from_disk = mock_task.evals()[0]
     assert eval_from_disk.current_config_id == "eval_config1"
+
+
+@pytest.mark.asyncio
+async def test_update_eval(client, mock_task_from_id, mock_task, mock_eval):
+    """Test updating an evaluation's name and description."""
+    mock_task_from_id.return_value = mock_task
+
+    # Get the eval before updating to verify the change
+    response = client.get("/api/projects/project1/tasks/task1/eval/eval1")
+    assert response.status_code == 200
+    eval_before = response.json()
+
+    # Verify initial values
+    assert eval_before["name"] == "Test Eval"
+    assert eval_before["description"] == "Test Description"
+
+    # Update the eval with new values
+    update_request = {"name": "Updated Eval Name", "description": "Updated Description"}
+
+    with patch("app.desktop.studio_server.eval_api.eval_from_id") as mock_eval_from_id:
+        mock_eval_from_id.return_value = mock_eval
+        response = client.patch(
+            "/api/projects/project1/tasks/task1/eval/eval1", json=update_request
+        )
+        assert response.status_code == 200
+        updated_eval = response.json()
+
+    # Verify the name and description were updated
+    assert updated_eval["name"] == "Updated Eval Name"
+    assert updated_eval["description"] == "Updated Description"
+    assert updated_eval["id"] == "eval1"
+
+    # Verify the change persists by checking the mock_eval object
+    assert mock_eval.name == "Updated Eval Name"
+    assert mock_eval.description == "Updated Description"
+
+    # load from disk and verify the change
+    eval_from_disk = mock_task.evals()[0]
+    assert eval_from_disk.name == "Updated Eval Name"
+    assert eval_from_disk.description == "Updated Description"
