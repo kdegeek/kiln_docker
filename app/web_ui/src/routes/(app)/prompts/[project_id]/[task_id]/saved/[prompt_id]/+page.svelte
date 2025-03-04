@@ -119,6 +119,7 @@
       label: "Description",
       description: "The description of the prompt",
       api_name: "description",
+      optional: true,
       value: prompt_model?.description || "",
       input_type: "textarea",
     },

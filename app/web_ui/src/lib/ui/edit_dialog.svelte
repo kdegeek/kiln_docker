@@ -27,6 +27,7 @@
 
   let error: KilnError | null = null
   let loading = false
+  let saved = false
 
   async function save() {
     loading = true
@@ -55,6 +56,11 @@
         throw createKilnError(error_body)
       }
       after_save()
+      saved = true
+      // Unsetting lets us re-save
+      setTimeout(() => {
+        saved = false
+      }, 3000)
     } catch (e) {
       error = createKilnError(e)
     } finally {
@@ -75,6 +81,7 @@
       {error}
       on:submit={save}
       submitting={loading}
+      bind:saved
     >
       {#each fields as field}
         <FormElement
