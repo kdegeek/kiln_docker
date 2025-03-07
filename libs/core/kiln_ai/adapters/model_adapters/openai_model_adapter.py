@@ -255,6 +255,9 @@ class OpenAICompatibleAdapter(BaseAdapter):
         extra_body = {}
         provider_options = {}
 
+        if provider.thinking_level is not None:
+            extra_body["reasoning_effort"] = provider.thinking_level
+
         if provider.require_openrouter_reasoning:
             # https://openrouter.ai/docs/use-cases/reasoning-tokens
             extra_body["reasoning"] = {

@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Dict, List
+from typing import Dict, List, Literal
 
 from pydantic import BaseModel
 
@@ -64,6 +64,12 @@ class ModelName(str, Enum):
     llama_3_3_70b = "llama_3_3_70b"
     gpt_4o_mini = "gpt_4o_mini"
     gpt_4o = "gpt_4o"
+    gpt_o1_low = "gpt_o1_low"
+    gpt_o1_medium = "gpt_o1_medium"
+    gpt_o1_high = "gpt_o1_high"
+    gpt_o3_mini_low = "gpt_o3_mini_low"
+    gpt_o3_mini_medium = "gpt_o3_mini_medium"
+    gpt_o3_mini_high = "gpt_o3_mini_high"
     phi_3_5 = "phi_3_5"
     phi_4 = "phi_4"
     mistral_large = "mistral_large"
@@ -138,6 +144,7 @@ class KilnModelProvider(BaseModel):
     require_openrouter_reasoning: bool = False
     logprobs_openrouter_options: bool = False
     openrouter_skip_required_parameters: bool = False
+    thinking_level: Literal["low", "medium", "high"] | None = None
 
 
 class KilnModel(BaseModel):
@@ -200,6 +207,90 @@ built_in_models: List[KilnModel] = [
                 structured_output_mode=StructuredOutputMode.json_schema,
                 supports_logprobs=True,
                 logprobs_openrouter_options=True,
+            ),
+        ],
+    ),
+    # GPT o3 Mini Low
+    KilnModel(
+        family=ModelFamily.gpt,
+        name=ModelName.gpt_o3_mini_low,
+        friendly_name="GPT o3 Mini - Low",
+        providers=[
+            KilnModelProvider(
+                name=ModelProviderName.openai,
+                provider_options={"model": "o3-mini"},
+                thinking_level="low",
+                structured_output_mode=StructuredOutputMode.json_schema,
+            ),
+        ],
+    ),
+    # GPT o3 Mini Medium
+    KilnModel(
+        family=ModelFamily.gpt,
+        name=ModelName.gpt_o3_mini_medium,
+        friendly_name="GPT o3 Mini - Medium",
+        providers=[
+            KilnModelProvider(
+                name=ModelProviderName.openai,
+                provider_options={"model": "o3-mini"},
+                thinking_level="medium",
+                structured_output_mode=StructuredOutputMode.json_schema,
+            ),
+        ],
+    ),
+    # GPT o3 Mini High
+    KilnModel(
+        family=ModelFamily.gpt,
+        name=ModelName.gpt_o3_mini_high,
+        friendly_name="GPT o3 Mini - High",
+        providers=[
+            KilnModelProvider(
+                name=ModelProviderName.openai,
+                provider_options={"model": "o3-mini"},
+                thinking_level="high",
+                structured_output_mode=StructuredOutputMode.json_schema,
+            ),
+        ],
+    ),
+    # GPT o1 Low
+    KilnModel(
+        family=ModelFamily.gpt,
+        name=ModelName.gpt_o1_low,
+        friendly_name="GPT o1 - Low",
+        providers=[
+            KilnModelProvider(
+                name=ModelProviderName.openai,
+                provider_options={"model": "o1"},
+                thinking_level="low",
+                structured_output_mode=StructuredOutputMode.json_schema,
+            ),
+        ],
+    ),
+    # GPT o1 Medium
+    KilnModel(
+        family=ModelFamily.gpt,
+        name=ModelName.gpt_o1_medium,
+        friendly_name="GPT o1 - Medium",
+        providers=[
+            KilnModelProvider(
+                name=ModelProviderName.openai,
+                provider_options={"model": "o1"},
+                thinking_level="medium",
+                structured_output_mode=StructuredOutputMode.json_schema,
+            ),
+        ],
+    ),
+    # GPT o1 High
+    KilnModel(
+        family=ModelFamily.gpt,
+        name=ModelName.gpt_o1_high,
+        friendly_name="GPT o1 - High",
+        providers=[
+            KilnModelProvider(
+                name=ModelProviderName.openai,
+                provider_options={"model": "o1"},
+                thinking_level="high",
+                structured_output_mode=StructuredOutputMode.json_schema,
             ),
         ],
     ),
