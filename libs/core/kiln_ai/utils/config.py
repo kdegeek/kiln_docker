@@ -88,6 +88,15 @@ class Config:
                 env_var="GEMINI_API_KEY",
                 sensitive=True,
             ),
+            "azure_ai_api_key": ConfigProperty(
+                str,
+                env_var="AZURE_AI_API_KEY",
+                sensitive=True,
+            ),
+            "azure_ai_api_base": ConfigProperty(
+                str,
+                env_var="AZURE_AI_API_BASE",
+            ),
             "projects": ConfigProperty(
                 list,
                 default_lambda=lambda: [],
