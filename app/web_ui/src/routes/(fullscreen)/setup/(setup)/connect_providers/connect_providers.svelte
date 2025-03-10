@@ -6,6 +6,7 @@
   import FormContainer from "$lib/utils/form_container.svelte"
   import { KilnError, createKilnError } from "$lib/utils/error_handlers"
   import { client, base_url } from "$lib/api_client"
+  import Warning from "$lib/ui/warning.svelte"
 
   type Provider = {
     name: string
@@ -116,7 +117,7 @@
       ],
       api_key_fields: ["API Key", "Endpoint URL"],
       api_key_warning:
-        "With Azure OpenAI, you must deploy each model. See our docs for details: https://docs.getkiln.ai/docs/models-and-ai-providers#azure-openai-api",
+        "With Azure OpenAI, you must deploy each model manually.\nSee our docs for details: https://docs.getkiln.ai/docs/models-and-ai-providers#azure-openai-api",
     },
     {
       name: "Amazon Bedrock",
@@ -131,7 +132,7 @@
         "Get the access key ID and secret access key for the new user. Paste them below and click 'Connect'",
       ],
       api_key_warning:
-        "Bedrock is difficult to setup.\n\nWe suggest OpenRouter as it's easier to setup and has more models.",
+        "Bedrock is quite difficult to setup.\nFor beginners we suggest other providers, like OpenRouter, as they easier to setup and have more models.",
       api_key_fields: ["Access Key", "Secret Key"],
     },
     {
@@ -581,24 +582,12 @@
     <div class="grow h-full max-w-[400px] flex flex-col place-content-center">
       <div class="grow"></div>
       {#if api_key_provider.api_key_warning}
-        <div role="alert" class="alert alert-warning my-4">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            class="h-6 w-6 shrink-0 stroke-current"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-            />
-          </svg>
-          <span>
-            <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-            {@html api_key_provider.api_key_warning.replace(/\n/g, "<br>")}
-          </span>
+        <div class="pb-6">
+          <Warning
+            warning_color="warning"
+            warning_message={api_key_provider.api_key_warning}
+            trusted={true}
+          />
         </div>
       {/if}
 
