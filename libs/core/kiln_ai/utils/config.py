@@ -101,6 +101,15 @@ class Config:
                 list,
                 default_lambda=lambda: [],
             ),
+            "azure_openai_api_key": ConfigProperty(
+                str,
+                env_var="AZURE_OPENAI_API_KEY",
+                sensitive=True,
+            ),
+            "azure_openai_endpoint": ConfigProperty(
+                str,
+                env_var="AZURE_OPENAI_ENDPOINT",
+            ),
             "custom_models": ConfigProperty(
                 list,
                 default_lambda=lambda: [],

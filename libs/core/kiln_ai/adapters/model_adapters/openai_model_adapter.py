@@ -2,12 +2,6 @@ from typing import Any, Dict
 
 import litellm
 from litellm.utils import ModelResponse
-from openai.types.chat import (
-    ChatCompletion,
-    ChatCompletionAssistantMessageParam,
-    ChatCompletionSystemMessageParam,
-    ChatCompletionUserMessageParam,
-)
 
 import kiln_ai.datamodel as datamodel
 from kiln_ai.adapters.ml_model_list import (
@@ -39,7 +33,6 @@ class OpenAICompatibleAdapter(BaseAdapter):
         base_adapter_config: AdapterConfig | None = None,
     ):
         self.config = config
-        # Store config values for use in requests instead of setting global litellm config
         self._api_key = config.api_key
         self._api_base = config.base_url
         self._headers = config.default_headers

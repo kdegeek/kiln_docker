@@ -30,6 +30,7 @@ class ModelProviderName(str, Enum):
     gemini_api = "gemini_api"
     # They are going to change the name 16 times so don't include "ai studio" or "foundry" in the name :P
     azure = "azure"
+    azure_openai = "azure_openai"
 
 
 class ModelFamily(str, Enum):
@@ -191,6 +192,10 @@ built_in_models: List[KilnModel] = [
                 supports_logprobs=True,
                 logprobs_openrouter_options=True,
             ),
+            KilnModelProvider(
+                name=ModelProviderName.azure_openai,
+                provider_options={"model": "gpt-4o-mini"},
+            ),
         ],
     ),
     # GPT 4o
@@ -212,6 +217,10 @@ built_in_models: List[KilnModel] = [
                 structured_output_mode=StructuredOutputMode.json_schema,
                 supports_logprobs=True,
                 logprobs_openrouter_options=True,
+            ),
+            KilnModelProvider(
+                name=ModelProviderName.azure_openai,
+                provider_options={"model": "gpt-4o"},
             ),
         ],
     ),

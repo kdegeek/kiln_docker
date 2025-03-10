@@ -151,6 +151,19 @@ def adapter_for_task(
                     provider_name=provider,
                 ),
             )
+        case ModelProviderName.azure_openai:
+            return OpenAICompatibleAdapter(
+                kiln_task=kiln_task,
+                prompt_id=prompt_id,
+                base_adapter_config=base_adapter_config,
+                config=OpenAICompatibleConfig(
+                    litellm_provider_name="azure",
+                    api_key=Config.shared().azure_openai_api_key,
+                    base_url=Config.shared().azure_openai_endpoint,
+                    model_name=model_name,
+                    provider_name=provider,
+                ),
+            )
         # These are virtual providers that should have mapped to an actual provider in core_provider
         case ModelProviderName.kiln_fine_tune:
             raise ValueError(
