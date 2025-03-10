@@ -93,8 +93,7 @@
     {
       name: "Gemini AI Studio",
       id: "gemini_api",
-      description:
-        "Google's Gemini API. Not to be confused with Google Vertex AI.",
+      description: "Google's Gemini API. Not to be confused with Vertex AI.",
       image: "/images/gemini.svg",
       featured: false,
       api_key_steps: [
@@ -117,7 +116,7 @@
       ],
       api_key_fields: ["API Key", "Endpoint URL"],
       api_key_warning:
-        "With Azure OpenAI, you must deploy each model. Kiln expects them to be deployed using default names (eg 'gpt-4o'). If you deploy a model with a custom deployment name, you'll need to add it as a custom model - see our docs for more details.",
+        "With Azure OpenAI, you must deploy each model. See our docs for details: https://docs.getkiln.ai/docs/models-and-ai-providers#azure-openai-api",
     },
     {
       name: "Amazon Bedrock",
@@ -655,7 +654,9 @@
       <div class="grow-[1.5]"></div>
     </div>
   {:else}
-    <div class="w-full flex flex-col gap-6 max-w-lg">
+    <div
+      class="w-full grid grid-cols-1 xl:grid-cols-2 gap-y-6 gap-x-24 max-w-lg xl:max-w-screen-xl"
+    >
       {#each providers as provider}
         {@const is_connected =
           status[provider.id] && status[provider.id].connected}
