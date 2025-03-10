@@ -334,6 +334,12 @@ def provider_name_from_id(id: str) -> str:
                 return "Custom Models"
             case ModelProviderName.openai_compatible:
                 return "OpenAI Compatible"
+            case ModelProviderName.azure_openai:
+                return "Azure OpenAI"
+            case ModelProviderName.gemini_api:
+                return "Gemini API"
+            case ModelProviderName.anthropic:
+                return "Anthropic"
             case _:
                 # triggers pyright warning if I miss a case
                 raise_exhaustive_enum_error(enum_id)
@@ -410,5 +416,17 @@ provider_warnings: Dict[ModelProviderName, ModelProviderWarning] = {
     ModelProviderName.fireworks_ai: ModelProviderWarning(
         required_config_keys=["fireworks_api_key", "fireworks_account_id"],
         message="Attempted to use Fireworks without an API key and account ID set. \nGet your API key from https://fireworks.ai/account/api-keys and your account ID from https://fireworks.ai/account/profile",
+    ),
+    ModelProviderName.anthropic: ModelProviderWarning(
+        required_config_keys=["anthropic_api_key"],
+        message="Attempted to use Anthropic without an API key set. \nGet your API key from https://console.anthropic.com/settings/keys",
+    ),
+    ModelProviderName.gemini_api: ModelProviderWarning(
+        required_config_keys=["gemini_api_key"],
+        message="Attempted to use Gemini without an API key set. \nGet your API key from https://aistudio.google.com/app/apikey",
+    ),
+    ModelProviderName.azure_openai: ModelProviderWarning(
+        required_config_keys=["azure_openai_api_key", "azure_openai_endpoint"],
+        message="Attempted to use Azure OpenAI without an API key and endpoint set. Configure these in settings.",
     ),
 }
