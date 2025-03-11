@@ -368,6 +368,9 @@ def provider_options_for_custom_model(
             | ModelProviderName.fireworks_ai
             | ModelProviderName.openrouter
             | ModelProviderName.groq
+            | ModelProviderName.azure_openai
+            | ModelProviderName.anthropic
+            | ModelProviderName.gemini_api
         ):
             return {"model": model_name}
         case ModelProviderName.kiln_custom_registry:

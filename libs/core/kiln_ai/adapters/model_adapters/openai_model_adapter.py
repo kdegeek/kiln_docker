@@ -21,6 +21,7 @@ from kiln_ai.adapters.model_adapters.openai_compatible_config import (
 from kiln_ai.adapters.parsers.json_parser import parse_json_string
 from kiln_ai.datamodel import PromptGenerators, PromptId
 from kiln_ai.datamodel.task import RunConfig
+from kiln_ai.utils.config import Config
 from kiln_ai.utils.exhaustive_error import raise_exhaustive_enum_error
 
 
@@ -262,6 +263,11 @@ class OpenAICompatibleAdapter(BaseAdapter):
 
         extra_body = {}
         provider_options = {}
+
+        if provider.name == ModelProviderName.amazon_bedrock:
+            extra_body["aws_access_key_id"] = Config.shared().bedrock_access_key
+            extra_body["aws_secret_access_key"] = Config.shared().bedrock_secret_key
+            extra_body["aws_region_name"] = "us-west-2"
 
         if provider.api_version is not None:
             extra_body["api_version"] = provider.api_version

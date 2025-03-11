@@ -3,7 +3,6 @@ from os import getenv
 from kiln_ai import datamodel
 from kiln_ai.adapters.ml_model_list import ModelProviderName
 from kiln_ai.adapters.model_adapters.base_adapter import AdapterConfig, BaseAdapter
-from kiln_ai.adapters.model_adapters.langchain_adapters import LangchainAdapter
 from kiln_ai.adapters.model_adapters.openai_model_adapter import (
     OpenAICompatibleAdapter,
     OpenAICompatibleConfig,
@@ -62,7 +61,6 @@ def adapter_for_task(
                 prompt_id=prompt_id,
                 base_adapter_config=base_adapter_config,
             )
-        # Use LangchainAdapter for the rest
         case ModelProviderName.groq:
             return OpenAICompatibleAdapter(
                 kiln_task=kiln_task,
@@ -134,19 +132,6 @@ def adapter_for_task(
                 config=OpenAICompatibleConfig(
                     litellm_provider_name="gemini",
                     api_key=Config.shared().gemini_api_key,
-                    model_name=model_name,
-                    provider_name=provider,
-                ),
-            )
-        case ModelProviderName.azure:
-            return OpenAICompatibleAdapter(
-                kiln_task=kiln_task,
-                prompt_id=prompt_id,
-                base_adapter_config=base_adapter_config,
-                config=OpenAICompatibleConfig(
-                    litellm_provider_name="azure_ai",
-                    api_key=Config.shared().azure_ai_api_key,
-                    # base_url=Config.shared().azure_ai_api_base,
                     model_name=model_name,
                     provider_name=provider,
                 ),

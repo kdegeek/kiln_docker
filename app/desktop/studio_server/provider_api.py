@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Any, Dict, List
 
+import litellm
 import openai
 import requests
 from fastapi import FastAPI, HTTPException
@@ -24,7 +25,6 @@ from kiln_ai.adapters.provider_tools import provider_name_from_id, provider_warn
 from kiln_ai.datamodel.registry import all_projects
 from kiln_ai.utils.config import Config
 from kiln_ai.utils.exhaustive_error import raise_exhaustive_enum_error
-from langchain_aws import ChatBedrockConverse
 from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
@@ -611,42 +611,34 @@ async def connect_bedrock(key_data: dict):
             detail="Access Key or Secret Key not found",
         )
     try:
-        # Langchain API is not good... need to use env vars. Pop these in finally block
-        os.environ["AWS_ACCESS_KEY_ID"] = access_key
-        os.environ["AWS_SECRET_ACCESS_KEY"] = secret_key
-
-        # Fake model, but will get a credential error before AWS realizes it's wrong
-        # Ensures we don't spend money on a test call
-        llm = ChatBedrockConverse(
-            model="fake_model",
-            region_name="us-west-2",
+        # Test credentials request, but invalid model so we don't use tokens
+        await litellm.acompletion(
+            model="bedrock/ai21.jamba-1-5-mini-v9999.8888",
+            aws_region_name="us-west-2",
+            aws_access_key_id=access_key,
+            aws_secret_access_key=secret_key,
+            messages=[{"role": "user", "content": "Hello, how are you?"}],
         )
-        llm.invoke("Hello, how are you?")
     except Exception as e:
-        # Check for specific error messages indicating invalid credentials
-        if "UnrecognizedClientException" in str(
-            e
-        ) or "InvalidSignatureException" in str(e):
+        # Improve error message if it's a confirmed authentication error
+        if isinstance(e, litellm.exceptions.AuthenticationError):
             return JSONResponse(
                 status_code=401,
                 content={
                     "message": "Failed to connect to Bedrock. Invalid credentials."
                 },
             )
-        else:
-            # We still expect an error (fake model), but not for invalid credentials which means success!
+        # If it's a bad request, it's a valid key (but the model is fake)
+        if isinstance(e, litellm.exceptions.BadRequestError):
             Config.shared().bedrock_access_key = access_key
             Config.shared().bedrock_secret_key = secret_key
             return JSONResponse(
                 status_code=200,
                 content={"message": "Connected to Bedrock"},
             )
+        # Unknown error, raise it
+        raise e
 
-    finally:
-        os.environ.pop("AWS_ACCESS_KEY_ID")
-        os.environ.pop("AWS_SECRET_ACCESS_KEY")
-
-    # we shouldn't get here, but if we do, something went wrong
     return JSONResponse(
         status_code=400,
         content={"message": "Unknown Bedrock Error"},

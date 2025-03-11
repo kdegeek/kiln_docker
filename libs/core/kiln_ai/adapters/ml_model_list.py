@@ -28,8 +28,6 @@ class ModelProviderName(str, Enum):
     openai_compatible = "openai_compatible"
     anthropic = "anthropic"
     gemini_api = "gemini_api"
-    # They are going to change the name 16 times so don't include "ai studio" or "foundry" in the name :P
-    azure = "azure"
     azure_openai = "azure_openai"
 
 
@@ -875,10 +873,6 @@ built_in_models: List[KilnModel] = [
                 structured_output_mode=StructuredOutputMode.json_instruction_and_object,
                 supports_data_gen=False,
                 provider_options={"model": "microsoft/phi-4"},
-            ),
-            KilnModelProvider(
-                name=ModelProviderName.azure,
-                provider_options={"model": "Phi-4"},
             ),
         ],
     ),
