@@ -151,6 +151,7 @@ class KilnModelProvider(BaseModel):
     logprobs_openrouter_options: bool = False
     openrouter_skip_required_parameters: bool = False
     thinking_level: Literal["low", "medium", "high"] | None = None
+    api_version: str | None = None
 
 
 class KilnModel(BaseModel):
@@ -236,6 +237,13 @@ built_in_models: List[KilnModel] = [
                 thinking_level="low",
                 structured_output_mode=StructuredOutputMode.json_schema,
             ),
+            KilnModelProvider(
+                name=ModelProviderName.azure_openai,
+                provider_options={"model": "o3-mini"},
+                api_version="2025-02-01-preview",
+                structured_output_mode=StructuredOutputMode.json_schema,
+                thinking_level="low",
+            ),
         ],
     ),
     # GPT o3 Mini Medium
@@ -249,6 +257,13 @@ built_in_models: List[KilnModel] = [
                 provider_options={"model": "o3-mini"},
                 thinking_level="medium",
                 structured_output_mode=StructuredOutputMode.json_schema,
+            ),
+            KilnModelProvider(
+                name=ModelProviderName.azure_openai,
+                provider_options={"model": "o3-mini"},
+                api_version="2025-02-01-preview",
+                structured_output_mode=StructuredOutputMode.json_schema,
+                thinking_level="medium",
             ),
         ],
     ),
@@ -264,6 +279,13 @@ built_in_models: List[KilnModel] = [
                 thinking_level="high",
                 structured_output_mode=StructuredOutputMode.json_schema,
             ),
+            KilnModelProvider(
+                name=ModelProviderName.azure_openai,
+                provider_options={"model": "o3-mini"},
+                api_version="2025-02-01-preview",
+                structured_output_mode=StructuredOutputMode.json_schema,
+                thinking_level="high",
+            ),
         ],
     ),
     # GPT o1 Low
@@ -277,6 +299,13 @@ built_in_models: List[KilnModel] = [
                 provider_options={"model": "o1"},
                 thinking_level="low",
                 structured_output_mode=StructuredOutputMode.json_schema,
+            ),
+            KilnModelProvider(
+                name=ModelProviderName.azure_openai,
+                provider_options={"model": "o1"},
+                api_version="2025-02-01-preview",
+                structured_output_mode=StructuredOutputMode.json_schema,
+                thinking_level="low",
             ),
         ],
     ),
@@ -292,6 +321,13 @@ built_in_models: List[KilnModel] = [
                 thinking_level="medium",
                 structured_output_mode=StructuredOutputMode.json_schema,
             ),
+            KilnModelProvider(
+                name=ModelProviderName.azure_openai,
+                provider_options={"model": "o1"},
+                api_version="2025-02-01-preview",
+                structured_output_mode=StructuredOutputMode.json_schema,
+                thinking_level="medium",
+            ),
         ],
     ),
     # GPT o1 High
@@ -305,6 +341,13 @@ built_in_models: List[KilnModel] = [
                 provider_options={"model": "o1"},
                 thinking_level="high",
                 structured_output_mode=StructuredOutputMode.json_schema,
+            ),
+            KilnModelProvider(
+                name=ModelProviderName.azure_openai,
+                provider_options={"model": "o1"},
+                api_version="2025-02-01-preview",
+                structured_output_mode=StructuredOutputMode.json_schema,
+                thinking_level="high",
             ),
         ],
     ),

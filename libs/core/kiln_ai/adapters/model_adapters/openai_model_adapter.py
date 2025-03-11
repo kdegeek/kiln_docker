@@ -263,6 +263,9 @@ class OpenAICompatibleAdapter(BaseAdapter):
         extra_body = {}
         provider_options = {}
 
+        if provider.api_version is not None:
+            extra_body["api_version"] = provider.api_version
+
         if provider.thinking_level is not None:
             extra_body["reasoning_effort"] = provider.thinking_level
 

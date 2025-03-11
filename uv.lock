@@ -843,7 +843,7 @@ requires-dist = [
     { name = "langchain-fireworks", specifier = ">=0.2.5" },
     { name = "langchain-groq", specifier = ">=0.2.0" },
     { name = "langchain-ollama", specifier = ">=0.2.2" },
-    { name = "litellm", specifier = ">=1.63.3" },
+    { name = "litellm", specifier = ">=1.63.5" },
     { name = "openai", specifier = ">=1.53.0" },
     { name = "pdoc", specifier = ">=15.0.0" },
     { name = "pydantic", specifier = ">=2.9.2" },
@@ -1091,7 +1091,7 @@ wheels = [
 
 [[package]]
 name = "litellm"
-version = "1.63.3"
+version = "1.63.5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
@@ -1106,9 +1106,9 @@ dependencies = [
     { name = "tiktoken" },
     { name = "tokenizers" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/b8/58/ff02c75d9f7b0bcb414e54eb3a9994d5d29ceb46eb8f681e34d476f09d41/litellm-1.63.3.tar.gz", hash = "sha256:329fa60e2c93e95d28798c2fbc63aaca67d8da38b2256d015cb169e97e5382f3", size = 6589147 }
+sdist = { url = "https://files.pythonhosted.org/packages/7a/8f/96d3e388d43a2712b97fb7dc35e8e6849eca6ae7813dfa4819c6693b554f/litellm-1.63.5.tar.gz", hash = "sha256:c48a20ea147b07951c1244731a092f732bb15a94083b4dcd0e32a4b7532b688a", size = 6594191 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/7d/13/bde5273a50ef03be4b517a3aadb4613284befb8c1e9c6792bf0e5053bb46/litellm-1.63.3-py3-none-any.whl", hash = "sha256:bbe56d3b4afa5dda1e9730071780601e03278bba003da1634c4a2dc93c83ae05", size = 6901557 },
+    { url = "https://files.pythonhosted.org/packages/53/c4/656ab5fee9b86a6201a80757995885334218ee8e62c43464cde10fdc7680/litellm-1.63.5-py3-none-any.whl", hash = "sha256:638b098cdd883571362412199d67021d07c96635c39a023df724f1eff4cbb543", size = 6904075 },
 ]
 
 [[package]]
