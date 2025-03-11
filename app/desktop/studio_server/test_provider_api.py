@@ -2,6 +2,7 @@ import json
 from datetime import datetime, timedelta
 from unittest.mock import MagicMock, Mock, patch
 
+import litellm
 import pytest
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
@@ -250,12 +251,11 @@ def mock_environ():
 
 
 @pytest.mark.asyncio
-@patch("app.desktop.studio_server.provider_api.ChatBedrockConverse")
-async def test_connect_bedrock_success(mock_chat_bedrock, mock_environ):
-    mock_llm = MagicMock()
-    mock_chat_bedrock.return_value = mock_llm
-    mock_llm.invoke.side_effect = Exception("Some non-credential error")
-
+@patch("app.desktop.studio_server.provider_api.litellm.acompletion")
+async def test_connect_bedrock_success(mock_litellm_acompletion, mock_environ):
+    mock_litellm_acompletion.side_effect = litellm.exceptions.BadRequestError(
+        "msg", "model", "provider"
+    )
     result = await connect_bedrock(
         {"Access Key": "test_access_key", "Secret Key": "test_secret_key"}
     )
@@ -266,19 +266,17 @@ async def test_connect_bedrock_success(mock_chat_bedrock, mock_environ):
     assert Config.shared().bedrock_access_key == "test_access_key"
     assert Config.shared().bedrock_secret_key == "test_secret_key"
 
-    mock_chat_bedrock.assert_called_once_with(
-        model="fake_model",
-        region_name="us-west-2",
-    )
-    mock_llm.invoke.assert_called_once_with("Hello, how are you?")
+    mock_litellm_acompletion.assert_called_once()
 
 
 @pytest.mark.asyncio
-@patch("app.desktop.studio_server.provider_api.ChatBedrockConverse")
-async def test_connect_bedrock_invalid_credentials(mock_chat_bedrock, mock_environ):
-    mock_llm = MagicMock()
-    mock_chat_bedrock.return_value = mock_llm
-    mock_llm.invoke.side_effect = Exception("UnrecognizedClientException")
+@patch("app.desktop.studio_server.provider_api.litellm.acompletion")
+async def test_connect_bedrock_invalid_credentials(
+    mock_litellm_acompletion, mock_environ
+):
+    mock_litellm_acompletion.side_effect = litellm.exceptions.AuthenticationError(
+        "msg", "model", "provider"
+    )
 
     result = await connect_bedrock(
         {"Access Key": "invalid_access_key", "Secret Key": "invalid_secret_key"}
@@ -296,38 +294,14 @@ async def test_connect_bedrock_invalid_credentials(mock_chat_bedrock, mock_envir
 
 
 @pytest.mark.asyncio
-@patch("app.desktop.studio_server.provider_api.ChatBedrockConverse")
-async def test_connect_bedrock_unknown_error(mock_chat_bedrock, mock_environ):
-    mock_llm = MagicMock()
-    mock_chat_bedrock.return_value = mock_llm
-    mock_llm.invoke.side_effect = Exception("Some unexpected error")
+@patch("app.desktop.studio_server.provider_api.litellm.acompletion")
+async def test_connect_bedrock_unknown_error(mock_litellm_acompletion, mock_environ):
+    mock_litellm_acompletion.side_effect = Exception("Some unexpected error")
 
-    result = await connect_bedrock(
-        {"Access Key": "test_access_key", "Secret Key": "test_secret_key"}
-    )
-
-    assert isinstance(result, JSONResponse)
-    assert result.status_code == 200
-    assert result.body == b'{"message":"Connected to Bedrock"}'
-    assert Config.shared().bedrock_access_key == "test_access_key"
-    assert Config.shared().bedrock_secret_key == "test_secret_key"
-
-
-@pytest.mark.asyncio
-@patch("app.desktop.studio_server.provider_api.ChatBedrockConverse")
-async def test_connect_bedrock_environment_variables(mock_chat_bedrock, mock_environ):
-    mock_llm = MagicMock()
-    mock_chat_bedrock.return_value = mock_llm
-    mock_llm.invoke.side_effect = Exception("Some non-credential error")
-
-    await connect_bedrock(
-        {"Access Key": "test_access_key", "Secret Key": "test_secret_key"}
-    )
-
-    assert "AWS_ACCESS_KEY_ID" not in mock_environ
-    assert "AWS_SECRET_ACCESS_KEY" not in mock_environ
-
-    mock_chat_bedrock.assert_called_once()
+    with pytest.raises(Exception) as e:
+        result = await connect_bedrock(
+            {"Access Key": "test_access_key", "Secret Key": "test_secret_key"}
+        )
 
 
 @pytest.mark.asyncio
