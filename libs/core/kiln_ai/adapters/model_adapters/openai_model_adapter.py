@@ -1,7 +1,7 @@
 from typing import Any, Dict
 
 import litellm
-from litellm.utils import ModelResponse
+from litellm.types.utils import ChoiceLogprobs, Choices, ModelResponse
 
 import kiln_ai.datamodel as datamodel
 from kiln_ai.adapters.ml_model_list import (
@@ -82,13 +82,22 @@ class OpenAICompatibleAdapter(BaseAdapter):
                 api_base=self._api_base,
                 headers=self._headers,
             )
+            if (
+                not isinstance(cot_response, ModelResponse)
+                or not cot_response.choices
+                or len(cot_response.choices) == 0
+                or not isinstance(cot_response.choices[0], Choices)
+            ):
+                raise RuntimeError(
+                    f"Expected ModelResponse with Choices, got {type(cot_response)}."
+                )
             cot_content = cot_response.choices[0].message.content
             if cot_content is not None:
                 intermediate_outputs["chain_of_thought"] = cot_content
 
             messages.extend(
                 [
-                    {"role": "assistant", "content": cot_content},
+                    {"role": "assistant", "content": cot_content or ""},
                     {"role": "user", "content": COT_FINAL_ANSWER_PROMPT},
                 ]
             )
@@ -126,9 +135,17 @@ class OpenAICompatibleAdapter(BaseAdapter):
         if not isinstance(response, ModelResponse):
             raise RuntimeError(f"Expected ModelResponse, got {type(response)}.")
 
-        if hasattr(response, "error") and response.error:
-            raise RuntimeError(f"LLM API returned an error: {response.error}")
-        if not response.choices or len(response.choices) == 0:
+        # TODO: P2 - there is no error attribute on the response object. Keeping in typesafe way as we added it for a reason, but should investigate what that was.
+        if hasattr(response, "error") and response.__getattribute__("error"):
+            raise RuntimeError(
+                f"LLM API returned an error: {response.__getattribute__('error')}"
+            )
+
+        if (
+            not response.choices
+            or len(response.choices) == 0
+            or not isinstance(response.choices[0], Choices)
+        ):
             raise RuntimeError(
                 "No message content returned in the response from LLM API"
             )
@@ -137,6 +154,7 @@ class OpenAICompatibleAdapter(BaseAdapter):
         logprobs = (
             response.choices[0].logprobs
             if hasattr(response.choices[0], "logprobs")
+            and isinstance(response.choices[0].logprobs, ChoiceLogprobs)
             else None
         )
 
