@@ -146,8 +146,8 @@ class OpenAICompatibleAdapter(BaseAdapter):
 
         # Save reasoning if it exists (OpenRouter specific api response field)
         if provider.require_openrouter_reasoning:
-            if hasattr(message, "reasoning") and message.reasoning:
-                intermediate_outputs["reasoning"] = message.reasoning
+            if hasattr(message, "reasoning_content") and message.reasoning_content:
+                intermediate_outputs["reasoning_content"] = message.reasoning_content
             else:
                 raise RuntimeError(
                     "Reasoning is required for this model, but no reasoning was returned from OpenRouter."
