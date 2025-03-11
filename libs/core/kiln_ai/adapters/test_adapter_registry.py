@@ -6,7 +6,6 @@ from kiln_ai import datamodel
 from kiln_ai.adapters.adapter_registry import adapter_for_task
 from kiln_ai.adapters.ml_model_list import ModelProviderName
 from kiln_ai.adapters.model_adapters.base_adapter import AdapterConfig
-from kiln_ai.adapters.model_adapters.langchain_adapters import LangchainAdapter
 from kiln_ai.adapters.model_adapters.openai_model_adapter import OpenAICompatibleAdapter
 from kiln_ai.adapters.prompt_builders import BasePromptBuilder
 from kiln_ai.adapters.provider_tools import kiln_model_provider_from
@@ -63,7 +62,6 @@ def test_openrouter_adapter_creation(mock_config, basic_task):
     assert adapter.config.model_name == "anthropic/claude-3-opus"
     assert adapter.config.api_key == "test-openrouter-key"
     assert adapter.config.provider_name == ModelProviderName.openrouter
-    assert adapter.config.base_url == "https://openrouter.ai/api/v1"
     assert adapter.config.default_headers == {
         "HTTP-Referer": "https://getkiln.ai/openrouter",
         "X-Title": "KilnAI",
@@ -79,12 +77,12 @@ def test_openrouter_adapter_creation(mock_config, basic_task):
         ModelProviderName.fireworks_ai,
     ],
 )
-def test_langchain_adapter_creation(mock_config, basic_task, provider):
+def test_openai_compatible_adapter_creation(mock_config, basic_task, provider):
     adapter = adapter_for_task(
         kiln_task=basic_task, model_name="test-model", provider=provider
     )
 
-    assert isinstance(adapter, LangchainAdapter)
+    assert isinstance(adapter, OpenAICompatibleAdapter)
     assert adapter.run_config.model_name == "test-model"
 
 
