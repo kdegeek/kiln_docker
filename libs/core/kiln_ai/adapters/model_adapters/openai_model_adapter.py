@@ -53,6 +53,9 @@ class OpenAICompatibleAdapter(BaseAdapter):
 
     async def _run(self, input: Dict | str) -> RunOutput:
         provider = self.model_provider()
+        if not provider.model_id:
+            raise ValueError("Model ID is required for OpenAI compatible models")
+
         intermediate_outputs: dict[str, str] = {}
         prompt = self.build_prompt()
         user_msg = self.prompt_builder.build_user_message(input)
@@ -74,9 +77,7 @@ class OpenAICompatibleAdapter(BaseAdapter):
 
             # First call for chain of thought
             cot_response = await litellm.acompletion(
-                model=self._litellm_provider_name
-                + "/"
-                + provider.provider_options["model"],
+                model=self._litellm_provider_name + "/" + provider.model_id,
                 messages=messages,
                 api_key=self._api_key,
                 api_base=self._api_base,
@@ -111,9 +112,7 @@ class OpenAICompatibleAdapter(BaseAdapter):
         # Merge all parameters into a single kwargs dict for litellm
         # TODO P0 - make this shared
         completion_kwargs = {
-            "model": self._litellm_provider_name
-            + "/"
-            + provider.provider_options["model"],
+            "model": self._litellm_provider_name + "/" + provider.model_id,
             "messages": messages,
             "api_key": self._api_key,
             "api_base": self._api_base,

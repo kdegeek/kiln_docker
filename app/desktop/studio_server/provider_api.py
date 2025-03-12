@@ -698,13 +698,12 @@ def model_from_ollama_tag(
         if not ollama_provider:
             continue
 
-        if "model" in ollama_provider.provider_options:
-            model_name = ollama_provider.provider_options["model"]
-            if tag in [model_name, f"{model_name}:latest"]:
-                return model, ollama_provider
-        if "model_aliases" in ollama_provider.provider_options:
+        model_name = ollama_provider.model_id
+        if tag in [model_name, f"{model_name}:latest"]:
+            return model, ollama_provider
+        if ollama_provider.ollama_model_aliases is not None:
             # all aliases (and :latest)
-            for alias in ollama_provider.provider_options["model_aliases"]:
+            for alias in ollama_provider.ollama_model_aliases:
                 if tag in [alias, f"{alias}:latest"]:
                     return model, ollama_provider
 

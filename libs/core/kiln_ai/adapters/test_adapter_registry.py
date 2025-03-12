@@ -172,4 +172,4 @@ async def test_fine_tune_provider(mock_config, basic_task, mock_finetune_from_id
         "proj::task::tune", provider_name=ModelProviderName.kiln_fine_tune
     )
     # The actual model name from the fine tune object
-    assert provider.provider_options["model"] == "test-model"
+    assert provider.model_id == "test-model"

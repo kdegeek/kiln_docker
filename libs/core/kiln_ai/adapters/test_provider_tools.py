@@ -22,7 +22,6 @@ from kiln_ai.adapters.provider_tools import (
     parse_custom_model_id,
     provider_enabled,
     provider_name_from_id,
-    provider_options_for_custom_model,
     provider_warnings,
 )
 from kiln_ai.datamodel import Finetune, StructuredOutputMode, Task
@@ -186,7 +185,7 @@ def test_get_model_and_provider_valid():
     assert provider is not None
     assert model.name == ModelName.phi_3_5
     assert provider.name == ModelProviderName.ollama
-    assert provider.provider_options["model"] == "phi3.5"
+    assert provider.model_id == "phi3.5"
 
 
 def test_get_model_and_provider_invalid_model():
@@ -227,7 +226,7 @@ def test_get_model_and_provider_multiple_providers():
     assert provider is not None
     assert model.name == ModelName.llama_3_3_70b
     assert provider.name == ModelProviderName.groq
-    assert provider.provider_options["model"] == "llama-3.3-70b-versatile"
+    assert provider.model_id == "llama-3.3-70b-versatile"
 
 
 @pytest.mark.asyncio
@@ -324,59 +323,7 @@ async def test_kiln_model_provider_from_custom_model_valid(mock_config):
     assert provider.supports_structured_output is False
     assert provider.supports_data_gen is False
     assert provider.untested_model is True
-    assert "model" in provider.provider_options
-    assert provider.provider_options["model"] == "custom_model"
-
-
-def test_provider_options_for_custom_model_basic():
-    """Test basic case with custom model name"""
-    options = provider_options_for_custom_model(
-        "custom_model_name", ModelProviderName.openai
-    )
-    assert options == {"model": "custom_model_name"}
-
-
-def test_provider_options_for_custom_model_bedrock():
-    """Test Amazon Bedrock provider options"""
-    options = provider_options_for_custom_model(
-        ModelName.llama_3_1_8b, ModelProviderName.amazon_bedrock
-    )
-    assert options == {"model": ModelName.llama_3_1_8b, "region_name": "us-west-2"}
-
-
-@pytest.mark.parametrize(
-    "provider",
-    [
-        ModelProviderName.openai,
-        ModelProviderName.ollama,
-        ModelProviderName.fireworks_ai,
-        ModelProviderName.openrouter,
-        ModelProviderName.groq,
-    ],
-)
-def test_provider_options_for_custom_model_simple_providers(provider):
-    """Test providers that just need model name"""
-
-    options = provider_options_for_custom_model(ModelName.llama_3_1_8b, provider)
-    assert options == {"model": ModelName.llama_3_1_8b}
-
-
-def test_provider_options_for_custom_model_kiln_fine_tune():
-    """Test that kiln_fine_tune raises appropriate error"""
-    with pytest.raises(ValueError) as exc_info:
-        provider_options_for_custom_model(
-            "model_name", ModelProviderName.kiln_fine_tune
-        )
-    assert (
-        str(exc_info.value)
-        == "Fine tuned models should populate provider options via another path"
-    )
-
-
-def test_provider_options_for_custom_model_invalid_enum():
-    """Test handling of invalid enum value"""
-    with pytest.raises(ValueError):
-        provider_options_for_custom_model("model_name", "invalid_enum_value")
+    assert provider.model_id == "custom_model"
 
 
 @pytest.mark.asyncio
@@ -393,7 +340,7 @@ async def test_kiln_model_provider_from_custom_registry(mock_config):
     assert provider.supports_structured_output is False
     assert provider.supports_data_gen is False
     assert provider.untested_model is True
-    assert provider.provider_options == {"model": "gpt-4-turbo"}
+    assert provider.model_id == "gpt-4-turbo"
 
 
 @pytest.mark.asyncio
@@ -412,7 +359,7 @@ async def test_builtin_model_from_valid_model_default_provider(mock_config):
 
     assert provider is not None
     assert provider.name == ModelProviderName.ollama
-    assert provider.provider_options["model"] == "phi3.5"
+    assert provider.model_id == "phi3.5"
 
 
 @pytest.mark.asyncio
@@ -426,7 +373,7 @@ async def test_builtin_model_from_valid_model_specific_provider(mock_config):
 
     assert provider is not None
     assert provider.name == ModelProviderName.groq
-    assert provider.provider_options["model"] == "llama-3.3-70b-versatile"
+    assert provider.model_id == "llama-3.3-70b-versatile"
 
 
 @pytest.mark.asyncio
@@ -477,7 +424,7 @@ def test_finetune_provider_model_success(mock_project, mock_task, mock_finetune)
     provider = finetune_provider_model(model_id)
 
     assert provider.name == ModelProviderName.openai
-    assert provider.provider_options == {"model": "ft:gpt-3.5-turbo:custom:model-123"}
+    assert provider.model_id == "ft:gpt-3.5-turbo:custom:model-123"
     assert provider.structured_output_mode == StructuredOutputMode.json_schema
 
 
@@ -573,7 +520,7 @@ def test_finetune_provider_model_structured_mode(
     provider = finetune_provider_model("project-123::task-456::finetune-789")
 
     assert provider.name == provider_name
-    assert provider.provider_options == {"model": "fireworks-model-123"}
+    assert provider.model_id == "fireworks-model-123"
     assert provider.structured_output_mode == expected_mode
 
 
@@ -596,9 +543,7 @@ def test_openai_compatible_provider_model_success(mock_shared_config):
     provider = openai_compatible_provider_model(model_id)
 
     assert provider.name == ModelProviderName.openai_compatible
-    assert provider.provider_options == {
-        "model": model_id,
-    }
+    assert provider.model_id == model_id
     assert provider.supports_structured_output is False
     assert provider.supports_data_gen is False
     assert provider.untested_model is True

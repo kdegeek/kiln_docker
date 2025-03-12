@@ -175,7 +175,7 @@ def kiln_model_provider_from(
         supports_structured_output=False,
         supports_data_gen=False,
         untested_model=True,
-        provider_options=provider_options_for_custom_model(name, provider_name),
+        model_id=name,
     )
 
 
@@ -221,9 +221,7 @@ def openai_compatible_provider_model(
 ) -> KilnModelProvider:
     return KilnModelProvider(
         name=ModelProviderName.openai_compatible,
-        provider_options={
-            "model": model_id,
-        },
+        model_id=model_id,
         supports_structured_output=False,
         supports_data_gen=False,
         untested_model=True,
@@ -267,9 +265,7 @@ def finetune_provider_model(
     provider = ModelProviderName[fine_tune.provider]
     model_provider = KilnModelProvider(
         name=provider,
-        provider_options={
-            "model": fine_tune.fine_tune_model_id,
-        },
+        model_id=fine_tune.fine_tune_model_id,
     )
 
     if fine_tune.structured_output_mode is not None:
@@ -345,52 +341,6 @@ def provider_name_from_id(id: str) -> str:
                 raise_exhaustive_enum_error(enum_id)
 
     return "Unknown provider: " + id
-
-
-def provider_options_for_custom_model(
-    model_name: str, provider_name: str
-) -> Dict[str, str]:
-    """
-    Generated model provider options for a custom model. Each has their own format/options.
-    """
-
-    if provider_name not in ModelProviderName.__members__:
-        raise ValueError(f"Invalid provider name: {provider_name}")
-
-    enum_id = ModelProviderName(provider_name)
-    match enum_id:
-        case ModelProviderName.amazon_bedrock:
-            # us-west-2 is the only region consistently supported by Bedrock
-            return {"model": model_name, "region_name": "us-west-2"}
-        case (
-            ModelProviderName.openai
-            | ModelProviderName.ollama
-            | ModelProviderName.fireworks_ai
-            | ModelProviderName.openrouter
-            | ModelProviderName.groq
-            | ModelProviderName.azure_openai
-            | ModelProviderName.anthropic
-            | ModelProviderName.gemini_api
-        ):
-            return {"model": model_name}
-        case ModelProviderName.kiln_custom_registry:
-            raise ValueError(
-                "Custom models from registry should be parsed into provider/model before calling this."
-            )
-        case ModelProviderName.kiln_fine_tune:
-            raise ValueError(
-                "Fine tuned models should populate provider options via another path"
-            )
-        case ModelProviderName.openai_compatible:
-            raise ValueError(
-                "OpenAI compatible models should populate provider options via another path"
-            )
-        case _:
-            # triggers pyright warning if I miss a case
-            raise_exhaustive_enum_error(enum_id)
-
-    # Won't reach this, type checking will catch missed values
-    return {"model": model_name}
 
 
 @dataclass

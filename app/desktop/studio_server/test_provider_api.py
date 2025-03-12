@@ -337,7 +337,7 @@ async def test_get_available_models(app, client):
                 KilnModelProvider(
                     name=ModelProviderName.ollama,
                     supports_structured_output=True,
-                    provider_options={"model": "ollama_model2"},
+                    model_id="ollama_model2",
                 ),
             ],
         ),
@@ -512,10 +512,8 @@ def test_model_from_ollama_tag():
             providers=[
                 KilnModelProvider(
                     name=ModelProviderName.ollama,
-                    provider_options={
-                        "model": "llama2",
-                        "model_aliases": ["llama-2", "llama2-chat"],
-                    },
+                    model_id="llama2",
+                    ollama_model_aliases=["llama-2", "llama2-chat"],
                 )
             ],
         ),
@@ -524,9 +522,7 @@ def test_model_from_ollama_tag():
             friendly_name="Model 2",
             family="test",
             providers=[
-                KilnModelProvider(
-                    name=ModelProviderName.ollama, provider_options={"model": "mistral"}
-                )
+                KilnModelProvider(name=ModelProviderName.ollama, model_id="mistral")
             ],
         ),
         KilnModel(
@@ -534,9 +530,7 @@ def test_model_from_ollama_tag():
             friendly_name="Model 3",
             family="test",
             providers=[
-                KilnModelProvider(
-                    name=ModelProviderName.openai, provider_options={"model": "gpt-4"}
-                )
+                KilnModelProvider(name=ModelProviderName.openai, model_id="gpt-4")
             ],
         ),
     ]
@@ -587,7 +581,8 @@ async def test_available_ollama_models():
             providers=[
                 KilnModelProvider(
                     name=ModelProviderName.ollama,
-                    provider_options={"model": "llama2", "model_aliases": ["llama-2"]},
+                    model_id="llama2",
+                    ollama_model_aliases=["llama-2"],
                     supports_structured_output=True,
                 )
             ],
@@ -599,7 +594,7 @@ async def test_available_ollama_models():
             providers=[
                 KilnModelProvider(
                     name=ModelProviderName.ollama,
-                    provider_options={"model": "mistral"},
+                    model_id="mistral",
                     supports_structured_output=False,
                 )
             ],
