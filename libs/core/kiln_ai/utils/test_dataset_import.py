@@ -8,14 +8,10 @@ from io import StringIO
 from pathlib import Path
 
 import pytest
-
 from kiln_ai.datamodel import Project, Task
-from kiln_ai.utils.dataset_import import (
-    DatasetFileImporter,
-    DatasetImportFormat,
-    ImportConfig,
-    KilnInvalidImportFormat,
-)
+from kiln_ai.utils.dataset_import import (DatasetFileImporter,
+                                          DatasetImportFormat, ImportConfig,
+                                          KilnInvalidImportFormat)
 
 logger = logging.getLogger(__name__)
 
@@ -427,3 +423,37 @@ def test_import_csv_intermediate_outputs(task_with_intermediate_outputs: Task):
         assert run.intermediate_outputs["reasoning"] == match["reasoning"]
 
         compare_tags(run.tags, match["tags"])
+
+
+def test_import_csv_invalid_tags(base_task: Task):
+    row_data = [
+        {
+            "input": "This is my input",
+            "output": "This is my output",
+            "tags": "tag with space,valid-tag",
+        },
+        {
+            "input": "This is my input 2",
+            "output": "This is my output 2",
+            "tags": "another invalid tag",
+        }
+    ]
+
+    file_path = dicts_to_file_as_csv(row_data, "test.csv")
+
+    importer = DatasetFileImporter(
+        base_task,
+        ImportConfig(
+            dataset_type=DatasetImportFormat.CSV,
+            dataset_path=file_path,
+            dataset_name="test.csv",
+        ),
+    )
+
+    # check that the import raises an exception
+    with pytest.raises(KilnInvalidImportFormat) as e:
+        importer.create_runs_from_file()
+
+    # the row number is +1 because of the header
+    assert e.value.row_number == 2
+    assert "Tags cannot contain spaces" in str(e.value)

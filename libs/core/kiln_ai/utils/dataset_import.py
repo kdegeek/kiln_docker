@@ -5,9 +5,9 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Dict, Protocol
 
+from kiln_ai.datamodel import (DataSource, DataSourceType, Task, TaskOutput,
+                               TaskRun)
 from pydantic import BaseModel, Field, ValidationError, field_validator
-
-from kiln_ai.datamodel import DataSource, DataSourceType, Task, TaskOutput, TaskRun
 
 logger = logging.getLogger(__name__)
 
@@ -43,19 +43,7 @@ class CSVRowSchema(BaseModel):
     tags: list[str] = Field(
         default_factory=list,
         description="The tags of the run (optional)",
-        validate_default=True,
     )
-
-    @field_validator("tags", mode="before")
-    def split_tags(cls, value: str | None) -> list[str]:
-        # Handle missing tags column or empty value
-        if not value:
-            return []
-        # Handle string values (comma-separated tags)
-        if isinstance(value, str):
-            tags = value.split(",")
-            return [tag.strip() for tag in tags if tag.strip()]
-        return []
 
 
 def generate_import_tags(session_id: str) -> list[str]:
@@ -86,6 +74,13 @@ def format_validation_error(e: ValidationError) -> str:
     return "Validation failed:\n" + "\n".join(error_messages)
 
 
+def deserialize_tags(tags_serialized: str | None) -> list[str]:
+    """Deserialize tags from a comma-separated string to a list of strings."""
+    if tags_serialized:
+        return [tag.strip() for tag in tags_serialized.split(",") if tag.strip()]
+    return []
+
+
 def create_task_run_from_csv_row(
     task: Task,
     row: dict[str, str],
@@ -97,7 +92,12 @@ def create_task_run_from_csv_row(
 
     # first we validate the row from the CSV file
     try:
-        validated_row = CSVRowSchema.model_validate(row)
+        validated_row = CSVRowSchema.model_validate(
+            {
+                **row,
+                "tags": deserialize_tags(row.get("tags")),
+            }
+        )
     except ValidationError as e:
         logger.warning(f"Invalid row {row_number}: {row}", exc_info=True)
         human_readable = format_validation_error(e)
