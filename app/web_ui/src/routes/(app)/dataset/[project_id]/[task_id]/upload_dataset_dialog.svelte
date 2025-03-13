@@ -81,7 +81,7 @@
 
 <Dialog
   bind:this={dialog}
-  title="Upload Dataset"
+  title="Upload CSV to Dataset"
   action_buttons={[
     { label: "Cancel", isCancel: true, action: () => handleCancel() },
     {
