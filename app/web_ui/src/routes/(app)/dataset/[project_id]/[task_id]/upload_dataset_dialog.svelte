@@ -34,8 +34,10 @@
         "/api/projects/{project_id}/tasks/{task_id}/runs/bulk_upload",
         {
           params: { path: { project_id, task_id } },
-          // @ts-expect-error - formData type mismatch
-          body: formData,
+
+          // todo: a transform must be set up to determine how to serialize multipart file uploads
+          // see: https://github.com/openapi-ts/openapi-typescript/issues/1214
+          body: formData as unknown as { file: string },
         },
       )
 
