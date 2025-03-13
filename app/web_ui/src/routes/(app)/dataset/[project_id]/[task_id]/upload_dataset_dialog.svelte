@@ -51,7 +51,6 @@
 
       return true
     } catch (e) {
-      console.error("Upload failed:", e)
       error = createKilnError(e)
       return false
     } finally {
