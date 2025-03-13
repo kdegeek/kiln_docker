@@ -6,14 +6,9 @@
 
   export let onImportCompleted: () => void
 
-  const dataset_type_accepts = {
-    csv: [".csv"],
-  }
-
   let error: KilnError | null = null
   let loading = false
   let selected_file: File | null = null
-  let dataset_type: "csv" | null = "csv"
 
   $: project_id = $page.params.project_id
   $: task_id = $page.params.task_id
@@ -26,7 +21,7 @@
   }
 
   async function handleUpload(): Promise<boolean> {
-    if (!selected_file || !dataset_type) {
+    if (!selected_file) {
       return false
     }
 
@@ -34,7 +29,6 @@
     try {
       const formData = new FormData()
       formData.append("file", selected_file)
-      formData.append("dataset_type", dataset_type!)
 
       const { error } = await client.POST(
         "/api/projects/{project_id}/tasks/{task_id}/runs/bulk_upload",
@@ -102,33 +96,13 @@
         <div class="loading loading-spinner loading-lg"></div>
       </div>
     {:else}
-      <p class="mb-4">Select the type of dataset you want to upload.</p>
-      <div class="form-control">
-        <label class="label cursor-pointer flex flex-row gap-3">
-          <input
-            type="radio"
-            name="radio-input-schema-dataset-type"
-            class="radio"
-            value="csv"
-            bind:group={dataset_type}
-          />
-          <span class="label-text text-left grow">CSV</span>
-        </label>
-      </div>
-      {#if dataset_type}
-        <p class="mb-4">Select a dataset file to upload:</p>
-        <input
-          type="file"
-          class="file-input file-input-bordered w-full"
-          on:change={handleFileSelect}
-          accept={dataset_type_accepts[dataset_type].join(",")}
-        />
-        {#if selected_file}
-          <p class="mt-2 text-sm text-gray-500">
-            Selected: {selected_file.name}
-          </p>
-        {/if}
-      {/if}
+      <p class="mb-4">Select a dataset file to upload:</p>
+      <input
+        type="file"
+        class="file-input file-input-bordered w-full"
+        on:change={handleFileSelect}
+        accept=".csv"
+      />
     {/if}
   </div>
   {#if error}

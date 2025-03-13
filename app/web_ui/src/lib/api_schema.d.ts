@@ -1016,7 +1016,6 @@ export interface components {
         };
         /** Body_bulk_upload_api_projects__project_id__tasks__task_id__runs_bulk_upload_post */
         Body_bulk_upload_api_projects__project_id__tasks__task_id__runs_bulk_upload_post: {
-            dataset_type: components["schemas"]["DatasetImportFormat"];
             /**
              * File
              * Format: binary
@@ -1274,12 +1273,6 @@ export interface components {
          * @enum {string}
          */
         DataSourceType: "human" | "synthetic" | "file_import";
-        /**
-         * DatasetImportFormat
-         * @description The format of the dataset to import.
-         * @enum {string}
-         */
-        DatasetImportFormat: "csv";
         /**
          * DatasetSplit
          * @description A collection of task runs, with optional splits (train, test, validation).

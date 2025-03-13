@@ -5,7 +5,7 @@ from asyncio import Lock
 from datetime import datetime
 from typing import Any, Dict
 
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import FastAPI, File, HTTPException, UploadFile
 from kiln_ai.adapters.adapter_registry import adapter_for_task
 from kiln_ai.adapters.dataset_import import (
     DatasetFileImporter,
@@ -278,7 +278,6 @@ def connect_run_api(app: FastAPI):
     async def bulk_upload(
         project_id: str,
         task_id: str,
-        dataset_type: DatasetImportFormat = Form(...),
         file: UploadFile = File(...),
     ) -> BulkUploadResponse:
         task = task_from_id(project_id, task_id)
@@ -298,7 +297,7 @@ def connect_run_api(app: FastAPI):
             importer = DatasetFileImporter(
                 task,
                 ImportConfig(
-                    dataset_type=dataset_type,
+                    dataset_type=DatasetImportFormat.CSV,
                     dataset_path=file_path,
                     dataset_name=file_name,
                 ),
@@ -315,12 +314,12 @@ def connect_run_api(app: FastAPI):
             )
         except Exception as e:
             logger.error(
-                f"Error processing {dataset_type}: {str(e)}",
+                f"Error processing file: {str(e)}",
                 exc_info=True,
             )
             raise HTTPException(
                 status_code=500,
-                detail=f"Error processing {dataset_type}: {str(e)}",
+                detail=f"Error processing file: {str(e)}",
             )
 
         return BulkUploadResponse(
