@@ -495,12 +495,13 @@
   sub_subtitle="Read the Docs"
   sub_subtitle_link="https://docs.getkiln.ai/docs/organizing-datasets"
   no_y_padding
+  action_buttons={[
+    {
+      label: "Upload CSV to Dataset",
+      handler: () => showUploadDialog(),
+    },
+  ]}
 >
-  <div class="flex flex-row justify-end">
-    <button class="btn btn-mid" on:click={() => showUploadDialog()}>
-      Upload Dataset
-    </button>
-  </div>
   {#if loading}
     <div class="w-full min-h-[50vh] flex justify-center items-center">
       <div class="loading loading-spinner loading-lg"></div>
