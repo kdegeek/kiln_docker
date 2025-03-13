@@ -92,6 +92,9 @@ def adapter_for_task(
                 ),
             )
         case ModelProviderName.ollama:
+            ollama_base_url = (
+                Config.shared().ollama_base_url or "http://localhost:11434"
+            )
             return OpenAICompatibleAdapter(
                 kiln_task=kiln_task,
                 prompt_id=prompt_id,
@@ -102,7 +105,7 @@ def adapter_for_task(
                     # Set the Ollama base URL for 2 reasons:
                     # 1. To use the correct base URL
                     # 2. We use Ollama's OpenAI compatible API (/v1), and don't just let litellm use the Ollama API. We use more advanced features like json_schema.
-                    base_url=Config.shared().ollama_base_url + "/v1",
+                    base_url=ollama_base_url + "/v1",
                 ),
             )
         case ModelProviderName.fireworks_ai:

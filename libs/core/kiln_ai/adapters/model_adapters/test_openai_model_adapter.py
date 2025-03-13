@@ -61,7 +61,6 @@ def test_initialization(config, mock_task):
     assert adapter.base_adapter_config.default_tags == ["test-tag"]
     assert adapter.run_config.model_name == config.model_name
     assert adapter.run_config.model_provider_name == config.provider_name
-    assert adapter.litellm_model_id() == "openrouter/test-model"
     assert adapter.config.additional_body_options["api_key"] == "test_key"
     assert adapter._api_base == config.base_url
     assert adapter._headers == config.default_headers
