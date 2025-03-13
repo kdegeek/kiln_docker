@@ -18,7 +18,6 @@ from kiln_ai.adapters.model_adapters.base_adapter import (
 from kiln_ai.adapters.model_adapters.openai_compatible_config import (
     OpenAICompatibleConfig,
 )
-from kiln_ai.adapters.parsers.json_parser import parse_json_string
 from kiln_ai.datamodel import PromptGenerators, PromptId
 from kiln_ai.datamodel.task import RunConfig
 from kiln_ai.utils.config import Config
@@ -162,14 +161,9 @@ class OpenAICompatibleAdapter(BaseAdapter):
         if self.base_adapter_config.top_logprobs is not None and logprobs is None:
             raise RuntimeError("Logprobs were required, but no logprobs were returned.")
 
-        # Save reasoning if it exists (OpenRouter specific api response field)
-        if provider.require_openrouter_reasoning:
-            if hasattr(message, "reasoning_content") and message.reasoning_content:
-                intermediate_outputs["reasoning_content"] = message.reasoning_content
-            else:
-                raise RuntimeError(
-                    "Reasoning is required for this model, but no reasoning was returned from OpenRouter."
-                )
+        # Save reasoning if it exists and was parsed by LiteLLM (or openrouter, or anyone upstream)
+        if hasattr(message, "reasoning_content") and message.reasoning_content:
+            intermediate_outputs["reasoning"] = message.reasoning_content
 
         # the string content of the response
         response_content = message.content
@@ -194,13 +188,8 @@ class OpenAICompatibleAdapter(BaseAdapter):
         if not isinstance(response_content, str):
             raise RuntimeError(f"response is not a string: {response_content}")
 
-        # Parse to dict if we have structured output
-        output: Dict | str = response_content
-        if self.has_structured_output():
-            output = parse_json_string(response_content)
-
         return RunOutput(
-            output=output,
+            output=response_content,
             intermediate_outputs=intermediate_outputs,
             output_logprobs=logprobs,
         )
