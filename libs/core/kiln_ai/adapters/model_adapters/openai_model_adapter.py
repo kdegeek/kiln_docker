@@ -37,7 +37,7 @@ class OpenAICompatibleAdapter(BaseAdapter):
         self._api_key = config.api_key
         self._api_base = config.base_url
         self._headers = config.default_headers
-        self._litellm_provider_name = config.litellm_provider_name
+        self._litellm_model_id: str | None = None
 
         run_config = RunConfig(
             task=kiln_task,
@@ -77,7 +77,7 @@ class OpenAICompatibleAdapter(BaseAdapter):
 
             # First call for chain of thought
             cot_response = await litellm.acompletion(
-                model=self._litellm_provider_name + "/" + provider.model_id,
+                model=self.litellm_model_id(),
                 messages=messages,
                 api_key=self._api_key,
                 api_base=self._api_base,
@@ -112,7 +112,7 @@ class OpenAICompatibleAdapter(BaseAdapter):
         # Merge all parameters into a single kwargs dict for litellm
         # TODO P0 - make this shared
         completion_kwargs = {
-            "model": self._litellm_provider_name + "/" + provider.model_id,
+            "model": self.litellm_model_id(),
             "messages": messages,
             "api_key": self._api_key,
             "api_base": self._api_base,
@@ -324,3 +324,59 @@ class OpenAICompatibleAdapter(BaseAdapter):
             extra_body["provider"] = provider_options
 
         return extra_body
+
+    def litellm_model_id(self) -> str:
+        # The model ID is an interesting combination of format and url endpoint.
+        # It specifics the provider URL/host, but this is overridden if you manually set an api url
+
+        if self._litellm_model_id:
+            return self._litellm_model_id
+
+        provider = self.model_provider()
+        if not provider.model_id:
+            raise ValueError("Model ID is required for OpenAI compatible models")
+
+        litellm_provider_name: str | None = None
+        is_custom = False
+        match provider.name:
+            case ModelProviderName.openrouter:
+                litellm_provider_name = "openrouter"
+            case ModelProviderName.openai:
+                litellm_provider_name = "openai"
+            case ModelProviderName.groq:
+                litellm_provider_name = "groq"
+            case ModelProviderName.anthropic:
+                litellm_provider_name = "anthropic"
+            case ModelProviderName.ollama:
+                litellm_provider_name = "ollama"
+            case ModelProviderName.gemini_api:
+                litellm_provider_name = "gemini"
+            case ModelProviderName.fireworks_ai:
+                litellm_provider_name = "fireworks_ai"
+            case ModelProviderName.amazon_bedrock:
+                litellm_provider_name = "bedrock"
+            case ModelProviderName.azure_openai:
+                litellm_provider_name = "azure"
+            case ModelProviderName.openai_compatible:
+                is_custom = True
+            case ModelProviderName.kiln_custom_registry:
+                is_custom = True
+            case ModelProviderName.kiln_fine_tune:
+                is_custom = True
+            case _:
+                raise_exhaustive_enum_error(provider.name)
+
+        if is_custom:
+            if self._api_base is None:
+                raise ValueError(
+                    "Explicit Base URL is required for OpenAI compatible models, fine tunes, and custom registry models"
+                )
+            # Use openai as it's only used for format, not url
+            litellm_provider_name = "openai"
+
+        # Sholdn't be possible but keep type checker happy
+        if litellm_provider_name is None:
+            raise ValueError("Provider name could not lookup valid litellm provider ID")
+
+        self._litellm_model_id = litellm_provider_name + "/" + provider.model_id
+        return self._litellm_model_id

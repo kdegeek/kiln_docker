@@ -124,7 +124,6 @@ async def test_mock_returning_run(tmp_path):
                 api_key="test_key",
                 model_name="custom_model",
                 provider_name="ollama",
-                litellm_provider_name="custom",
             ),
             kiln_task=task,
         )

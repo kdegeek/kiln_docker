@@ -28,7 +28,6 @@ def adapter_for_task(
             return OpenAICompatibleAdapter(
                 kiln_task=kiln_task,
                 config=OpenAICompatibleConfig(
-                    litellm_provider_name="openrouter",
                     api_key=Config.shared().open_router_api_key,
                     model_name=model_name,
                     provider_name=provider,
@@ -44,7 +43,6 @@ def adapter_for_task(
             return OpenAICompatibleAdapter(
                 kiln_task=kiln_task,
                 config=OpenAICompatibleConfig(
-                    litellm_provider_name="openai",
                     api_key=Config.shared().open_ai_api_key,
                     model_name=model_name,
                     provider_name=provider,
@@ -67,7 +65,6 @@ def adapter_for_task(
                 prompt_id=prompt_id,
                 base_adapter_config=base_adapter_config,
                 config=OpenAICompatibleConfig(
-                    litellm_provider_name="groq",
                     api_key=Config.shared().groq_api_key,
                     model_name=model_name,
                     provider_name=provider,
@@ -79,9 +76,7 @@ def adapter_for_task(
                 prompt_id=prompt_id,
                 base_adapter_config=base_adapter_config,
                 config=OpenAICompatibleConfig(
-                    litellm_provider_name="bedrock",
-                    # TODO this should be optional, or someting
-                    api_key="asdf",
+                    api_key=None,
                     model_name=model_name,
                     provider_name=provider,
                 ),
@@ -92,9 +87,7 @@ def adapter_for_task(
                 prompt_id=prompt_id,
                 base_adapter_config=base_adapter_config,
                 config=OpenAICompatibleConfig(
-                    litellm_provider_name="ollama",
-                    # TODO this should be optional, or someting
-                    api_key="asdf",
+                    api_key=None,
                     model_name=model_name,
                     provider_name=provider,
                 ),
@@ -105,7 +98,6 @@ def adapter_for_task(
                 prompt_id=prompt_id,
                 base_adapter_config=base_adapter_config,
                 config=OpenAICompatibleConfig(
-                    litellm_provider_name="fireworks_ai",
                     # TODO: account ID isn't passed. And "strict" isn't allowed for tools.
                     api_key=Config.shared().fireworks_api_key,
                     model_name=model_name,
@@ -118,7 +110,6 @@ def adapter_for_task(
                 prompt_id=prompt_id,
                 base_adapter_config=base_adapter_config,
                 config=OpenAICompatibleConfig(
-                    litellm_provider_name="anthropic",
                     api_key=Config.shared().anthropic_api_key,
                     model_name=model_name,
                     provider_name=provider,
@@ -130,7 +121,6 @@ def adapter_for_task(
                 prompt_id=prompt_id,
                 base_adapter_config=base_adapter_config,
                 config=OpenAICompatibleConfig(
-                    litellm_provider_name="gemini",
                     api_key=Config.shared().gemini_api_key,
                     model_name=model_name,
                     provider_name=provider,
@@ -142,7 +132,6 @@ def adapter_for_task(
                 prompt_id=prompt_id,
                 base_adapter_config=base_adapter_config,
                 config=OpenAICompatibleConfig(
-                    litellm_provider_name="azure",
                     api_key=Config.shared().azure_openai_api_key,
                     base_url=Config.shared().azure_openai_endpoint,
                     model_name=model_name,

@@ -207,8 +207,6 @@ def openai_compatible_config(
 
     return OpenAICompatibleConfig(
         # OpenAI compatible, with a custom base URL
-        # TODO P0 check this
-        litellm_provider_name="openai",
         api_key=api_key,
         model_name=model_id,
         provider_name=ModelProviderName.openai_compatible,
