@@ -39,11 +39,11 @@ def mock_task(tmp_path):
 @pytest.fixture
 def config():
     return OpenAICompatibleConfig(
-        api_key="test_key",
         base_url="https://api.test.com",
         model_name="test-model",
         provider_name="openrouter",
         default_headers={"X-Test": "test"},
+        additional_body_options={"api_key": "test_key"},
     )
 
 
@@ -62,7 +62,7 @@ def test_initialization(config, mock_task):
     assert adapter.run_config.model_name == config.model_name
     assert adapter.run_config.model_provider_name == config.provider_name
     assert adapter.litellm_model_id() == "openrouter/test-model"
-    assert adapter._api_key == config.api_key
+    assert adapter.config.additional_body_options["api_key"] == "test_key"
     assert adapter._api_base == config.base_url
     assert adapter._headers == config.default_headers
 
@@ -225,7 +225,7 @@ def test_tool_call_params_strict(config, mock_task):
         (ModelProviderName.openai, "openai"),
         (ModelProviderName.groq, "groq"),
         (ModelProviderName.anthropic, "anthropic"),
-        (ModelProviderName.ollama, "ollama"),
+        (ModelProviderName.ollama, "openai"),
         (ModelProviderName.gemini_api, "gemini"),
         (ModelProviderName.fireworks_ai, "fireworks_ai"),
         (ModelProviderName.amazon_bedrock, "bedrock"),

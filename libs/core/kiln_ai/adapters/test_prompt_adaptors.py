@@ -121,9 +121,9 @@ async def test_mock_returning_run(tmp_path):
 
         adapter = OpenAICompatibleAdapter(
             config=OpenAICompatibleConfig(
-                api_key="test_key",
                 model_name="custom_model",
                 provider_name="ollama",
+                additional_body_options={"api_key": "test_key"},
             ),
             kiln_task=task,
         )

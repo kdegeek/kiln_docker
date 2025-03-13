@@ -207,10 +207,12 @@ def openai_compatible_config(
 
     return OpenAICompatibleConfig(
         # OpenAI compatible, with a custom base URL
-        api_key=api_key,
         model_name=model_id,
         provider_name=ModelProviderName.openai_compatible,
         base_url=base_url,
+        additional_body_options={
+            "api_key": api_key,
+        },
     )
 
 

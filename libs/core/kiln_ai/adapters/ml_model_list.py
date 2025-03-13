@@ -148,7 +148,6 @@ class KilnModelProvider(BaseModel):
     logprobs_openrouter_options: bool = False
     openrouter_skip_required_parameters: bool = False
     thinking_level: Literal["low", "medium", "high"] | None = None
-    api_version: str | None = None
     ollama_model_aliases: List[str] | None = None
 
 
@@ -238,7 +237,6 @@ built_in_models: List[KilnModel] = [
             KilnModelProvider(
                 name=ModelProviderName.azure_openai,
                 model_id="o3-mini",
-                api_version="2025-02-01-preview",
                 structured_output_mode=StructuredOutputMode.json_schema,
                 thinking_level="low",
             ),
@@ -259,7 +257,6 @@ built_in_models: List[KilnModel] = [
             KilnModelProvider(
                 name=ModelProviderName.azure_openai,
                 model_id="o3-mini",
-                api_version="2025-02-01-preview",
                 structured_output_mode=StructuredOutputMode.json_schema,
                 thinking_level="medium",
             ),
@@ -280,7 +277,6 @@ built_in_models: List[KilnModel] = [
             KilnModelProvider(
                 name=ModelProviderName.azure_openai,
                 model_id="o3-mini",
-                api_version="2025-02-01-preview",
                 structured_output_mode=StructuredOutputMode.json_schema,
                 thinking_level="high",
             ),
@@ -301,7 +297,6 @@ built_in_models: List[KilnModel] = [
             KilnModelProvider(
                 name=ModelProviderName.azure_openai,
                 model_id="o1",
-                api_version="2025-02-01-preview",
                 structured_output_mode=StructuredOutputMode.json_schema,
                 thinking_level="low",
             ),
@@ -322,7 +317,6 @@ built_in_models: List[KilnModel] = [
             KilnModelProvider(
                 name=ModelProviderName.azure_openai,
                 model_id="o1",
-                api_version="2025-02-01-preview",
                 structured_output_mode=StructuredOutputMode.json_schema,
                 thinking_level="medium",
             ),
@@ -343,7 +337,6 @@ built_in_models: List[KilnModel] = [
             KilnModelProvider(
                 name=ModelProviderName.azure_openai,
                 model_id="o1",
-                api_version="2025-02-01-preview",
                 structured_output_mode=StructuredOutputMode.json_schema,
                 thinking_level="high",
             ),

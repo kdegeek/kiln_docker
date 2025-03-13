@@ -34,7 +34,7 @@ class OpenAICompatibleAdapter(BaseAdapter):
         base_adapter_config: AdapterConfig | None = None,
     ):
         self.config = config
-        self._api_key = config.api_key
+        self._additional_body_options = config.additional_body_options
         self._api_base = config.base_url
         self._headers = config.default_headers
         self._litellm_model_id: str | None = None
@@ -79,9 +79,10 @@ class OpenAICompatibleAdapter(BaseAdapter):
             cot_response = await litellm.acompletion(
                 model=self.litellm_model_id(),
                 messages=messages,
-                api_key=self._api_key,
                 api_base=self._api_base,
                 headers=self._headers,
+                # TODO P1 - remove type ignore
+                **self._additional_body_options,  # type: ignore
             )
             if (
                 not isinstance(cot_response, ModelResponse)
@@ -114,10 +115,10 @@ class OpenAICompatibleAdapter(BaseAdapter):
         completion_kwargs = {
             "model": self.litellm_model_id(),
             "messages": messages,
-            "api_key": self._api_key,
             "api_base": self._api_base,
             "headers": self._headers,
             **extra_body,
+            **self._additional_body_options,
         }
 
         # Add logprobs if requested
@@ -217,16 +218,7 @@ class OpenAICompatibleAdapter(BaseAdapter):
             case StructuredOutputMode.json_mode:
                 return {"response_format": {"type": "json_object"}}
             case StructuredOutputMode.json_schema:
-                output_schema = self.task().output_schema()
-                return {
-                    "response_format": {
-                        "type": "json_schema",
-                        "json_schema": {
-                            "name": "task_response",
-                            "schema": output_schema,
-                        },
-                    }
-                }
+                return self.json_schema_response_format()
             case StructuredOutputMode.function_calling_weak:
                 return self.tool_call_params(strict=False)
             case StructuredOutputMode.function_calling:
@@ -238,10 +230,26 @@ class OpenAICompatibleAdapter(BaseAdapter):
                 # We set response_format to json_object and also set json instructions in the prompt
                 return {"response_format": {"type": "json_object"}}
             case StructuredOutputMode.default:
-                # Default to function calling -- it's older than the other modes. Higher compatibility.
-                return self.tool_call_params(strict=True)
+                if provider.name == ModelProviderName.ollama:
+                    # Ollama added json_schema to all models: https://ollama.com/blog/structured-outputs
+                    return self.json_schema_response_format()
+                else:
+                    # Default to function calling -- it's older than the other modes. Higher compatibility.
+                    return self.tool_call_params(strict=True)
             case _:
                 raise_exhaustive_enum_error(provider.structured_output_mode)
+
+    def json_schema_response_format(self) -> dict[str, Any]:
+        output_schema = self.task().output_schema()
+        return {
+            "response_format": {
+                "type": "json_schema",
+                "json_schema": {
+                    "name": "task_response",
+                    "schema": output_schema,
+                },
+            }
+        }
 
     def tool_call_params(self, strict: bool) -> dict[str, Any]:
         # Add additional_properties: false to the schema (OpenAI requires this for some models)
@@ -280,14 +288,6 @@ class OpenAICompatibleAdapter(BaseAdapter):
 
         extra_body = {}
         provider_options = {}
-
-        if provider.name == ModelProviderName.amazon_bedrock:
-            extra_body["aws_access_key_id"] = Config.shared().bedrock_access_key
-            extra_body["aws_secret_access_key"] = Config.shared().bedrock_secret_key
-            extra_body["aws_region_name"] = "us-west-2"
-
-        if provider.api_version is not None:
-            extra_body["api_version"] = provider.api_version
 
         if provider.thinking_level is not None:
             extra_body["reasoning_effort"] = provider.thinking_level
@@ -348,7 +348,9 @@ class OpenAICompatibleAdapter(BaseAdapter):
             case ModelProviderName.anthropic:
                 litellm_provider_name = "anthropic"
             case ModelProviderName.ollama:
-                litellm_provider_name = "ollama"
+                # We don't let litellm use the Ollama API and muck with our requests. We use Ollama's OpenAI compatible API.
+                # This is because we're setting detailed features like response_format=json_schema which it assumes don't work but do.
+                litellm_provider_name = "openai"
             case ModelProviderName.gemini_api:
                 litellm_provider_name = "gemini"
             case ModelProviderName.fireworks_ai:

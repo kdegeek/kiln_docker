@@ -532,7 +532,7 @@ def test_openai_compatible_provider_config(mock_shared_config):
 
     assert config.provider_name == ModelProviderName.openai_compatible
     assert config.model_name == "gpt-4"
-    assert config.api_key == "test-key"
+    assert config.additional_body_options == {"api_key": "test-key"}
     assert config.base_url == "https://api.test.com"
 
 
@@ -557,7 +557,7 @@ def test_openai_compatible_config_no_api_key(mock_shared_config):
 
     assert config.provider_name == ModelProviderName.openai_compatible
     assert config.model_name == "gpt-4"
-    assert config.api_key is None
+    assert config.additional_body_options == {"api_key": None}
     assert config.base_url == "https://api.nokey.com"
 
 

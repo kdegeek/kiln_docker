@@ -1,12 +1,13 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass
 class OpenAICompatibleConfig:
-    api_key: str | None
     model_name: str
-    # TODO what is this?
     provider_name: str
-    # TODO P0 remove this? Naaa
+    # If set, over rides the provider-name based URL from litellm
     base_url: str | None = None
+    # Headers to send with every request
     default_headers: dict[str, str] | None = None
+    # Extra body to send with every request
+    additional_body_options: dict[str, str] = field(default_factory=dict)

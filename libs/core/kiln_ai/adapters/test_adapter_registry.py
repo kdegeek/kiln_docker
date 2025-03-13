@@ -45,7 +45,7 @@ def test_openai_adapter_creation(mock_config, basic_task):
 
     assert isinstance(adapter, OpenAICompatibleAdapter)
     assert adapter.config.model_name == "gpt-4"
-    assert adapter.config.api_key == "test-openai-key"
+    assert adapter.config.additional_body_options == {"api_key": "test-openai-key"}
     assert adapter.config.provider_name == ModelProviderName.openai
     assert adapter.config.base_url is None  # OpenAI url is default
     assert adapter.config.default_headers is None
@@ -60,7 +60,7 @@ def test_openrouter_adapter_creation(mock_config, basic_task):
 
     assert isinstance(adapter, OpenAICompatibleAdapter)
     assert adapter.config.model_name == "anthropic/claude-3-opus"
-    assert adapter.config.api_key == "test-openrouter-key"
+    assert adapter.config.additional_body_options == {"api_key": "test-openrouter-key"}
     assert adapter.config.provider_name == ModelProviderName.openrouter
     assert adapter.config.default_headers == {
         "HTTP-Referer": "https://getkiln.ai/openrouter",
@@ -123,7 +123,9 @@ def test_invalid_provider(mock_config, basic_task):
 @patch("kiln_ai.adapters.adapter_registry.openai_compatible_config")
 def test_openai_compatible_adapter(mock_compatible_config, mock_config, basic_task):
     mock_compatible_config.return_value.model_name = "test-model"
-    mock_compatible_config.return_value.api_key = "test-key"
+    mock_compatible_config.return_value.additional_body_options = {
+        "api_key": "test-key"
+    }
     mock_compatible_config.return_value.base_url = "https://test.com/v1"
     mock_compatible_config.return_value.provider_name = "CustomProvider99"
 
@@ -135,10 +137,7 @@ def test_openai_compatible_adapter(mock_compatible_config, mock_config, basic_ta
 
     assert isinstance(adapter, OpenAICompatibleAdapter)
     mock_compatible_config.assert_called_once_with("provider::test-model")
-    assert adapter.config.model_name == "test-model"
-    assert adapter.config.api_key == "test-key"
-    assert adapter.config.base_url == "https://test.com/v1"
-    assert adapter.config.provider_name == "CustomProvider99"
+    assert adapter.config == mock_compatible_config.return_value
 
 
 def test_custom_openai_compatible_provider(mock_config, basic_task):
@@ -150,7 +149,7 @@ def test_custom_openai_compatible_provider(mock_config, basic_task):
 
     assert isinstance(adapter, OpenAICompatibleAdapter)
     assert adapter.config.model_name == "openai::test-model"
-    assert adapter.config.api_key == "test-openai-key"
+    assert adapter.config.additional_body_options == {"api_key": "test-openai-key"}
     assert adapter.config.base_url is None  # openai is none
     assert adapter.config.provider_name == ModelProviderName.kiln_custom_registry
 

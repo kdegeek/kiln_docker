@@ -28,12 +28,14 @@ def adapter_for_task(
             return OpenAICompatibleAdapter(
                 kiln_task=kiln_task,
                 config=OpenAICompatibleConfig(
-                    api_key=Config.shared().open_router_api_key,
                     model_name=model_name,
                     provider_name=provider,
                     default_headers={
                         "HTTP-Referer": "https://getkiln.ai/openrouter",
                         "X-Title": "KilnAI",
+                    },
+                    additional_body_options={
+                        "api_key": Config.shared().open_router_api_key,
                     },
                 ),
                 prompt_id=prompt_id,
@@ -43,15 +45,16 @@ def adapter_for_task(
             return OpenAICompatibleAdapter(
                 kiln_task=kiln_task,
                 config=OpenAICompatibleConfig(
-                    api_key=Config.shared().open_ai_api_key,
                     model_name=model_name,
                     provider_name=provider,
+                    additional_body_options={
+                        "api_key": Config.shared().open_ai_api_key,
+                    },
                 ),
                 prompt_id=prompt_id,
                 base_adapter_config=base_adapter_config,
             )
         case ModelProviderName.openai_compatible:
-            # TODO P0 this is broken
             config = openai_compatible_config(model_name)
             return OpenAICompatibleAdapter(
                 kiln_task=kiln_task,
@@ -65,9 +68,11 @@ def adapter_for_task(
                 prompt_id=prompt_id,
                 base_adapter_config=base_adapter_config,
                 config=OpenAICompatibleConfig(
-                    api_key=Config.shared().groq_api_key,
                     model_name=model_name,
                     provider_name=provider,
+                    additional_body_options={
+                        "api_key": Config.shared().groq_api_key,
+                    },
                 ),
             )
         case ModelProviderName.amazon_bedrock:
@@ -76,9 +81,14 @@ def adapter_for_task(
                 prompt_id=prompt_id,
                 base_adapter_config=base_adapter_config,
                 config=OpenAICompatibleConfig(
-                    api_key=None,
                     model_name=model_name,
                     provider_name=provider,
+                    additional_body_options={
+                        "aws_access_key_id": Config.shared().bedrock_access_key,
+                        "aws_secret_access_key": Config.shared().bedrock_secret_key,
+                        # The only region that's widely supported for bedrock
+                        "aws_region_name": "us-west-2",
+                    },
                 ),
             )
         case ModelProviderName.ollama:
@@ -87,9 +97,12 @@ def adapter_for_task(
                 prompt_id=prompt_id,
                 base_adapter_config=base_adapter_config,
                 config=OpenAICompatibleConfig(
-                    api_key=None,
                     model_name=model_name,
                     provider_name=provider,
+                    # Set the Ollama base URL for 2 reasons:
+                    # 1. To use the correct base URL
+                    # 2. We use Ollama's OpenAI compatible API (/v1), and don't just let litellm use the Ollama API. We use more advanced features like json_schema.
+                    base_url=Config.shared().ollama_base_url + "/v1",
                 ),
             )
         case ModelProviderName.fireworks_ai:
@@ -98,10 +111,11 @@ def adapter_for_task(
                 prompt_id=prompt_id,
                 base_adapter_config=base_adapter_config,
                 config=OpenAICompatibleConfig(
-                    # TODO: account ID isn't passed. And "strict" isn't allowed for tools.
-                    api_key=Config.shared().fireworks_api_key,
                     model_name=model_name,
                     provider_name=provider,
+                    additional_body_options={
+                        "api_key": Config.shared().fireworks_api_key,
+                    },
                 ),
             )
         case ModelProviderName.anthropic:
@@ -110,9 +124,11 @@ def adapter_for_task(
                 prompt_id=prompt_id,
                 base_adapter_config=base_adapter_config,
                 config=OpenAICompatibleConfig(
-                    api_key=Config.shared().anthropic_api_key,
                     model_name=model_name,
                     provider_name=provider,
+                    additional_body_options={
+                        "api_key": Config.shared().anthropic_api_key,
+                    },
                 ),
             )
         case ModelProviderName.gemini_api:
@@ -121,9 +137,11 @@ def adapter_for_task(
                 prompt_id=prompt_id,
                 base_adapter_config=base_adapter_config,
                 config=OpenAICompatibleConfig(
-                    api_key=Config.shared().gemini_api_key,
                     model_name=model_name,
                     provider_name=provider,
+                    additional_body_options={
+                        "api_key": Config.shared().gemini_api_key,
+                    },
                 ),
             )
         case ModelProviderName.azure_openai:
@@ -132,10 +150,13 @@ def adapter_for_task(
                 prompt_id=prompt_id,
                 base_adapter_config=base_adapter_config,
                 config=OpenAICompatibleConfig(
-                    api_key=Config.shared().azure_openai_api_key,
                     base_url=Config.shared().azure_openai_endpoint,
                     model_name=model_name,
                     provider_name=provider,
+                    additional_body_options={
+                        "api_key": Config.shared().azure_openai_api_key,
+                        "api_version": "2025-02-01-preview",
+                    },
                 ),
             )
         # These are virtual providers that should have mapped to an actual provider in core_provider
