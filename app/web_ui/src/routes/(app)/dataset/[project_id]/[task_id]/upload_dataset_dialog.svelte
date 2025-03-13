@@ -107,7 +107,7 @@
     {/if}
   </div>
   {#if error}
-    <div class="text-error text-sm">
+    <div class="pt-2 text-error text-sm">
       {error.getMessage() || "An unknown error occurred"}
     </div>
   {/if}
