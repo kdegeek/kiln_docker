@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 
 
 @dataclass
-class OpenAICompatibleConfig:
+class LiteLlmConfig:
     model_name: str
     provider_name: str
     # If set, over rides the provider-name based URL from litellm

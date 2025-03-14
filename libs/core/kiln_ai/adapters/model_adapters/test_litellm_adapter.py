@@ -5,10 +5,10 @@ import pytest
 
 from kiln_ai.adapters.ml_model_list import ModelProviderName, StructuredOutputMode
 from kiln_ai.adapters.model_adapters.base_adapter import AdapterConfig
-from kiln_ai.adapters.model_adapters.openai_compatible_config import (
-    OpenAICompatibleConfig,
+from kiln_ai.adapters.model_adapters.litellm_adapter import LiteLlmAdapter
+from kiln_ai.adapters.model_adapters.litellm_config import (
+    LiteLlmConfig,
 )
-from kiln_ai.adapters.model_adapters.openai_model_adapter import OpenAICompatibleAdapter
 from kiln_ai.datamodel import Project, Task
 
 
@@ -38,7 +38,7 @@ def mock_task(tmp_path):
 
 @pytest.fixture
 def config():
-    return OpenAICompatibleConfig(
+    return LiteLlmConfig(
         base_url="https://api.test.com",
         model_name="test-model",
         provider_name="openrouter",
@@ -48,7 +48,7 @@ def config():
 
 
 def test_initialization(config, mock_task):
-    adapter = OpenAICompatibleAdapter(
+    adapter = LiteLlmAdapter(
         config=config,
         kiln_task=mock_task,
         prompt_id="simple_prompt_builder",
@@ -67,7 +67,7 @@ def test_initialization(config, mock_task):
 
 
 def test_adapter_info(config, mock_task):
-    adapter = OpenAICompatibleAdapter(config=config, kiln_task=mock_task)
+    adapter = LiteLlmAdapter(config=config, kiln_task=mock_task)
 
     assert adapter.adapter_name() == "kiln_openai_compatible_adapter"
 
@@ -78,7 +78,7 @@ def test_adapter_info(config, mock_task):
 
 @pytest.mark.asyncio
 async def test_response_format_options_unstructured(config, mock_task):
-    adapter = OpenAICompatibleAdapter(config=config, kiln_task=mock_task)
+    adapter = LiteLlmAdapter(config=config, kiln_task=mock_task)
 
     # Mock has_structured_output to return False
     with patch.object(adapter, "has_structured_output", return_value=False):
@@ -95,7 +95,7 @@ async def test_response_format_options_unstructured(config, mock_task):
 )
 @pytest.mark.asyncio
 async def test_response_format_options_json_mode(config, mock_task, mode):
-    adapter = OpenAICompatibleAdapter(config=config, kiln_task=mock_task)
+    adapter = LiteLlmAdapter(config=config, kiln_task=mock_task)
 
     with (
         patch.object(adapter, "has_structured_output", return_value=True),
@@ -116,7 +116,7 @@ async def test_response_format_options_json_mode(config, mock_task, mode):
 )
 @pytest.mark.asyncio
 async def test_response_format_options_function_calling(config, mock_task, mode):
-    adapter = OpenAICompatibleAdapter(config=config, kiln_task=mock_task)
+    adapter = LiteLlmAdapter(config=config, kiln_task=mock_task)
 
     with (
         patch.object(adapter, "has_structured_output", return_value=True),
@@ -131,7 +131,7 @@ async def test_response_format_options_function_calling(config, mock_task, mode)
 
 @pytest.mark.asyncio
 async def test_response_format_options_json_instructions(config, mock_task):
-    adapter = OpenAICompatibleAdapter(config=config, kiln_task=mock_task)
+    adapter = LiteLlmAdapter(config=config, kiln_task=mock_task)
 
     with (
         patch.object(adapter, "has_structured_output", return_value=True),
@@ -146,7 +146,7 @@ async def test_response_format_options_json_instructions(config, mock_task):
 
 @pytest.mark.asyncio
 async def test_response_format_options_json_schema(config, mock_task):
-    adapter = OpenAICompatibleAdapter(config=config, kiln_task=mock_task)
+    adapter = LiteLlmAdapter(config=config, kiln_task=mock_task)
 
     with (
         patch.object(adapter, "has_structured_output", return_value=True),
@@ -168,7 +168,7 @@ async def test_response_format_options_json_schema(config, mock_task):
 
 
 def test_tool_call_params_weak(config, mock_task):
-    adapter = OpenAICompatibleAdapter(config=config, kiln_task=mock_task)
+    adapter = LiteLlmAdapter(config=config, kiln_task=mock_task)
 
     params = adapter.tool_call_params(strict=False)
     expected_schema = mock_task.output_schema()
@@ -193,7 +193,7 @@ def test_tool_call_params_weak(config, mock_task):
 
 def test_tool_call_params_strict(config, mock_task):
     config.provider_name = "openai"
-    adapter = OpenAICompatibleAdapter(config=config, kiln_task=mock_task)
+    adapter = LiteLlmAdapter(config=config, kiln_task=mock_task)
 
     params = adapter.tool_call_params(strict=True)
     expected_schema = mock_task.output_schema()
@@ -235,7 +235,7 @@ def test_litellm_model_id_standard_providers(
     config, mock_task, provider_name, expected_prefix
 ):
     """Test litellm_model_id for standard providers"""
-    adapter = OpenAICompatibleAdapter(config=config, kiln_task=mock_task)
+    adapter = LiteLlmAdapter(config=config, kiln_task=mock_task)
 
     # Mock the model_provider method to return a provider with the specified name
     mock_provider = Mock()
@@ -261,7 +261,7 @@ def test_litellm_model_id_standard_providers(
 def test_litellm_model_id_custom_providers(config, mock_task, provider_name):
     """Test litellm_model_id for custom providers that require a base URL"""
     config.base_url = "https://api.custom.com"
-    adapter = OpenAICompatibleAdapter(config=config, kiln_task=mock_task)
+    adapter = LiteLlmAdapter(config=config, kiln_task=mock_task)
 
     # Mock the model_provider method
     mock_provider = Mock()
@@ -279,7 +279,7 @@ def test_litellm_model_id_custom_providers(config, mock_task, provider_name):
 def test_litellm_model_id_custom_provider_no_base_url(config, mock_task):
     """Test litellm_model_id raises error for custom providers without base URL"""
     config.base_url = None
-    adapter = OpenAICompatibleAdapter(config=config, kiln_task=mock_task)
+    adapter = LiteLlmAdapter(config=config, kiln_task=mock_task)
 
     # Mock the model_provider method
     mock_provider = Mock()
@@ -293,7 +293,7 @@ def test_litellm_model_id_custom_provider_no_base_url(config, mock_task):
 
 def test_litellm_model_id_no_model_id(config, mock_task):
     """Test litellm_model_id raises error when provider has no model_id"""
-    adapter = OpenAICompatibleAdapter(config=config, kiln_task=mock_task)
+    adapter = LiteLlmAdapter(config=config, kiln_task=mock_task)
 
     # Mock the model_provider method to return a provider with no model_id
     mock_provider = Mock()
@@ -307,7 +307,7 @@ def test_litellm_model_id_no_model_id(config, mock_task):
 
 def test_litellm_model_id_caching(config, mock_task):
     """Test that litellm_model_id caches the result"""
-    adapter = OpenAICompatibleAdapter(config=config, kiln_task=mock_task)
+    adapter = LiteLlmAdapter(config=config, kiln_task=mock_task)
 
     # Set the cached value directly
     adapter._litellm_model_id = "cached-value"
@@ -322,7 +322,7 @@ def test_litellm_model_id_caching(config, mock_task):
 
 def test_litellm_model_id_unknown_provider(config, mock_task):
     """Test litellm_model_id raises error for unknown provider"""
-    adapter = OpenAICompatibleAdapter(config=config, kiln_task=mock_task)
+    adapter = LiteLlmAdapter(config=config, kiln_task=mock_task)
 
     # Create a mock provider with an unknown name
     mock_provider = Mock()
@@ -331,7 +331,7 @@ def test_litellm_model_id_unknown_provider(config, mock_task):
 
     with patch.object(adapter, "model_provider", return_value=mock_provider):
         with patch(
-            "kiln_ai.adapters.model_adapters.openai_model_adapter.raise_exhaustive_enum_error"
+            "kiln_ai.adapters.model_adapters.litellm_adapter.raise_exhaustive_enum_error"
         ) as mock_raise_error:
             mock_raise_error.side_effect = Exception("Test error")
 

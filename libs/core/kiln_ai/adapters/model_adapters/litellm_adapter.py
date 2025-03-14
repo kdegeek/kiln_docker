@@ -15,8 +15,8 @@ from kiln_ai.adapters.model_adapters.base_adapter import (
     BaseAdapter,
     RunOutput,
 )
-from kiln_ai.adapters.model_adapters.openai_compatible_config import (
-    OpenAICompatibleConfig,
+from kiln_ai.adapters.model_adapters.litellm_config import (
+    LiteLlmConfig,
 )
 from kiln_ai.datamodel import PromptGenerators, PromptId
 from kiln_ai.datamodel.task import RunConfig
@@ -24,10 +24,10 @@ from kiln_ai.utils.config import Config
 from kiln_ai.utils.exhaustive_error import raise_exhaustive_enum_error
 
 
-class OpenAICompatibleAdapter(BaseAdapter):
+class LiteLlmAdapter(BaseAdapter):
     def __init__(
         self,
-        config: OpenAICompatibleConfig,
+        config: LiteLlmConfig,
         kiln_task: datamodel.Task,
         prompt_id: PromptId | None = None,
         base_adapter_config: AdapterConfig | None = None,

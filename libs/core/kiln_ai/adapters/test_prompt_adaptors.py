@@ -8,9 +8,9 @@ from litellm.utils import ModelResponse
 import kiln_ai.datamodel as datamodel
 from kiln_ai.adapters.adapter_registry import adapter_for_task
 from kiln_ai.adapters.ml_model_list import built_in_models
-from kiln_ai.adapters.model_adapters.openai_model_adapter import (
-    OpenAICompatibleAdapter,
-    OpenAICompatibleConfig,
+from kiln_ai.adapters.model_adapters.litellm_adapter import (
+    LiteLlmAdapter,
+    LiteLlmConfig,
 )
 from kiln_ai.adapters.ollama_tools import ollama_online
 from kiln_ai.adapters.prompt_builders import (
@@ -119,8 +119,8 @@ async def test_mock_returning_run(tmp_path):
             choices=[{"message": {"content": "mock response"}}],
         )
 
-        adapter = OpenAICompatibleAdapter(
-            config=OpenAICompatibleConfig(
+        adapter = LiteLlmAdapter(
+            config=LiteLlmConfig(
                 model_name="custom_model",
                 provider_name="ollama",
                 additional_body_options={"api_key": "test_key"},

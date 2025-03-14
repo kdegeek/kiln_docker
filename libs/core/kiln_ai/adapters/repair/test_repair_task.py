@@ -7,7 +7,7 @@ from pydantic import ValidationError
 
 from kiln_ai.adapters.adapter_registry import adapter_for_task
 from kiln_ai.adapters.model_adapters.base_adapter import RunOutput
-from kiln_ai.adapters.model_adapters.openai_model_adapter import OpenAICompatibleAdapter
+from kiln_ai.adapters.model_adapters.litellm_adapter import LiteLlmAdapter
 from kiln_ai.adapters.repair.repair_task import (
     RepairTaskInput,
     RepairTaskRun,
@@ -217,9 +217,7 @@ async def test_mocked_repair_task_run(sample_task, sample_task_run, sample_repai
         "rating": 8,
     }
 
-    with patch.object(
-        OpenAICompatibleAdapter, "_run", new_callable=AsyncMock
-    ) as mock_run:
+    with patch.object(LiteLlmAdapter, "_run", new_callable=AsyncMock) as mock_run:
         mock_run.return_value = RunOutput(
             output=mocked_output, intermediate_outputs=None
         )

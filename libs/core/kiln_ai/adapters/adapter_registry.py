@@ -3,11 +3,11 @@ from os import getenv
 from kiln_ai import datamodel
 from kiln_ai.adapters.ml_model_list import ModelProviderName
 from kiln_ai.adapters.model_adapters.base_adapter import AdapterConfig, BaseAdapter
-from kiln_ai.adapters.model_adapters.openai_model_adapter import (
-    OpenAICompatibleAdapter,
-    OpenAICompatibleConfig,
+from kiln_ai.adapters.model_adapters.litellm_adapter import (
+    LiteLlmAdapter,
+    LiteLlmConfig,
 )
-from kiln_ai.adapters.provider_tools import core_provider, openai_compatible_config
+from kiln_ai.adapters.provider_tools import core_provider, lite_llm_config
 from kiln_ai.datamodel import PromptId
 from kiln_ai.utils.config import Config
 from kiln_ai.utils.exhaustive_error import raise_exhaustive_enum_error
@@ -25,9 +25,9 @@ def adapter_for_task(
 
     match core_provider_name:
         case ModelProviderName.openrouter:
-            return OpenAICompatibleAdapter(
+            return LiteLlmAdapter(
                 kiln_task=kiln_task,
-                config=OpenAICompatibleConfig(
+                config=LiteLlmConfig(
                     model_name=model_name,
                     base_url=getenv("OPENROUTER_BASE_URL")
                     or "https://openrouter.ai/api/v1",
@@ -44,9 +44,9 @@ def adapter_for_task(
                 base_adapter_config=base_adapter_config,
             )
         case ModelProviderName.openai:
-            return OpenAICompatibleAdapter(
+            return LiteLlmAdapter(
                 kiln_task=kiln_task,
-                config=OpenAICompatibleConfig(
+                config=LiteLlmConfig(
                     model_name=model_name,
                     provider_name=provider,
                     additional_body_options={
@@ -57,19 +57,19 @@ def adapter_for_task(
                 base_adapter_config=base_adapter_config,
             )
         case ModelProviderName.openai_compatible:
-            config = openai_compatible_config(model_name)
-            return OpenAICompatibleAdapter(
+            config = lite_llm_config(model_name)
+            return LiteLlmAdapter(
                 kiln_task=kiln_task,
                 config=config,
                 prompt_id=prompt_id,
                 base_adapter_config=base_adapter_config,
             )
         case ModelProviderName.groq:
-            return OpenAICompatibleAdapter(
+            return LiteLlmAdapter(
                 kiln_task=kiln_task,
                 prompt_id=prompt_id,
                 base_adapter_config=base_adapter_config,
-                config=OpenAICompatibleConfig(
+                config=LiteLlmConfig(
                     model_name=model_name,
                     provider_name=provider,
                     additional_body_options={
@@ -78,11 +78,11 @@ def adapter_for_task(
                 ),
             )
         case ModelProviderName.amazon_bedrock:
-            return OpenAICompatibleAdapter(
+            return LiteLlmAdapter(
                 kiln_task=kiln_task,
                 prompt_id=prompt_id,
                 base_adapter_config=base_adapter_config,
-                config=OpenAICompatibleConfig(
+                config=LiteLlmConfig(
                     model_name=model_name,
                     provider_name=provider,
                     additional_body_options={
@@ -97,11 +97,11 @@ def adapter_for_task(
             ollama_base_url = (
                 Config.shared().ollama_base_url or "http://localhost:11434"
             )
-            return OpenAICompatibleAdapter(
+            return LiteLlmAdapter(
                 kiln_task=kiln_task,
                 prompt_id=prompt_id,
                 base_adapter_config=base_adapter_config,
-                config=OpenAICompatibleConfig(
+                config=LiteLlmConfig(
                     model_name=model_name,
                     provider_name=provider,
                     # Set the Ollama base URL for 2 reasons:
@@ -111,11 +111,11 @@ def adapter_for_task(
                 ),
             )
         case ModelProviderName.fireworks_ai:
-            return OpenAICompatibleAdapter(
+            return LiteLlmAdapter(
                 kiln_task=kiln_task,
                 prompt_id=prompt_id,
                 base_adapter_config=base_adapter_config,
-                config=OpenAICompatibleConfig(
+                config=LiteLlmConfig(
                     model_name=model_name,
                     provider_name=provider,
                     additional_body_options={
@@ -124,11 +124,11 @@ def adapter_for_task(
                 ),
             )
         case ModelProviderName.anthropic:
-            return OpenAICompatibleAdapter(
+            return LiteLlmAdapter(
                 kiln_task=kiln_task,
                 prompt_id=prompt_id,
                 base_adapter_config=base_adapter_config,
-                config=OpenAICompatibleConfig(
+                config=LiteLlmConfig(
                     model_name=model_name,
                     provider_name=provider,
                     additional_body_options={
@@ -137,11 +137,11 @@ def adapter_for_task(
                 ),
             )
         case ModelProviderName.gemini_api:
-            return OpenAICompatibleAdapter(
+            return LiteLlmAdapter(
                 kiln_task=kiln_task,
                 prompt_id=prompt_id,
                 base_adapter_config=base_adapter_config,
-                config=OpenAICompatibleConfig(
+                config=LiteLlmConfig(
                     model_name=model_name,
                     provider_name=provider,
                     additional_body_options={
@@ -150,11 +150,11 @@ def adapter_for_task(
                 ),
             )
         case ModelProviderName.azure_openai:
-            return OpenAICompatibleAdapter(
+            return LiteLlmAdapter(
                 kiln_task=kiln_task,
                 prompt_id=prompt_id,
                 base_adapter_config=base_adapter_config,
-                config=OpenAICompatibleConfig(
+                config=LiteLlmConfig(
                     base_url=Config.shared().azure_openai_endpoint,
                     model_name=model_name,
                     provider_name=provider,

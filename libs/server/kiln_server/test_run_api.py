@@ -4,7 +4,7 @@ import pytest
 from fastapi import FastAPI, HTTPException
 from fastapi.testclient import TestClient
 from kiln_ai.adapters.ml_model_list import ModelProviderName
-from kiln_ai.adapters.model_adapters.openai_model_adapter import OpenAICompatibleAdapter
+from kiln_ai.adapters.model_adapters.litellm_adapter import LiteLlmAdapter
 from kiln_ai.datamodel import (
     DataSource,
     DataSourceType,
@@ -107,9 +107,7 @@ async def test_run_task_success(client, task_run_setup):
 
     with (
         patch("kiln_server.run_api.task_from_id") as mock_task_from_id,
-        patch.object(
-            OpenAICompatibleAdapter, "invoke", new_callable=AsyncMock
-        ) as mock_invoke,
+        patch.object(LiteLlmAdapter, "invoke", new_callable=AsyncMock) as mock_invoke,
         patch("kiln_ai.utils.config.Config.shared") as MockConfig,
     ):
         mock_task_from_id.return_value = task
@@ -137,9 +135,7 @@ async def test_run_task_structured_output(client, task_run_setup):
 
     with (
         patch("kiln_server.run_api.task_from_id") as mock_task_from_id,
-        patch.object(
-            OpenAICompatibleAdapter, "invoke", new_callable=AsyncMock
-        ) as mock_invoke,
+        patch.object(LiteLlmAdapter, "invoke", new_callable=AsyncMock) as mock_invoke,
         patch("kiln_ai.utils.config.Config.shared") as MockConfig,
     ):
         mock_task_from_id.return_value = task
@@ -201,7 +197,7 @@ async def test_run_task_structured_input(client, task_run_setup):
         with (
             patch("kiln_server.run_api.task_from_id") as mock_task_from_id,
             patch.object(
-                OpenAICompatibleAdapter, "invoke", new_callable=AsyncMock
+                LiteLlmAdapter, "invoke", new_callable=AsyncMock
             ) as mock_invoke,
             patch("kiln_ai.utils.config.Config.shared") as MockConfig,
         ):

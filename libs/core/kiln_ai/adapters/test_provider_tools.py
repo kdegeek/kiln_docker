@@ -17,8 +17,8 @@ from kiln_ai.adapters.provider_tools import (
     finetune_provider_model,
     get_model_and_provider,
     kiln_model_provider_from,
-    openai_compatible_config,
-    openai_compatible_provider_model,
+    lite_llm_config,
+    lite_llm_provider_model,
     parse_custom_model_id,
     provider_enabled,
     provider_name_from_id,
@@ -528,7 +528,7 @@ def test_openai_compatible_provider_config(mock_shared_config):
     """Test successful creation of an OpenAI compatible provider"""
     model_id = "test_provider::gpt-4"
 
-    config = openai_compatible_config(model_id)
+    config = lite_llm_config(model_id)
 
     assert config.provider_name == ModelProviderName.openai_compatible
     assert config.model_name == "gpt-4"
@@ -536,11 +536,11 @@ def test_openai_compatible_provider_config(mock_shared_config):
     assert config.base_url == "https://api.test.com"
 
 
-def test_openai_compatible_provider_model_success(mock_shared_config):
+def test_litellm_provider_model_success(mock_shared_config):
     """Test successful creation of an OpenAI compatible provider"""
     model_id = "test_provider::gpt-4"
 
-    provider = openai_compatible_provider_model(model_id)
+    provider = lite_llm_provider_model(model_id)
 
     assert provider.name == ModelProviderName.openai_compatible
     assert provider.model_id == model_id
@@ -549,11 +549,11 @@ def test_openai_compatible_provider_model_success(mock_shared_config):
     assert provider.untested_model is True
 
 
-def test_openai_compatible_config_no_api_key(mock_shared_config):
+def test_lite_llm_config_no_api_key(mock_shared_config):
     """Test provider creation without API key (should work as some providers don't require it)"""
     model_id = "no_key_provider::gpt-4"
 
-    config = openai_compatible_config(model_id)
+    config = lite_llm_config(model_id)
 
     assert config.provider_name == ModelProviderName.openai_compatible
     assert config.model_name == "gpt-4"
@@ -561,34 +561,34 @@ def test_openai_compatible_config_no_api_key(mock_shared_config):
     assert config.base_url == "https://api.nokey.com"
 
 
-def test_openai_compatible_config_invalid_id():
+def test_lite_llm_config_invalid_id():
     """Test handling of invalid model ID format"""
     with pytest.raises(ValueError) as exc_info:
-        openai_compatible_config("invalid-id-format")
+        lite_llm_config("invalid-id-format")
     assert (
         str(exc_info.value) == "Invalid openai compatible model ID: invalid-id-format"
     )
 
 
-def test_openai_compatible_config_no_providers(mock_shared_config):
+def test_lite_llm_config_no_providers(mock_shared_config):
     """Test handling when no providers are configured"""
     mock_shared_config.return_value.openai_compatible_providers = None
 
     with pytest.raises(ValueError) as exc_info:
-        openai_compatible_config("test_provider::gpt-4")
+        lite_llm_config("test_provider::gpt-4")
     assert str(exc_info.value) == "OpenAI compatible provider test_provider not found"
 
 
-def test_openai_compatible_config_provider_not_found(mock_shared_config):
+def test_lite_llm_config_provider_not_found(mock_shared_config):
     """Test handling of non-existent provider"""
     with pytest.raises(ValueError) as exc_info:
-        openai_compatible_config("unknown_provider::gpt-4")
+        lite_llm_config("unknown_provider::gpt-4")
     assert (
         str(exc_info.value) == "OpenAI compatible provider unknown_provider not found"
     )
 
 
-def test_openai_compatible_config_no_base_url(mock_shared_config):
+def test_lite_llm_config_no_base_url(mock_shared_config):
     """Test handling of provider without base URL"""
     mock_shared_config.return_value.openai_compatible_providers = [
         {
@@ -598,7 +598,7 @@ def test_openai_compatible_config_no_base_url(mock_shared_config):
     ]
 
     with pytest.raises(ValueError) as exc_info:
-        openai_compatible_config("test_provider::gpt-4")
+        lite_llm_config("test_provider::gpt-4")
     assert (
         str(exc_info.value)
         == "OpenAI compatible provider test_provider has no base URL"

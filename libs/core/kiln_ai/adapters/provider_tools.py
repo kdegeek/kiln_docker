@@ -9,8 +9,8 @@ from kiln_ai.adapters.ml_model_list import (
     StructuredOutputMode,
     built_in_models,
 )
-from kiln_ai.adapters.model_adapters.openai_compatible_config import (
-    OpenAICompatibleConfig,
+from kiln_ai.adapters.model_adapters.litellm_config import (
+    LiteLlmConfig,
 )
 from kiln_ai.adapters.ollama_tools import (
     get_ollama_connection,
@@ -153,7 +153,7 @@ def kiln_model_provider_from(
         return finetune_provider_model(name)
 
     if provider_name == ModelProviderName.openai_compatible:
-        return openai_compatible_provider_model(name)
+        return lite_llm_provider_model(name)
 
     built_in_model = builtin_model_from(name, provider_name)
     if built_in_model:
@@ -179,9 +179,9 @@ def kiln_model_provider_from(
     )
 
 
-def openai_compatible_config(
+def lite_llm_config(
     model_id: str,
-) -> OpenAICompatibleConfig:
+) -> LiteLlmConfig:
     try:
         openai_provider_name, model_id = model_id.split("::")
     except Exception:
@@ -205,7 +205,7 @@ def openai_compatible_config(
             f"OpenAI compatible provider {openai_provider_name} has no base URL"
         )
 
-    return OpenAICompatibleConfig(
+    return LiteLlmConfig(
         # OpenAI compatible, with a custom base URL
         model_name=model_id,
         provider_name=ModelProviderName.openai_compatible,
@@ -216,7 +216,7 @@ def openai_compatible_config(
     )
 
 
-def openai_compatible_provider_model(
+def lite_llm_provider_model(
     model_id: str,
 ) -> KilnModelProvider:
     return KilnModelProvider(
