@@ -122,7 +122,7 @@ async def test_mock_returning_run(tmp_path):
         adapter = LiteLlmAdapter(
             config=LiteLlmConfig(
                 model_name="custom_model",
-                provider_name="ollama",
+                provider_name="openai",
                 additional_body_options={"api_key": "test_key"},
             ),
             kiln_task=task,
@@ -139,7 +139,7 @@ async def test_mock_returning_run(tmp_path):
     assert run.output.source.properties == {
         "adapter_name": "kiln_openai_compatible_adapter",
         "model_name": "custom_model",
-        "model_provider": "ollama",
+        "model_provider": "openai",
         "prompt_id": "simple_prompt_builder",
     }
 

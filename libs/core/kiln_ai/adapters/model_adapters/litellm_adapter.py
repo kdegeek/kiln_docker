@@ -134,7 +134,8 @@ class LiteLlmAdapter(BaseAdapter):
         if not isinstance(response, ModelResponse):
             raise RuntimeError(f"Expected ModelResponse, got {type(response)}.")
 
-        # TODO: P2 - there is no error attribute on the response object. Keeping in typesafe way as we added it for a reason, but should investigate what that was.
+        # Maybe remove this? There is no error attribute on the response object.
+        # # Keeping in typesafe way as we added it for a reason, but should investigate what that was and if it still applies.
         if hasattr(response, "error") and response.__getattribute__("error"):
             raise RuntimeError(
                 f"LLM API returned an error: {response.__getattribute__('error')}"
@@ -343,8 +344,8 @@ class LiteLlmAdapter(BaseAdapter):
                 litellm_provider_name = "anthropic"
             case ModelProviderName.ollama:
                 # We don't let litellm use the Ollama API and muck with our requests. We use Ollama's OpenAI compatible API.
-                # This is because we're setting detailed features like response_format=json_schema which it assumes don't work but do.
-                litellm_provider_name = "openai"
+                # This is because we're setting detailed features like response_format=json_schema and want lower level control.
+                is_custom = True
             case ModelProviderName.gemini_api:
                 litellm_provider_name = "gemini"
             case ModelProviderName.fireworks_ai:
@@ -365,14 +366,16 @@ class LiteLlmAdapter(BaseAdapter):
         if is_custom:
             if self._api_base is None:
                 raise ValueError(
-                    "Explicit Base URL is required for OpenAI compatible models, fine tunes, and custom registry models"
+                    "Explicit Base URL is required for OpenAI compatible APIs (custom models, ollama, fine tunes, and custom registry models)"
                 )
             # Use openai as it's only used for format, not url
             litellm_provider_name = "openai"
 
         # Sholdn't be possible but keep type checker happy
         if litellm_provider_name is None:
-            raise ValueError("Provider name could not lookup valid litellm provider ID")
+            raise ValueError(
+                f"Provider name could not lookup valid litellm provider ID {provider.model_id}"
+            )
 
         self._litellm_model_id = litellm_provider_name + "/" + provider.model_id
         return self._litellm_model_id
