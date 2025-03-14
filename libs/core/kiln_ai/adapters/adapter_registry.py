@@ -29,6 +29,8 @@ def adapter_for_task(
                 kiln_task=kiln_task,
                 config=OpenAICompatibleConfig(
                     model_name=model_name,
+                    base_url=getenv("OPENROUTER_BASE_URL")
+                    or "https://openrouter.ai/api/v1",
                     provider_name=provider,
                     default_headers={
                         "HTTP-Referer": "https://getkiln.ai/openrouter",
