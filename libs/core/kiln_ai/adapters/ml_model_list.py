@@ -622,7 +622,7 @@ built_in_models: List[KilnModel] = [
         providers=[
             KilnModelProvider(
                 name=ModelProviderName.amazon_bedrock,
-                structured_output_mode=StructuredOutputMode.json_schema,
+                structured_output_mode=StructuredOutputMode.json_instructions,
                 model_id="mistral.mistral-large-2407-v1:0",
             ),
             KilnModelProvider(
@@ -691,6 +691,7 @@ built_in_models: List[KilnModel] = [
                 name=ModelProviderName.fireworks_ai,
                 provider_finetune_id="accounts/fireworks/models/llama-v3p2-3b-instruct",
                 supports_structured_output=False,
+                supports_data_gen=False,
                 model_id="accounts/fireworks/models/llama-v3p2-3b-instruct",
             ),
         ],
@@ -813,6 +814,7 @@ built_in_models: List[KilnModel] = [
                 name=ModelProviderName.fireworks_ai,
                 # No finetune support. https://docs.fireworks.ai/fine-tuning/fine-tuning-models
                 supports_structured_output=False,
+                supports_data_gen=False,
                 model_id="accounts/fireworks/models/phi-3-vision-128k-instruct",
             ),
         ],
