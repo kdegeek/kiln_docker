@@ -91,13 +91,33 @@
     },
   ]}
 >
-  <div class="text-sm">
+  <div class="font-light text-sm">
     {#if loading}
       <div class="w-full min-h-[50vh] flex justify-center items-center">
         <div class="loading loading-spinner loading-lg"></div>
       </div>
     {:else}
-      <p class="mb-4">Select a dataset file to upload:</p>
+      <div class="space-y-2">
+        <div>
+          <p>
+            Upload a CSV to add each row to your dataset. The CSV must have a
+            header row. The following columns are supported:
+          </p>
+          <ul class="mb-4 ml-4 mt-1 list-disc">
+            <li><code>input</code> - Required</li>
+            <li><code>output</code> - Required</li>
+            <li><code>reasoning</code> - Optional</li>
+            <li><code>tags</code> - Optional, comma separated string</li>
+          </ul>
+          <p class="mb-4">
+            See an example <a
+              href="#link-to-example-on-github"
+              target="_blank"
+              class="link">an example CSV</a
+            >.
+          </p>
+        </div>
+      </div>
       <input
         type="file"
         class="file-input file-input-bordered w-full"
