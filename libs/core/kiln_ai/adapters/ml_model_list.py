@@ -75,6 +75,8 @@ class ModelName(str, Enum):
     gpt_o3_mini_high = "gpt_o3_mini_high"
     phi_3_5 = "phi_3_5"
     phi_4 = "phi_4"
+    phi_4_5p6b = "phi_4_5p6b"
+    phi_4_mini = "phi_4_mini"
     mistral_large = "mistral_large"
     mistral_nemo = "mistral_nemo"
     gemma_2_2b = "gemma_2_2b"
@@ -835,7 +837,7 @@ built_in_models: List[KilnModel] = [
     KilnModel(
         family=ModelFamily.phi,
         name=ModelName.phi_4,
-        friendly_name="Phi 4",
+        friendly_name="Phi 4 - 14B",
         providers=[
             KilnModelProvider(
                 name=ModelProviderName.ollama,
@@ -848,6 +850,32 @@ built_in_models: List[KilnModel] = [
                 structured_output_mode=StructuredOutputMode.json_instruction_and_object,
                 supports_data_gen=False,
                 model_id="microsoft/phi-4",
+            ),
+        ],
+    ),
+    # Phi 4 5.6B
+    KilnModel(
+        family=ModelFamily.phi,
+        name=ModelName.phi_4_5p6b,
+        friendly_name="Phi 4 - 5.6B",
+        providers=[
+            KilnModelProvider(
+                name=ModelProviderName.openrouter,
+                model_id="microsoft/phi-4-multimodal-instruct",
+                supports_structured_output=False,
+                supports_data_gen=False,
+            ),
+        ],
+    ),
+    # Phi 4 Mini
+    KilnModel(
+        family=ModelFamily.phi,
+        name=ModelName.phi_4_mini,
+        friendly_name="Phi 4 Mini - 3.8B",
+        providers=[
+            KilnModelProvider(
+                name=ModelProviderName.ollama,
+                model_id="phi4-mini",
             ),
         ],
     ),
