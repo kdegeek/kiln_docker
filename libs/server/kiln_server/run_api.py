@@ -312,15 +312,6 @@ def connect_run_api(app: FastAPI):
                 status_code=422,
                 detail=str(e),
             )
-        except Exception as e:
-            logger.error(
-                f"Error processing file: {str(e)}",
-                exc_info=True,
-            )
-            raise HTTPException(
-                status_code=500,
-                detail=f"Error processing file: {str(e)}",
-            )
 
         return BulkUploadResponse(
             success=True,
