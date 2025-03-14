@@ -28,6 +28,7 @@ from app.desktop.studio_server.provider_api import (
     connect_bedrock,
     connect_gemini,
     connect_groq,
+    connect_huggingface,
     connect_ollama,
     connect_openrouter,
     connect_provider_api,
@@ -1775,3 +1776,123 @@ async def test_connect_azure_openai_request_exception(
     assert b"Failed to connect to Azure OpenAI. Error: Connection error" in result.body
     assert mock_config.azure_openai_api_key is None
     assert mock_config.azure_openai_endpoint is None
+
+
+@pytest.mark.asyncio
+@patch("app.desktop.studio_server.provider_api.requests.get")
+@patch("app.desktop.studio_server.provider_api.Config.shared")
+async def test_connect_huggingface_success(mock_config_shared, mock_requests_get):
+    # Setup
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.text = '{"data": "success"}'
+    mock_requests_get.return_value = mock_response
+
+    mock_config = MagicMock()
+    mock_config_shared.return_value = mock_config
+
+    # Execute
+    result = await connect_huggingface("test_api_key")
+
+    # Assert
+    mock_requests_get.assert_called_once_with(
+        "https://huggingface.co/api/organizations/fake_org_for_auth_test/resource-groups",
+        headers={
+            "Authorization": "Bearer test_api_key",
+            "Content-Type": "application/json",
+        },
+    )
+    mock_config.huggingface_api_key = "test_api_key"
+    assert result.status_code == 200
+    assert json.loads(result.body)["message"] == "Connected to Huggingface"
+
+
+@pytest.mark.asyncio
+@patch("app.desktop.studio_server.provider_api.requests.get")
+@patch("app.desktop.studio_server.provider_api.Config.shared")
+async def test_connect_huggingface_invalid_api_key(
+    mock_config_shared, mock_requests_get
+):
+    # Setup
+    mock_response = MagicMock()
+    mock_response.status_code = 401
+    mock_response.text = '{"error": "Unauthorized"}'
+    mock_requests_get.return_value = mock_response
+
+    # Execute
+    result = await connect_huggingface("invalid_api_key")
+
+    # Assert
+    mock_requests_get.assert_called_once_with(
+        "https://huggingface.co/api/organizations/fake_org_for_auth_test/resource-groups",
+        headers={
+            "Authorization": "Bearer invalid_api_key",
+            "Content-Type": "application/json",
+        },
+    )
+    mock_config_shared.assert_not_called()
+    assert result.status_code == 401
+    assert (
+        json.loads(result.body)["message"]
+        == "Failed to connect to Huggingface. Invalid API key."
+    )
+
+
+@pytest.mark.asyncio
+@patch("app.desktop.studio_server.provider_api.requests.get")
+@patch("app.desktop.studio_server.provider_api.Config.shared")
+async def test_connect_huggingface_request_exception(
+    mock_config_shared, mock_requests_get
+):
+    # Setup
+    mock_requests_get.side_effect = Exception("Connection error")
+
+    # Execute
+    result = await connect_huggingface("test_api_key")
+
+    # Assert
+    mock_requests_get.assert_called_once_with(
+        "https://huggingface.co/api/organizations/fake_org_for_auth_test/resource-groups",
+        headers={
+            "Authorization": "Bearer test_api_key",
+            "Content-Type": "application/json",
+        },
+    )
+    mock_config_shared.assert_not_called()
+    assert result.status_code == 400
+    assert (
+        "Failed to connect to Huggingface. Error: Connection error"
+        in json.loads(result.body)["message"]
+    )
+
+
+@pytest.mark.asyncio
+@patch("app.desktop.studio_server.provider_api.requests.get")
+@patch("app.desktop.studio_server.provider_api.Config.shared")
+async def test_connect_huggingface_non_401_response(
+    mock_config_shared, mock_requests_get
+):
+    # Setup
+    mock_response = MagicMock()
+    mock_response.status_code = 404  # Any non-401 status code
+    mock_response.text = '{"error": "Not found"}'
+    mock_requests_get.return_value = mock_response
+
+    mock_config = MagicMock()
+    mock_config_shared.return_value = mock_config
+
+    # Execute
+    result = await connect_huggingface("test_api_key")
+
+    # Assert
+    mock_requests_get.assert_called_once_with(
+        "https://huggingface.co/api/organizations/fake_org_for_auth_test/resource-groups",
+        headers={
+            "Authorization": "Bearer test_api_key",
+            "Content-Type": "application/json",
+        },
+    )
+    # Even with a 404, we should save the key as the function considers any non-401 as valid auth
+    mock_config.huggingface_api_key = "test_api_key"
+    assert result.status_code == 200
+    assert json.loads(result.body)["message"] == "Connected to Huggingface"

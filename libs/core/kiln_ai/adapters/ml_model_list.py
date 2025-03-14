@@ -29,6 +29,7 @@ class ModelProviderName(str, Enum):
     anthropic = "anthropic"
     gemini_api = "gemini_api"
     azure_openai = "azure_openai"
+    huggingface = "huggingface"
 
 
 class ModelFamily(str, Enum):
@@ -548,6 +549,11 @@ built_in_models: List[KilnModel] = [
                 provider_finetune_id="accounts/fireworks/models/llama-v3p1-8b-instruct",
                 model_id="accounts/fireworks/models/llama-v3p1-8b-instruct",
             ),
+            KilnModelProvider(
+                name=ModelProviderName.huggingface,
+                model_id="meta-llama/Meta-Llama-3.1-8B-Instruct",
+                structured_output_mode=StructuredOutputMode.json_instruction_and_object,
+            ),
         ],
     ),
     # Llama 3.1 70b
@@ -1004,6 +1010,11 @@ built_in_models: List[KilnModel] = [
                 structured_output_mode=StructuredOutputMode.json_instruction_and_object,
                 model_id="google/gemma-3-27b-it",
             ),
+            KilnModelProvider(
+                name=ModelProviderName.huggingface,
+                model_id="google/gemma-3-27b-it",
+                structured_output_mode=StructuredOutputMode.json_instruction_and_object,
+            ),
         ],
     ),
     # Mixtral 8x7B
@@ -1058,6 +1069,13 @@ built_in_models: List[KilnModel] = [
                 model_id="qwen-qwq-32b",
                 reasoning_capable=True,
                 parser=ModelParserID.r1_thinking,
+                structured_output_mode=StructuredOutputMode.json_instructions,
+            ),
+            KilnModelProvider(
+                name=ModelProviderName.huggingface,
+                reasoning_capable=True,
+                parser=ModelParserID.r1_thinking,
+                model_id="Qwen/QwQ-32B",
                 structured_output_mode=StructuredOutputMode.json_instructions,
             ),
         ],

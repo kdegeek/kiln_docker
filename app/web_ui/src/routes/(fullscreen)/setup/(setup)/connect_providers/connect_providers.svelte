@@ -120,6 +120,19 @@
         "With Azure OpenAI, you must deploy each model manually.\nSee our docs for details: https://docs.getkiln.ai/docs/models-and-ai-providers#azure-openai-api",
     },
     {
+      name: "Hugging Face",
+      id: "huggingface",
+      description: "AI community hub, with many models.",
+      image: "/images/hugging_face.svg",
+      featured: false,
+      api_key_steps: [
+        "Go to https://huggingface.co/settings/tokens",
+        "Create a new Access Token",
+        "Copy the new Access Token, paste it below and click 'Connect'",
+      ],
+      api_key_fields: ["API Key"],
+    },
+    {
       name: "Amazon Bedrock",
       id: "amazon_bedrock",
       description: "So your company has an AWS contract?",
@@ -194,6 +207,12 @@
       custom_description: null,
     },
     gemini_api: {
+      connected: false,
+      connecting: false,
+      error: null,
+      custom_description: null,
+    },
+    huggingface: {
       connected: false,
       connecting: false,
       error: null,
@@ -453,6 +472,9 @@
       }
       if (data["azure_openai_api_key"] && data["azure_openai_endpoint"]) {
         status.azure_openai.connected = true
+      }
+      if (data["huggingface_api_key"]) {
+        status.huggingface.connected = true
       }
       if (
         data["openai_compatible_providers"] &&
