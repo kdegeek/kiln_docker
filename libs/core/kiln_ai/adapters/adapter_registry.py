@@ -164,6 +164,19 @@ def adapter_for_task(
                     },
                 ),
             )
+        case ModelProviderName.huggingface:
+            return LiteLlmAdapter(
+                kiln_task=kiln_task,
+                prompt_id=prompt_id,
+                base_adapter_config=base_adapter_config,
+                config=LiteLlmConfig(
+                    model_name=model_name,
+                    provider_name=provider,
+                    additional_body_options={
+                        "api_key": Config.shared().huggingface_api_key,
+                    },
+                ),
+            )
         # These are virtual providers that should have mapped to an actual provider in core_provider
         case ModelProviderName.kiln_fine_tune:
             raise ValueError(

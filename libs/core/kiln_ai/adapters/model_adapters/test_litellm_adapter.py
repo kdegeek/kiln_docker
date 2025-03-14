@@ -229,6 +229,7 @@ def test_tool_call_params_strict(config, mock_task):
         (ModelProviderName.fireworks_ai, "fireworks_ai"),
         (ModelProviderName.amazon_bedrock, "bedrock"),
         (ModelProviderName.azure_openai, "azure"),
+        (ModelProviderName.huggingface, "huggingface"),
     ],
 )
 def test_litellm_model_id_standard_providers(

@@ -20,7 +20,6 @@ from kiln_ai.adapters.model_adapters.litellm_config import (
 )
 from kiln_ai.datamodel import PromptGenerators, PromptId
 from kiln_ai.datamodel.task import RunConfig
-from kiln_ai.utils.config import Config
 from kiln_ai.utils.exhaustive_error import raise_exhaustive_enum_error
 
 
@@ -328,6 +327,8 @@ class LiteLlmAdapter(BaseAdapter):
                 litellm_provider_name = "bedrock"
             case ModelProviderName.azure_openai:
                 litellm_provider_name = "azure"
+            case ModelProviderName.huggingface:
+                litellm_provider_name = "huggingface"
             case ModelProviderName.openai_compatible:
                 is_custom = True
             case ModelProviderName.kiln_custom_registry:

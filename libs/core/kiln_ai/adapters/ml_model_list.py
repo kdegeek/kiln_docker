@@ -29,6 +29,7 @@ class ModelProviderName(str, Enum):
     anthropic = "anthropic"
     gemini_api = "gemini_api"
     azure_openai = "azure_openai"
+    huggingface = "huggingface"
 
 
 class ModelFamily(str, Enum):
@@ -676,6 +677,12 @@ built_in_models: List[KilnModel] = [
                 supports_data_gen=False,
                 model_id="llama3.2:1b",
             ),
+            KilnModelProvider(
+                name=ModelProviderName.huggingface,
+                model_id="meta-llama/Llama-3.2-1B-Instruct",
+                supports_structured_output=False,
+                supports_data_gen=False,
+            ),
         ],
     ),
     # Llama 3.2 3B
@@ -708,6 +715,12 @@ built_in_models: List[KilnModel] = [
                 supports_data_gen=False,
                 model_id="accounts/fireworks/models/llama-v3p2-3b-instruct",
             ),
+            KilnModelProvider(
+                name=ModelProviderName.huggingface,
+                model_id="meta-llama/Llama-3.2-3B-Instruct",
+                supports_structured_output=False,
+                supports_data_gen=False,
+            ),
         ],
     ),
     # Llama 3.2 11B
@@ -736,6 +749,12 @@ built_in_models: List[KilnModel] = [
                 # No finetune support. https://docs.fireworks.ai/fine-tuning/fine-tuning-models
                 model_id="accounts/fireworks/models/llama-v3p2-11b-vision-instruct",
                 structured_output_mode=StructuredOutputMode.json_instruction_and_object,
+                supports_data_gen=False,
+            ),
+            KilnModelProvider(
+                name=ModelProviderName.huggingface,
+                model_id="meta-llama/Llama-3.2-11B-Vision-Instruct",
+                supports_structured_output=False,
                 supports_data_gen=False,
             ),
         ],
@@ -1003,6 +1022,11 @@ built_in_models: List[KilnModel] = [
                 name=ModelProviderName.openrouter,
                 structured_output_mode=StructuredOutputMode.json_instruction_and_object,
                 model_id="google/gemma-3-27b-it",
+            ),
+            KilnModelProvider(
+                name=ModelProviderName.huggingface,
+                model_id="google/gemma-3-27b-it",
+                structured_output_mode=StructuredOutputMode.json_instructions,
             ),
         ],
     ),

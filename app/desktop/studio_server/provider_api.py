@@ -260,6 +260,8 @@ def connect_provider_api(app: FastAPI):
             case ModelProviderName.azure_openai:
                 endpoint = parse_url(key_data, "Endpoint URL")
                 return await connect_azure_openai(parse_api_key(key_data), endpoint)
+            case ModelProviderName.huggingface:
+                return await connect_huggingface(parse_api_key(key_data))
             case (
                 ModelProviderName.kiln_custom_registry
                 | ModelProviderName.kiln_fine_tune
@@ -302,6 +304,8 @@ def connect_provider_api(app: FastAPI):
             case ModelProviderName.azure_openai:
                 Config.shared().azure_openai_api_key = None
                 Config.shared().azure_openai_endpoint = None
+            case ModelProviderName.huggingface:
+                Config.shared().huggingface_api_key = None
             case (
                 ModelProviderName.kiln_custom_registry
                 | ModelProviderName.kiln_fine_tune
@@ -510,6 +514,38 @@ async def connect_gemini(key: str):
         return JSONResponse(
             status_code=400,
             content={"message": f"Failed to connect to Gemini. Error: {str(e)}"},
+        )
+
+
+async def connect_huggingface(key: str):
+    try:
+        headers = {
+            "Authorization": f"Bearer {key}",
+            "Content-Type": "application/json",
+        }
+        response = requests.get(
+            "https://huggingface.co/api/organizations/fake_org_for_auth_test/resource-groups",
+            headers=headers,
+        )
+
+        if response.status_code == 401:
+            return JSONResponse(
+                status_code=401,
+                content={
+                    "message": "Failed to connect to Huggingface. Invalid API key."
+                },
+            )
+        else:
+            # Any non-401 status code is okay - auth passed. We expect other errors, but we don't care.
+            Config.shared().huggingface_api_key = key
+            return JSONResponse(
+                status_code=200,
+                content={"message": "Connected to Huggingface"},
+            )
+    except Exception as e:
+        return JSONResponse(
+            status_code=400,
+            content={"message": f"Failed to connect to Huggingface. Error: {str(e)}"},
         )
 
 

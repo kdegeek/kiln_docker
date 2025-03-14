@@ -336,6 +336,8 @@ def provider_name_from_id(id: str) -> str:
                 return "Gemini API"
             case ModelProviderName.anthropic:
                 return "Anthropic"
+            case ModelProviderName.huggingface:
+                return "Hugging Face"
             case _:
                 # triggers pyright warning if I miss a case
                 raise_exhaustive_enum_error(enum_id)
@@ -381,5 +383,9 @@ provider_warnings: Dict[ModelProviderName, ModelProviderWarning] = {
     ModelProviderName.azure_openai: ModelProviderWarning(
         required_config_keys=["azure_openai_api_key", "azure_openai_endpoint"],
         message="Attempted to use Azure OpenAI without an API key and endpoint set. Configure these in settings.",
+    ),
+    ModelProviderName.huggingface: ModelProviderWarning(
+        required_config_keys=["huggingface_api_key"],
+        message="Attempted to use Hugging Face without an API key set. \nGet your API key from https://huggingface.co/settings/tokens",
     ),
 }

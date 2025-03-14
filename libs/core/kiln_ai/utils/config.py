@@ -101,6 +101,11 @@ class Config:
                 str,
                 env_var="AZURE_OPENAI_ENDPOINT",
             ),
+            "huggingface_api_key": ConfigProperty(
+                str,
+                env_var="HUGGINGFACE_API_KEY",
+                sensitive=True,
+            ),
             "custom_models": ConfigProperty(
                 list,
                 default_lambda=lambda: [],
