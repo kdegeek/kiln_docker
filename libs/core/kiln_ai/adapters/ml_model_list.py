@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import Dict, List, Literal
 
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel
 
 from kiln_ai.datamodel import StructuredOutputMode
 
@@ -149,6 +149,7 @@ class KilnModelProvider(BaseModel):
     openrouter_skip_required_parameters: bool = False
     thinking_level: Literal["low", "medium", "high"] | None = None
     ollama_model_aliases: List[str] | None = None
+    anthropic_extended_thinking: bool = False
 
 
 class KilnModel(BaseModel):
@@ -390,6 +391,7 @@ built_in_models: List[KilnModel] = [
             KilnModelProvider(
                 name=ModelProviderName.anthropic,
                 model_id="claude-3-7-sonnet-20250219",
+                structured_output_mode=StructuredOutputMode.function_calling,
             ),
         ],
     ),
@@ -407,8 +409,14 @@ built_in_models: List[KilnModel] = [
                 structured_output_mode=StructuredOutputMode.json_instructions,
                 require_openrouter_reasoning=True,
             ),
+            KilnModelProvider(
+                name=ModelProviderName.anthropic,
+                reasoning_capable=True,
+                model_id="claude-3-7-sonnet-20250219",
+                anthropic_extended_thinking=True,
+                structured_output_mode=StructuredOutputMode.json_instructions,
+            ),
         ],
-        # TODO
     ),
     # Gemini 1.5 Pro
     KilnModel(

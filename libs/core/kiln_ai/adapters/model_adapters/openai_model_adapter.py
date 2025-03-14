@@ -289,6 +289,9 @@ class OpenAICompatibleAdapter(BaseAdapter):
                 "exclude": False,
             }
 
+        if provider.anthropic_extended_thinking:
+            extra_body["thinking"] = {"type": "enabled", "budget_tokens": 4000}
+
         if provider.r1_openrouter_options:
             # Require providers that support the reasoning parameter
             provider_options["require_parameters"] = True
