@@ -80,6 +80,10 @@ class ModelName(str, Enum):
     gemma_2_2b = "gemma_2_2b"
     gemma_2_9b = "gemma_2_9b"
     gemma_2_27b = "gemma_2_27b"
+    gemma_3_1b = "gemma_3_1b"
+    gemma_3_4b = "gemma_3_4b"
+    gemma_3_12b = "gemma_3_12b"
+    gemma_3_27b = "gemma_3_27b"
     claude_3_5_haiku = "claude_3_5_haiku"
     claude_3_5_sonnet = "claude_3_5_sonnet"
     claude_3_7_sonnet = "claude_3_7_sonnet"
@@ -896,6 +900,81 @@ built_in_models: List[KilnModel] = [
                 structured_output_mode=StructuredOutputMode.json_instruction_and_object,
                 supports_data_gen=False,
                 model_id="google/gemma-2-27b-it",
+            ),
+        ],
+    ),
+    # Gemma 3 1B
+    KilnModel(
+        family=ModelFamily.gemma,
+        name=ModelName.gemma_3_1b,
+        friendly_name="Gemma 3 1B",
+        providers=[
+            KilnModelProvider(
+                name=ModelProviderName.ollama,
+                model_id="gemma3:1b",
+                supports_structured_output=False,
+                supports_data_gen=False,
+            ),
+            KilnModelProvider(
+                name=ModelProviderName.openrouter,
+                # TODO: swap to non-free model when available (more reliable)
+                model_id="google/gemma-3-1b-it:free",
+                supports_structured_output=False,
+                supports_data_gen=False,
+            ),
+        ],
+    ),
+    # Gemma 3 4B
+    KilnModel(
+        family=ModelFamily.gemma,
+        name=ModelName.gemma_3_4b,
+        friendly_name="Gemma 3 4B",
+        providers=[
+            KilnModelProvider(
+                name=ModelProviderName.ollama,
+                model_id="gemma3:4b",
+                ollama_model_aliases=["gemma3"],
+            ),
+            KilnModelProvider(
+                name=ModelProviderName.openrouter,
+                structured_output_mode=StructuredOutputMode.json_instruction_and_object,
+                # TODO: swap to non-free model when available (more reliable)
+                model_id="google/gemma-3-4b-it:free",
+            ),
+        ],
+    ),
+    # Gemma 3 12B
+    KilnModel(
+        family=ModelFamily.gemma,
+        name=ModelName.gemma_3_12b,
+        friendly_name="Gemma 3 12B",
+        providers=[
+            KilnModelProvider(
+                name=ModelProviderName.ollama,
+                model_id="gemma3:12b",
+            ),
+            KilnModelProvider(
+                name=ModelProviderName.openrouter,
+                structured_output_mode=StructuredOutputMode.json_instruction_and_object,
+                # TODO: swap to non-free model when available (more reliable)
+                model_id="google/gemma-3-12b-it:free",
+            ),
+        ],
+    ),
+    # Gemma 3 27B
+    KilnModel(
+        family=ModelFamily.gemma,
+        name=ModelName.gemma_3_27b,
+        friendly_name="Gemma 3 27B",
+        providers=[
+            KilnModelProvider(
+                name=ModelProviderName.ollama,
+                model_id="gemma3:27b",
+            ),
+            KilnModelProvider(
+                name=ModelProviderName.openrouter,
+                structured_output_mode=StructuredOutputMode.json_instruction_and_object,
+                model_id="google/gemma-3-27b-it",
             ),
         ],
     ),
