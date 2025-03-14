@@ -5,9 +5,9 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Dict, Protocol
 
-from kiln_ai.datamodel import (DataSource, DataSourceType, Task, TaskOutput,
-                               TaskRun)
 from pydantic import BaseModel, Field, ValidationError, field_validator
+
+from kiln_ai.datamodel import DataSource, DataSourceType, Task, TaskOutput, TaskRun
 
 logger = logging.getLogger(__name__)
 
@@ -85,65 +85,48 @@ def create_task_run_from_csv_row(
     task: Task,
     row: dict[str, str],
     dataset_name: str,
-    row_number: int,
     session_id: str,
 ) -> TaskRun:
     """Validate and create a TaskRun from a CSV row, without saving to file"""
 
     # first we validate the row from the CSV file
-    try:
-        validated_row = CSVRowSchema.model_validate(
-            {
-                **row,
-                "tags": deserialize_tags(row.get("tags")),
-            }
-        )
-    except ValidationError as e:
-        logger.warning(f"Invalid row {row_number}: {row}", exc_info=True)
-        human_readable = format_validation_error(e)
-        raise KilnInvalidImportFormat(
-            human_readable,
-            row_number=row_number,
-        ) from e
+    validated_row = CSVRowSchema.model_validate(
+        {
+            **row,
+            "tags": deserialize_tags(row.get("tags")),
+        }
+    )
 
     tags = generate_import_tags(session_id)
     if validated_row.tags:
         tags.extend(validated_row.tags)
 
     # now we create the task run, which may raise pydantic validation errors
-    try:
-        run = TaskRun(
-            parent=task,
-            input=validated_row.input,
-            input_source=DataSource(
+    run = TaskRun(
+        parent=task,
+        input=validated_row.input,
+        input_source=DataSource(
+            type=DataSourceType.file_import,
+            properties={
+                "file_name": dataset_name,
+            },
+        ),
+        output=TaskOutput(
+            output=validated_row.output,
+            source=DataSource(
                 type=DataSourceType.file_import,
                 properties={
                     "file_name": dataset_name,
                 },
             ),
-            output=TaskOutput(
-                output=validated_row.output,
-                source=DataSource(
-                    type=DataSourceType.file_import,
-                    properties={
-                        "file_name": dataset_name,
-                    },
-                ),
-            ),
-            intermediate_outputs={
-                "reasoning": validated_row.reasoning,
-            }
-            if validated_row.reasoning
-            else None,
-            tags=tags,
-        )
-    except ValidationError as e:
-        logger.warning(f"Invalid row {row_number}: {row}", exc_info=True)
-        human_readable = format_validation_error(e)
-        raise KilnInvalidImportFormat(
-            human_readable,
-            row_number=row_number,
-        ) from e
+        ),
+        intermediate_outputs={
+            "reasoning": validated_row.reasoning,
+        }
+        if validated_row.reasoning
+        else None,
+        tags=tags,
+    )
 
     return run
 
@@ -186,13 +169,20 @@ def import_csv(task: Task, dataset_path: str, dataset_name: str) -> int:
 
         # enumeration starts at 2 because row 1 is headers
         for row_number, row in enumerate(reader, start=2):
-            run = create_task_run_from_csv_row(
-                task=task,
-                row=row,
-                dataset_name=dataset_name,
-                row_number=row_number,
-                session_id=session_id,
-            )
+            try:
+                run = create_task_run_from_csv_row(
+                    task=task,
+                    row=row,
+                    dataset_name=dataset_name,
+                    session_id=session_id,
+                )
+            except ValidationError as e:
+                logger.warning(f"Invalid row {row_number}: {row}", exc_info=True)
+                human_readable = format_validation_error(e)
+                raise KilnInvalidImportFormat(
+                    human_readable,
+                    row_number=row_number,
+                ) from e
             rows.append(run)
 
     # now that we know all rows are valid, we can save them
