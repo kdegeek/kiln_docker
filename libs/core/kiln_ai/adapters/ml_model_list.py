@@ -549,11 +549,6 @@ built_in_models: List[KilnModel] = [
                 provider_finetune_id="accounts/fireworks/models/llama-v3p1-8b-instruct",
                 model_id="accounts/fireworks/models/llama-v3p1-8b-instruct",
             ),
-            KilnModelProvider(
-                name=ModelProviderName.huggingface,
-                model_id="meta-llama/Meta-Llama-3.1-8B-Instruct",
-                structured_output_mode=StructuredOutputMode.json_instruction_and_object,
-            ),
         ],
     ),
     # Llama 3.1 70b
@@ -682,6 +677,12 @@ built_in_models: List[KilnModel] = [
                 supports_data_gen=False,
                 model_id="llama3.2:1b",
             ),
+            KilnModelProvider(
+                name=ModelProviderName.huggingface,
+                model_id="meta-llama/Llama-3.2-1B-Instruct",
+                supports_structured_output=False,
+                supports_data_gen=False,
+            ),
         ],
     ),
     # Llama 3.2 3B
@@ -714,6 +715,12 @@ built_in_models: List[KilnModel] = [
                 supports_data_gen=False,
                 model_id="accounts/fireworks/models/llama-v3p2-3b-instruct",
             ),
+            KilnModelProvider(
+                name=ModelProviderName.huggingface,
+                model_id="meta-llama/Llama-3.2-3B-Instruct",
+                supports_structured_output=False,
+                supports_data_gen=False,
+            ),
         ],
     ),
     # Llama 3.2 11B
@@ -742,6 +749,12 @@ built_in_models: List[KilnModel] = [
                 # No finetune support. https://docs.fireworks.ai/fine-tuning/fine-tuning-models
                 model_id="accounts/fireworks/models/llama-v3p2-11b-vision-instruct",
                 structured_output_mode=StructuredOutputMode.json_instruction_and_object,
+                supports_data_gen=False,
+            ),
+            KilnModelProvider(
+                name=ModelProviderName.huggingface,
+                model_id="meta-llama/Llama-3.2-11B-Vision-Instruct",
+                supports_structured_output=False,
                 supports_data_gen=False,
             ),
         ],
@@ -1069,13 +1082,6 @@ built_in_models: List[KilnModel] = [
                 model_id="qwen-qwq-32b",
                 reasoning_capable=True,
                 parser=ModelParserID.r1_thinking,
-                structured_output_mode=StructuredOutputMode.json_instructions,
-            ),
-            KilnModelProvider(
-                name=ModelProviderName.huggingface,
-                reasoning_capable=True,
-                parser=ModelParserID.r1_thinking,
-                model_id="Qwen/QwQ-32B",
                 structured_output_mode=StructuredOutputMode.json_instructions,
             ),
         ],
