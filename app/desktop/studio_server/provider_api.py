@@ -224,23 +224,6 @@ def connect_provider_api(app: FastAPI):
             )
         return api_key
 
-    def parse_url(key_data: dict, field_name: str) -> str:
-        url = key_data.get(field_name)
-        if not url or not isinstance(url, str):
-            raise HTTPException(
-                status_code=400,
-                detail="Endpoint URL not found",
-            )
-        if url.endswith("/"):
-            # remove last slash
-            url = url[:-1]
-        if not url.startswith("http"):
-            raise HTTPException(
-                status_code=400,
-                detail="Endpoint URL must start with http or https",
-            )
-        return url
-
     @app.post("/api/provider/connect_api_key")
     async def connect_api_key(payload: dict):
         provider = payload.get("provider")
@@ -501,9 +484,6 @@ async def connect_groq(key: str):
 
 async def connect_gemini(key: str):
     try:
-        headers = {
-            "Content-Type": "application/json",
-        }
         response = requests.get(
             f"https://generativelanguage.googleapis.com/v1beta/models?key={key}",
         )
@@ -545,6 +525,13 @@ async def connect_anthropic(key: str):
             return JSONResponse(
                 status_code=401,
                 content={"message": "Failed to connect to Anthropic. Invalid API key."},
+            )
+        elif response.status_code != 200:
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "message": f"Failed to connect to Anthropic. Error: [{response.status_code}]"
+                },
             )
         else:
             Config.shared().anthropic_api_key = key
@@ -887,3 +874,21 @@ def openai_compatible_providers_load_cache() -> OpenAICompatibleProviderCache | 
     )
 
     return cache
+
+
+def parse_url(key_data: dict, field_name: str) -> str:
+    url = key_data.get(field_name)
+    if not url or not isinstance(url, str):
+        raise HTTPException(
+            status_code=400,
+            detail="Endpoint URL not found",
+        )
+    if url.endswith("/"):
+        # remove last slash
+        url = url[:-1]
+    if not url.startswith("http"):
+        raise HTTPException(
+            status_code=400,
+            detail="Endpoint URL must start with http or https",
+        )
+    return url

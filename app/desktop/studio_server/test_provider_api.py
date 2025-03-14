@@ -23,7 +23,10 @@ from app.desktop.studio_server.provider_api import (
     OpenAICompatibleProviderCache,
     all_fine_tuned_models,
     available_ollama_models,
+    connect_anthropic,
+    connect_azure_openai,
     connect_bedrock,
+    connect_gemini,
     connect_groq,
     connect_ollama,
     connect_openrouter,
@@ -32,6 +35,7 @@ from app.desktop.studio_server.provider_api import (
     model_from_ollama_tag,
     openai_compatible_providers,
     openai_compatible_providers_load_cache,
+    parse_url,
 )
 
 
@@ -1446,3 +1450,328 @@ async def test_disconnect_api_key_unsupported_provider(client, provider_id):
 
     assert response.status_code == 400
     assert response.json() == {"message": "Provider not supported"}
+
+
+def test_parse_url():
+    # Test successful case
+    key_data = {"endpoint": "https://api.example.com/"}
+    result = parse_url(key_data, "endpoint")
+    assert result == "https://api.example.com"
+
+    # Test with http
+    key_data = {"endpoint": "http://localhost:8080/"}
+    result = parse_url(key_data, "endpoint")
+    assert result == "http://localhost:8080"
+
+    # Test without trailing slash
+    key_data = {"endpoint": "https://api.example.com"}
+    result = parse_url(key_data, "endpoint")
+    assert result == "https://api.example.com"
+
+    # Test missing field
+    key_data = {"wrong_field": "https://api.example.com"}
+    with pytest.raises(HTTPException) as exc_info:
+        parse_url(key_data, "endpoint")
+    assert exc_info.value.status_code == 400
+    assert exc_info.value.detail == "Endpoint URL not found"
+
+    # Test empty string
+    key_data = {"endpoint": ""}
+    with pytest.raises(HTTPException) as exc_info:
+        parse_url(key_data, "endpoint")
+    assert exc_info.value.status_code == 400
+    assert exc_info.value.detail == "Endpoint URL not found"
+
+    # Test non-string value
+    key_data = {"endpoint": 123}
+    with pytest.raises(HTTPException) as exc_info:
+        parse_url(key_data, "endpoint")
+    assert exc_info.value.status_code == 400
+    assert exc_info.value.detail == "Endpoint URL not found"
+
+    # Test invalid URL scheme
+    key_data = {"endpoint": "ftp://api.example.com"}
+    with pytest.raises(HTTPException) as exc_info:
+        parse_url(key_data, "endpoint")
+    assert exc_info.value.status_code == 400
+    assert exc_info.value.detail == "Endpoint URL must start with http or https"
+
+
+@pytest.mark.asyncio
+@patch("app.desktop.studio_server.provider_api.requests.get")
+@patch("app.desktop.studio_server.provider_api.Config.shared")
+async def test_connect_gemini_success(mock_config_shared, mock_requests_get):
+    # Setup
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.text = '{"models": []}'
+    mock_requests_get.return_value = mock_response
+
+    mock_config = MagicMock()
+    mock_config_shared.return_value = mock_config
+
+    # Test
+    result = await connect_gemini("test_api_key")
+
+    # Verify
+    assert result.status_code == 200
+    assert result.body == b'{"message":"Connected to Gemini"}'
+    mock_requests_get.assert_called_once_with(
+        "https://generativelanguage.googleapis.com/v1beta/models?key=test_api_key",
+    )
+    assert mock_config.gemini_api_key == "test_api_key"
+
+
+@pytest.mark.asyncio
+@patch("app.desktop.studio_server.provider_api.requests.get")
+@patch("app.desktop.studio_server.provider_api.Config.shared")
+async def test_connect_gemini_invalid_api_key(mock_config_shared, mock_requests_get):
+    # Setup
+    mock_response = MagicMock()
+    mock_response.status_code = 400
+    mock_response.text = "API_KEY_INVALID"
+    mock_requests_get.return_value = mock_response
+
+    mock_config = MagicMock()
+    mock_config.gemini_api_key = None
+    mock_config_shared.return_value = mock_config
+
+    # Test
+    result = await connect_gemini("invalid_key")
+
+    # Verify
+    assert result.status_code == 401
+    assert result.body == b'{"message":"Failed to connect to Gemini. Invalid API key."}'
+    assert mock_config.gemini_api_key is None
+
+
+@pytest.mark.asyncio
+@patch("app.desktop.studio_server.provider_api.requests.get")
+@patch("app.desktop.studio_server.provider_api.Config.shared")
+async def test_connect_gemini_non_200_response(mock_config_shared, mock_requests_get):
+    # Setup
+    mock_response = MagicMock()
+    mock_response.status_code = 500
+    mock_response.text = "Internal Server Error"
+    mock_requests_get.return_value = mock_response
+
+    mock_config = MagicMock()
+    mock_config.gemini_api_key = None
+    mock_config_shared.return_value = mock_config
+
+    # Test
+    result = await connect_gemini("test_api_key")
+
+    # Verify
+    assert result.status_code == 400
+    assert result.body == b'{"message":"Failed to connect to Gemini. Error: [500]"}'
+    assert mock_config.gemini_api_key is None
+
+
+@pytest.mark.asyncio
+@patch("app.desktop.studio_server.provider_api.requests.get")
+@patch("app.desktop.studio_server.provider_api.Config.shared")
+async def test_connect_gemini_request_exception(mock_config_shared, mock_requests_get):
+    # Setup
+    mock_requests_get.side_effect = Exception("Connection error")
+
+    mock_config = MagicMock()
+    mock_config.gemini_api_key = None
+    mock_config_shared.return_value = mock_config
+
+    # Test
+    result = await connect_gemini("test_api_key")
+
+    # Verify
+    assert result.status_code == 400
+    assert b"Failed to connect to Gemini. Error: Connection error" in result.body
+    assert mock_config.gemini_api_key is None
+
+
+@pytest.mark.asyncio
+@patch("app.desktop.studio_server.provider_api.requests.get")
+@patch("app.desktop.studio_server.provider_api.Config.shared")
+async def test_connect_anthropic_success(mock_config_shared, mock_requests_get):
+    # Setup
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.text = '{"models": []}'
+    mock_requests_get.return_value = mock_response
+
+    mock_config = MagicMock()
+    mock_config_shared.return_value = mock_config
+
+    # Test
+    result = await connect_anthropic("test_api_key")
+
+    # Verify
+    assert result.status_code == 200
+    assert result.body == b'{"message":"Connected to Anthropic"}'
+    mock_requests_get.assert_called_once_with(
+        "https://api.anthropic.com/v1/models",
+        headers={
+            "x-api-key": "test_api_key",
+            "Content-Type": "application/json",
+        },
+    )
+    assert mock_config.anthropic_api_key == "test_api_key"
+
+
+@pytest.mark.asyncio
+@patch("app.desktop.studio_server.provider_api.requests.get")
+@patch("app.desktop.studio_server.provider_api.Config.shared")
+async def test_connect_anthropic_invalid_api_key(mock_config_shared, mock_requests_get):
+    # Setup
+    mock_response = MagicMock()
+    mock_response.status_code = 401
+    mock_response.text = "Invalid API key"
+    mock_requests_get.return_value = mock_response
+
+    mock_config = MagicMock()
+    mock_config.anthropic_api_key = None
+    mock_config_shared.return_value = mock_config
+
+    # Test
+    result = await connect_anthropic("invalid_key")
+
+    # Verify
+    assert result.status_code == 401
+    assert (
+        result.body == b'{"message":"Failed to connect to Anthropic. Invalid API key."}'
+    )
+    assert mock_config.anthropic_api_key is None
+
+
+@pytest.mark.asyncio
+@patch("app.desktop.studio_server.provider_api.requests.get")
+@patch("app.desktop.studio_server.provider_api.Config.shared")
+async def test_connect_anthropic_request_exception(
+    mock_config_shared, mock_requests_get
+):
+    # Setup
+    mock_requests_get.side_effect = Exception("Connection error")
+
+    mock_config = MagicMock()
+    mock_config.anthropic_api_key = None
+    mock_config_shared.return_value = mock_config
+
+    # Test
+    result = await connect_anthropic("test_api_key")
+
+    # Verify
+    assert result.status_code == 400
+    assert b"Failed to connect to Anthropic. Error: Connection error" in result.body
+    assert mock_config.anthropic_api_key is None
+
+
+@pytest.mark.asyncio
+@patch("app.desktop.studio_server.provider_api.requests.get")
+@patch("app.desktop.studio_server.provider_api.Config.shared")
+async def test_connect_azure_openai_success(mock_config_shared, mock_requests_get):
+    # Setup
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.text = '{"files": []}'
+    mock_requests_get.return_value = mock_response
+
+    mock_config = MagicMock()
+    mock_config_shared.return_value = mock_config
+
+    # Test
+    result = await connect_azure_openai("test_api_key", "https://example.azure.com")
+
+    # Verify
+    assert result.status_code == 200
+    assert result.body == b'{"message":"Connected to Azure OpenAI"}'
+    mock_requests_get.assert_called_once_with(
+        "https://example.azure.com/openai/files?api-version=2024-08-01-preview",
+        headers={
+            "api-key": "test_api_key",
+            "Content-Type": "application/json",
+        },
+    )
+    assert mock_config.azure_openai_api_key == "test_api_key"
+    assert mock_config.azure_openai_endpoint == "https://example.azure.com"
+
+
+@pytest.mark.asyncio
+@patch("app.desktop.studio_server.provider_api.requests.get")
+@patch("app.desktop.studio_server.provider_api.Config.shared")
+async def test_connect_azure_openai_invalid_api_key(
+    mock_config_shared, mock_requests_get
+):
+    # Setup
+    mock_response = MagicMock()
+    mock_response.status_code = 401
+    mock_response.text = "Invalid API key"
+    mock_requests_get.return_value = mock_response
+
+    mock_config = MagicMock()
+    mock_config.azure_openai_api_key = None
+    mock_config.azure_openai_endpoint = None
+    mock_config_shared.return_value = mock_config
+
+    # Test
+    result = await connect_azure_openai("invalid_key", "https://example.azure.com")
+
+    # Verify
+    assert result.status_code == 401
+    assert (
+        result.body
+        == b'{"message":"Failed to connect to Azure OpenAI. Invalid API key."}'
+    )
+    assert mock_config.azure_openai_api_key is None
+    assert mock_config.azure_openai_endpoint is None
+
+
+@pytest.mark.asyncio
+@patch("app.desktop.studio_server.provider_api.requests.get")
+@patch("app.desktop.studio_server.provider_api.Config.shared")
+async def test_connect_azure_openai_non_200_response(
+    mock_config_shared, mock_requests_get
+):
+    # Setup
+    mock_response = MagicMock()
+    mock_response.status_code = 500
+    mock_response.text = "Internal Server Error"
+    mock_requests_get.return_value = mock_response
+
+    mock_config = MagicMock()
+    mock_config.azure_openai_api_key = None
+    mock_config.azure_openai_endpoint = None
+    mock_config_shared.return_value = mock_config
+
+    # Test
+    result = await connect_azure_openai("test_api_key", "https://example.azure.com")
+
+    # Verify
+    assert result.status_code == 400
+    assert (
+        result.body == b'{"message":"Failed to connect to Azure OpenAI. Error: [500]"}'
+    )
+    assert mock_config.azure_openai_api_key is None
+    assert mock_config.azure_openai_endpoint is None
+
+
+@pytest.mark.asyncio
+@patch("app.desktop.studio_server.provider_api.requests.get")
+@patch("app.desktop.studio_server.provider_api.Config.shared")
+async def test_connect_azure_openai_request_exception(
+    mock_config_shared, mock_requests_get
+):
+    # Setup
+    mock_requests_get.side_effect = Exception("Connection error")
+
+    mock_config = MagicMock()
+    mock_config.azure_openai_api_key = None
+    mock_config.azure_openai_endpoint = None
+    mock_config_shared.return_value = mock_config
+
+    # Test
+    result = await connect_azure_openai("test_api_key", "https://example.azure.com")
+
+    # Verify
+    assert result.status_code == 400
+    assert b"Failed to connect to Azure OpenAI. Error: Connection error" in result.body
+    assert mock_config.azure_openai_api_key is None
+    assert mock_config.azure_openai_endpoint is None
