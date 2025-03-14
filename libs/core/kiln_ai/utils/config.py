@@ -78,9 +78,28 @@ class Config:
                 str,
                 env_var="FIREWORKS_ACCOUNT_ID",
             ),
+            "anthropic_api_key": ConfigProperty(
+                str,
+                env_var="ANTHROPIC_API_KEY",
+                sensitive=True,
+            ),
+            "gemini_api_key": ConfigProperty(
+                str,
+                env_var="GEMINI_API_KEY",
+                sensitive=True,
+            ),
             "projects": ConfigProperty(
                 list,
                 default_lambda=lambda: [],
+            ),
+            "azure_openai_api_key": ConfigProperty(
+                str,
+                env_var="AZURE_OPENAI_API_KEY",
+                sensitive=True,
+            ),
+            "azure_openai_endpoint": ConfigProperty(
+                str,
+                env_var="AZURE_OPENAI_ENDPOINT",
             ),
             "custom_models": ConfigProperty(
                 list,
