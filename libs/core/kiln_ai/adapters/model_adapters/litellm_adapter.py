@@ -74,15 +74,11 @@ class LiteLlmAdapter(BaseAdapter):
                 raise ValueError("cot_prompt is required for cot_two_call strategy")
             messages.append({"role": "system", "content": cot_prompt})
 
-            # First call for chain of thought
-            cot_response = await litellm.acompletion(
-                model=self.litellm_model_id(),
-                messages=messages,
-                api_base=self._api_base,
-                headers=self._headers,
-                # TODO P1 - remove type ignore
-                **self._additional_body_options,  # type: ignore
+            # First call for chain of thought - No logprobs as only needed for final answer
+            completion_kwargs = await self.build_completion_kwargs(
+                provider, messages, None
             )
+            cot_response = await litellm.acompletion(**completion_kwargs)
             if (
                 not isinstance(cot_response, ModelResponse)
                 or not cot_response.choices
@@ -103,32 +99,10 @@ class LiteLlmAdapter(BaseAdapter):
                 ]
             )
 
-        # Build custom request params based on model provider
-        extra_body = self.build_extra_body(provider)
-
-        # Main completion call
-        response_format_options = await self.response_format_options()
-
-        # Merge all parameters into a single kwargs dict for litellm
-        # TODO P0 - make this shared
-        completion_kwargs = {
-            "model": self.litellm_model_id(),
-            "messages": messages,
-            "api_base": self._api_base,
-            "headers": self._headers,
-            **extra_body,
-            **self._additional_body_options,
-        }
-
-        # Add logprobs if requested
-        if self.base_adapter_config.top_logprobs is not None:
-            completion_kwargs["logprobs"] = True
-            completion_kwargs["top_logprobs"] = self.base_adapter_config.top_logprobs
-
-        # Add response format options
-        completion_kwargs.update(response_format_options)
-
         # Make the API call using litellm
+        completion_kwargs = await self.build_completion_kwargs(
+            provider, messages, self.base_adapter_config.top_logprobs
+        )
         response = await litellm.acompletion(**completion_kwargs)
 
         if not isinstance(response, ModelResponse):
@@ -379,3 +353,31 @@ class LiteLlmAdapter(BaseAdapter):
 
         self._litellm_model_id = litellm_provider_name + "/" + provider.model_id
         return self._litellm_model_id
+
+    async def build_completion_kwargs(
+        self,
+        provider: KilnModelProvider,
+        messages: list[dict[str, Any]],
+        top_logprobs: int | None,
+    ) -> dict[str, Any]:
+        extra_body = self.build_extra_body(provider)
+
+        # Merge all parameters into a single kwargs dict for litellm
+        completion_kwargs = {
+            "model": self.litellm_model_id(),
+            "messages": messages,
+            "api_base": self._api_base,
+            "headers": self._headers,
+            **extra_body,
+            **self._additional_body_options,
+        }
+
+        # Response format: json_schema, json_instructions, json_mode, function_calling, etc
+        response_format_options = await self.response_format_options()
+        completion_kwargs.update(response_format_options)
+
+        if top_logprobs is not None:
+            completion_kwargs["logprobs"] = True
+            completion_kwargs["top_logprobs"] = top_logprobs
+
+        return completion_kwargs

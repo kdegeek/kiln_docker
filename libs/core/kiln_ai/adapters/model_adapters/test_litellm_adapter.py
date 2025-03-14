@@ -337,3 +337,61 @@ def test_litellm_model_id_unknown_provider(config, mock_task):
 
             with pytest.raises(Exception, match="Test error"):
                 adapter.litellm_model_id()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "top_logprobs,response_format,extra_body",
+    [
+        (None, {}, {}),  # Basic case
+        (5, {}, {}),  # With logprobs
+        (
+            None,
+            {"response_format": {"type": "json_object"}},
+            {},
+        ),  # With response format
+        (
+            3,
+            {"tools": [{"type": "function"}]},
+            {"reasoning_effort": 0.8},
+        ),  # Combined options
+    ],
+)
+async def test_build_completion_kwargs(
+    config, mock_task, top_logprobs, response_format, extra_body
+):
+    """Test build_completion_kwargs with various configurations"""
+    adapter = LiteLlmAdapter(config=config, kiln_task=mock_task)
+    mock_provider = Mock()
+    messages = [{"role": "user", "content": "Hello"}]
+
+    with (
+        patch.object(adapter, "model_provider", return_value=mock_provider),
+        patch.object(adapter, "litellm_model_id", return_value="openai/test-model"),
+        patch.object(adapter, "build_extra_body", return_value=extra_body),
+        patch.object(adapter, "response_format_options", return_value=response_format),
+    ):
+        kwargs = await adapter.build_completion_kwargs(
+            mock_provider, messages, top_logprobs
+        )
+
+    # Verify core functionality
+    assert kwargs["model"] == "openai/test-model"
+    assert kwargs["messages"] == messages
+    assert kwargs["api_base"] == config.base_url
+
+    # Verify optional parameters
+    if top_logprobs is not None:
+        assert kwargs["logprobs"] is True
+        assert kwargs["top_logprobs"] == top_logprobs
+    else:
+        assert "logprobs" not in kwargs
+        assert "top_logprobs" not in kwargs
+
+    # Verify response format is included
+    for key, value in response_format.items():
+        assert kwargs[key] == value
+
+    # Verify extra body is included
+    for key, value in extra_body.items():
+        assert kwargs[key] == value
