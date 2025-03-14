@@ -224,7 +224,9 @@ class OpenAICompatibleAdapter(BaseAdapter):
                     return self.json_schema_response_format()
                 else:
                     # Default to function calling -- it's older than the other modes. Higher compatibility.
-                    return self.tool_call_params(strict=True)
+                    # Strict isn't widely supported yet, so we don't use it by default unless it's OpenAI.
+                    strict = provider.name == ModelProviderName.openai
+                    return self.tool_call_params(strict=strict)
             case _:
                 raise_exhaustive_enum_error(provider.structured_output_mode)
 

@@ -565,7 +565,7 @@ built_in_models: List[KilnModel] = [
             KilnModelProvider(
                 name=ModelProviderName.fireworks_ai,
                 # Tool calling forces schema -- fireworks doesn't support json_schema, just json_mode
-                structured_output_mode=StructuredOutputMode.function_calling,
+                structured_output_mode=StructuredOutputMode.function_calling_weak,
                 provider_finetune_id="accounts/fireworks/models/llama-v3p1-70b-instruct",
                 model_id="accounts/fireworks/models/llama-v3p1-70b-instruct",
             ),
@@ -596,7 +596,7 @@ built_in_models: List[KilnModel] = [
             KilnModelProvider(
                 name=ModelProviderName.fireworks_ai,
                 # No finetune support. https://docs.fireworks.ai/fine-tuning/fine-tuning-models
-                structured_output_mode=StructuredOutputMode.function_calling,
+                structured_output_mode=StructuredOutputMode.function_calling_weak,
                 model_id="accounts/fireworks/models/llama-v3p1-405b-instruct",
             ),
         ],
@@ -784,7 +784,7 @@ built_in_models: List[KilnModel] = [
                 # Finetuning not live yet
                 # provider_finetune_id="accounts/fireworks/models/llama-v3p3-70b-instruct",
                 # Tool calling forces schema -- fireworks doesn't support json_schema, just json_mode
-                structured_output_mode=StructuredOutputMode.function_calling,
+                structured_output_mode=StructuredOutputMode.function_calling_weak,
                 model_id="accounts/fireworks/models/llama-v3p3-70b-instruct",
             ),
         ],
@@ -983,10 +983,8 @@ built_in_models: List[KilnModel] = [
             KilnModelProvider(
                 name=ModelProviderName.fireworks_ai,
                 model_id="accounts/fireworks/models/qwen2p5-72b-instruct",
-                # Fireworks will start tuning, but it never finishes.
-                # provider_finetune_id="accounts/fireworks/models/qwen2p5-72b-instruct",
                 # Tool calling forces schema -- fireworks doesn't support json_schema, just json_mode
-                structured_output_mode=StructuredOutputMode.function_calling,
+                structured_output_mode=StructuredOutputMode.function_calling_weak,
             ),
         ],
     ),
