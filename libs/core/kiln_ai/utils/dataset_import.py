@@ -151,7 +151,7 @@ def import_csv(task: Task, dataset_path: str, dataset_name: str) -> int:
     session_id = str(int(time.time()))
 
     required_headers = {"input", "output"}  # minimum required headers
-    optional_headers = {"reasoning", "tags"}  # optional headers
+    optional_headers = {"reasoning", "tags", "chain_of_thought"}  # optional headers
 
     rows: list[TaskRun] = []
     with open(dataset_path, "r", newline="") as csvfile:

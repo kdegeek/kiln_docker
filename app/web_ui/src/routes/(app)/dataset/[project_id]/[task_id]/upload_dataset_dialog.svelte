@@ -84,22 +84,19 @@
       <div>
         <p>
           Upload a CSV to add each row to your dataset. The CSV must have a
-          header row. The following columns are supported:
+          header row (<a
+            href="https://docs.getkiln.ai/docs/organizing-datasets"
+            target="_blank"
+            class="link">see docs</a
+          >). The following columns are supported:
         </p>
-        <ul class="mb-4 ml-4 mt-1 list-disc">
+        <ul class="mb-6 ml-4 mt-3 list-disc">
           <li><code>input</code> - Required</li>
           <li><code>output</code> - Required</li>
           <li><code>reasoning</code> - Optional</li>
           <li><code>chain_of_thought</code> - Optional</li>
           <li><code>tags</code> - Optional, comma separated string</li>
         </ul>
-        <p class="mb-4">
-          See an example <a
-            href="#link-to-example-on-github"
-            target="_blank"
-            class="link">an example CSV</a
-          >.
-        </p>
       </div>
     </div>
     <input

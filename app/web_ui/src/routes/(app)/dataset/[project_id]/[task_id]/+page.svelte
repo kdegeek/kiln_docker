@@ -497,7 +497,7 @@
   no_y_padding
   action_buttons={[
     {
-      label: "Upload CSV to Dataset",
+      label: "Upload File",
       handler: () => showUploadDialog(),
     },
   ]}
