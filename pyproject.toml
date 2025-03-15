@@ -39,3 +39,6 @@ reportMissingTypeArgument = true
 [tool.ruff]
 exclude = [
 ]
+
+[tool.pytest.ini_options]
+ addopts="-n auto"
