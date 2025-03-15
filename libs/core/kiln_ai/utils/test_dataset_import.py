@@ -8,6 +8,7 @@ from io import StringIO
 from pathlib import Path
 
 import pytest
+from pydantic import BaseModel, ValidationError
 
 from kiln_ai.datamodel import Project, Task
 from kiln_ai.utils.dataset_import import (
@@ -15,6 +16,9 @@ from kiln_ai.utils.dataset_import import (
     DatasetImportFormat,
     ImportConfig,
     KilnInvalidImportFormat,
+    deserialize_tags,
+    format_validation_error,
+    generate_import_tags,
     without_none_values,
 )
 
@@ -561,3 +565,32 @@ def test_without_none_values():
     assert without_none_values({"a": 1, "b": None}) == {"a": 1}
     assert without_none_values({"a": None, "b": 2}) == {"b": 2}
     assert without_none_values({"a": None, "b": None}) == {}
+
+
+def test_deserialize_tags():
+    assert deserialize_tags("t1,t2") == ["t1", "t2"]
+    assert deserialize_tags(None) == []
+    assert deserialize_tags("") == []
+    assert deserialize_tags("   ") == []
+    assert deserialize_tags("t1, t2") == ["t1", "t2"]
+
+
+def test_format_validation_error():
+    class TestModel(BaseModel):
+        a: int
+        b: int
+
+    try:
+        TestModel.model_validate({"a": "not an int"})
+    except ValidationError as e:
+        human_readable = format_validation_error(e)
+        assert human_readable.startswith("Validation failed:")
+        assert (
+            "a: Input should be a valid integer, unable to parse string as an integer"
+            in human_readable
+        )
+        assert "b: Field required" in human_readable
+
+
+def test_generate_import_tags():
+    assert generate_import_tags("123") == ["imported", "imported_123"]
