@@ -110,7 +110,8 @@ def create_task_run_from_csv_row(
     if validated_row.tags:
         tags.extend(validated_row.tags)
 
-    # now we create the task run, which may raise pydantic validation errors
+    # note that we don't persist the run yet, we just create and validate it
+    # this instantiation may raise pydantic validation errors
     run = TaskRun(
         parent=task,
         input=validated_row.input,
