@@ -1,9 +1,6 @@
 import csv
 import json
 import logging
-import random
-import string
-import tempfile
 from io import StringIO
 from pathlib import Path
 
@@ -27,12 +24,7 @@ logger = logging.getLogger(__name__)
 
 @pytest.fixture
 def base_task(tmp_path) -> Task:
-    project_path = Path.joinpath(
-        Path(tempfile.gettempdir()),
-        "".join(random.choices(string.ascii_letters + string.digits, k=10)),
-        "project.kiln",
-    )
-    project_path.parent.mkdir()
+    project_path = tmp_path / "project.kiln"
 
     project = Project(name="TestProject", path=str(project_path))
     project.save_to_file()
@@ -96,7 +88,7 @@ def dict_to_csv_row(row: dict) -> str:
     return output.getvalue().rstrip("\n")
 
 
-def dicts_to_file_as_csv(items: list[dict], file_name: str) -> str:
+def dicts_to_file_as_csv(items: list[dict], file_name: str, tmp_path: Path) -> str:
     """Write a list of dictionaries to a CSV file with escaping and a header.
 
     Returns the path to the file.
@@ -105,7 +97,7 @@ def dicts_to_file_as_csv(items: list[dict], file_name: str) -> str:
     header = ",".join(f'"{key}"' for key in items[0].keys())
     csv_data = header + "\n" + "\n".join(rows)
 
-    file_path = Path.joinpath(Path(tempfile.gettempdir()), file_name)
+    file_path = tmp_path / file_name
     with open(file_path, "w", encoding="utf-8") as f:
         f.write(csv_data)
 
@@ -126,7 +118,7 @@ def compare_tags(actual_tags: list[str], expected_tags: list[str]):
     assert all(tag in actual_tags for tag in tags_expected)
 
 
-def test_import_csv_plain_text(base_task: Task):
+def test_import_csv_plain_text(base_task: Task, tmp_path):
     row_data = [
         {
             "input": "This is my input",
@@ -150,7 +142,7 @@ def test_import_csv_plain_text(base_task: Task):
         },
     ]
 
-    file_path = dicts_to_file_as_csv(row_data, "test.csv")
+    file_path = dicts_to_file_as_csv(row_data, "test.csv", tmp_path)
 
     importer = DatasetFileImporter(
         base_task,
@@ -178,7 +170,7 @@ def test_import_csv_plain_text(base_task: Task):
         compare_tags(run.tags, match["tags"])
 
 
-def test_import_csv_default_tags(base_task: Task):
+def test_import_csv_default_tags(base_task: Task, tmp_path):
     row_data = [
         {
             "input": "This is my input",
@@ -192,7 +184,7 @@ def test_import_csv_default_tags(base_task: Task):
         },
     ]
 
-    file_path = dicts_to_file_as_csv(row_data, "test.csv")
+    file_path = dicts_to_file_as_csv(row_data, "test.csv", tmp_path)
 
     importer = DatasetFileImporter(
         base_task,
@@ -229,14 +221,14 @@ def test_import_csv_default_tags(base_task: Task):
         assert any(tag.startswith("imported_") for tag in run.tags)
 
 
-def test_import_csv_plain_text_missing_output(base_task: Task):
+def test_import_csv_plain_text_missing_output(base_task: Task, tmp_path):
     row_data = [
         {"input": "This is my input", "tags": "t1,t2"},
         {"input": "This is my input 2", "tags": "t3,t4"},
         {"input": "This is my input 3", "tags": "t5,t6"},
     ]
 
-    file_path = dicts_to_file_as_csv(row_data, "test.csv")
+    file_path = dicts_to_file_as_csv(row_data, "test.csv", tmp_path)
 
     importer = DatasetFileImporter(
         base_task,
@@ -256,7 +248,7 @@ def test_import_csv_plain_text_missing_output(base_task: Task):
     assert "Missing required headers" in str(e.value)
 
 
-def test_import_csv_structured_output(task_with_structured_output: Task):
+def test_import_csv_structured_output(task_with_structured_output: Task, tmp_path):
     row_data = [
         {
             "input": "This is my input",
@@ -275,7 +267,7 @@ def test_import_csv_structured_output(task_with_structured_output: Task):
         },
     ]
 
-    file_path = dicts_to_file_as_csv(row_data, "test.csv")
+    file_path = dicts_to_file_as_csv(row_data, "test.csv", tmp_path)
 
     importer = DatasetFileImporter(
         task_with_structured_output,
@@ -303,7 +295,9 @@ def test_import_csv_structured_output(task_with_structured_output: Task):
         compare_tags(run.tags, match["tags"])
 
 
-def test_import_csv_structured_output_wrong_schema(task_with_structured_output: Task):
+def test_import_csv_structured_output_wrong_schema(
+    task_with_structured_output: Task, tmp_path
+):
     row_data = [
         {
             "input": "This is my input",
@@ -323,7 +317,7 @@ def test_import_csv_structured_output_wrong_schema(task_with_structured_output: 
         },
     ]
 
-    file_path = dicts_to_file_as_csv(row_data, "test.csv")
+    file_path = dicts_to_file_as_csv(row_data, "test.csv", tmp_path)
 
     importer = DatasetFileImporter(
         task_with_structured_output,
@@ -343,7 +337,9 @@ def test_import_csv_structured_output_wrong_schema(task_with_structured_output: 
     assert "Error in row 3: Validation failed" in str(e.value)
 
 
-def test_import_csv_structured_input_wrong_schema(task_with_structured_input: Task):
+def test_import_csv_structured_input_wrong_schema(
+    task_with_structured_input: Task, tmp_path
+):
     row_data = [
         {
             # this one is missing example_id
@@ -363,7 +359,7 @@ def test_import_csv_structured_input_wrong_schema(task_with_structured_input: Ta
         },
     ]
 
-    file_path = dicts_to_file_as_csv(row_data, "test.csv")
+    file_path = dicts_to_file_as_csv(row_data, "test.csv", tmp_path)
 
     importer = DatasetFileImporter(
         task_with_structured_input,
@@ -385,6 +381,7 @@ def test_import_csv_structured_input_wrong_schema(task_with_structured_input: Ta
 
 def test_import_csv_intermediate_outputs_reasoning(
     task_with_intermediate_outputs: Task,
+    tmp_path,
 ):
     row_data = [
         {
@@ -407,7 +404,7 @@ def test_import_csv_intermediate_outputs_reasoning(
         },
     ]
 
-    file_path = dicts_to_file_as_csv(row_data, "test.csv")
+    file_path = dicts_to_file_as_csv(row_data, "test.csv", tmp_path)
 
     importer = DatasetFileImporter(
         task_with_intermediate_outputs,
@@ -435,7 +432,9 @@ def test_import_csv_intermediate_outputs_reasoning(
         compare_tags(run.tags, match["tags"])
 
 
-def test_import_csv_intermediate_outputs_cot(task_with_intermediate_outputs: Task):
+def test_import_csv_intermediate_outputs_cot(
+    task_with_intermediate_outputs: Task, tmp_path
+):
     row_data = [
         {
             "input": "This is my input",
@@ -457,7 +456,7 @@ def test_import_csv_intermediate_outputs_cot(task_with_intermediate_outputs: Tas
         },
     ]
 
-    file_path = dicts_to_file_as_csv(row_data, "test.csv")
+    file_path = dicts_to_file_as_csv(row_data, "test.csv", tmp_path)
 
     importer = DatasetFileImporter(
         task_with_intermediate_outputs,
@@ -487,6 +486,7 @@ def test_import_csv_intermediate_outputs_cot(task_with_intermediate_outputs: Tas
 
 def test_import_csv_intermediate_outputs_reasoning_and_cot(
     task_with_intermediate_outputs: Task,
+    tmp_path,
 ):
     row_data = [
         {
@@ -498,7 +498,7 @@ def test_import_csv_intermediate_outputs_reasoning_and_cot(
         },
     ]
 
-    file_path = dicts_to_file_as_csv(row_data, "test.csv")
+    file_path = dicts_to_file_as_csv(row_data, "test.csv", tmp_path)
 
     importer = DatasetFileImporter(
         task_with_intermediate_outputs,
@@ -527,7 +527,7 @@ def test_import_csv_intermediate_outputs_reasoning_and_cot(
         compare_tags(run.tags, match["tags"])
 
 
-def test_import_csv_invalid_tags(base_task: Task):
+def test_import_csv_invalid_tags(base_task: Task, tmp_path):
     row_data = [
         {
             "input": "This is my input",
@@ -541,7 +541,7 @@ def test_import_csv_invalid_tags(base_task: Task):
         },
     ]
 
-    file_path = dicts_to_file_as_csv(row_data, "test.csv")
+    file_path = dicts_to_file_as_csv(row_data, "test.csv", tmp_path)
 
     importer = DatasetFileImporter(
         base_task,
