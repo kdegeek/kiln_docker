@@ -40,6 +40,10 @@ class CSVRowSchema(BaseModel):
         description="The reasoning of the model (optional)",
         default=None,
     )
+    chain_of_thought: str | None = Field(
+        description="The chain of thought of the model (optional)",
+        default=None,
+    )
     tags: list[str] = Field(
         default_factory=list,
         description="The tags of the run (optional)",
@@ -81,6 +85,11 @@ def deserialize_tags(tags_serialized: str | None) -> list[str]:
     return []
 
 
+def without_none_values(d: dict) -> dict:
+    """Return a copy of the dictionary with all None values removed."""
+    return {k: v for k, v in d.items() if v is not None}
+
+
 def create_task_run_from_csv_row(
     task: Task,
     row: dict[str, str],
@@ -120,11 +129,13 @@ def create_task_run_from_csv_row(
                 },
             ),
         ),
-        intermediate_outputs={
-            "reasoning": validated_row.reasoning,
-        }
-        if validated_row.reasoning
-        else None,
+        intermediate_outputs=without_none_values(
+            {
+                "reasoning": validated_row.reasoning,
+                "chain_of_thought": validated_row.chain_of_thought,
+            }
+        )
+        or None,
         tags=tags,
     )
 

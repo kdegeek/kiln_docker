@@ -107,6 +107,7 @@
             <li><code>input</code> - Required</li>
             <li><code>output</code> - Required</li>
             <li><code>reasoning</code> - Optional</li>
+            <li><code>chain_of_thought</code> - Optional</li>
             <li><code>tags</code> - Optional, comma separated string</li>
           </ul>
           <p class="mb-4">

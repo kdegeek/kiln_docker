@@ -15,6 +15,7 @@ from kiln_ai.utils.dataset_import import (
     DatasetImportFormat,
     ImportConfig,
     KilnInvalidImportFormat,
+    without_none_values,
 )
 
 logger = logging.getLogger(__name__)
@@ -378,7 +379,9 @@ def test_import_csv_structured_input_wrong_schema(task_with_structured_input: Ta
     assert "Error in row 3: Validation failed" in str(e.value)
 
 
-def test_import_csv_intermediate_outputs(task_with_intermediate_outputs: Task):
+def test_import_csv_intermediate_outputs_reasoning(
+    task_with_intermediate_outputs: Task,
+):
     row_data = [
         {
             "input": "This is my input",
@@ -425,7 +428,98 @@ def test_import_csv_intermediate_outputs(task_with_intermediate_outputs: Task):
         assert run.input == match["input"]
         assert run.output.output == match["output"]
         assert run.intermediate_outputs["reasoning"] == match["reasoning"]
+        compare_tags(run.tags, match["tags"])
 
+
+def test_import_csv_intermediate_outputs_cot(task_with_intermediate_outputs: Task):
+    row_data = [
+        {
+            "input": "This is my input",
+            "output": "This is my output",
+            "chain_of_thought": "我觉得这个输出是正确的",
+            "tags": "t1,t2",
+        },
+        {
+            "input": "This is my input 2",
+            "output": "This is my output 2",
+            "chain_of_thought": "thinking output 2",
+            "tags": "t3,t4",
+        },
+        {
+            "input": "This is my input 3",
+            "output": "This is my output 3",
+            "chain_of_thought": "thinking output 3",
+            "tags": "",
+        },
+    ]
+
+    file_path = dicts_to_file_as_csv(row_data, "test.csv")
+
+    importer = DatasetFileImporter(
+        task_with_intermediate_outputs,
+        ImportConfig(
+            dataset_type=DatasetImportFormat.CSV,
+            dataset_path=file_path,
+            dataset_name="test.csv",
+        ),
+    )
+
+    importer.create_runs_from_file()
+
+    assert len(task_with_intermediate_outputs.runs()) == 3
+
+    for run in task_with_intermediate_outputs.runs():
+        # identify the row data with same input as the run
+        match = next(
+            (row for row in row_data if row["input"] == run.input),
+            None,
+        )
+        assert match is not None
+        assert run.input == match["input"]
+        assert run.output.output == match["output"]
+        assert run.intermediate_outputs["chain_of_thought"] == match["chain_of_thought"]
+        compare_tags(run.tags, match["tags"])
+
+
+def test_import_csv_intermediate_outputs_reasoning_and_cot(
+    task_with_intermediate_outputs: Task,
+):
+    row_data = [
+        {
+            "input": "This is my input",
+            "output": "This is my output",
+            "reasoning": "thinking output 1",
+            "chain_of_thought": "thinking output 1",
+            "tags": "t1,t2",
+        },
+    ]
+
+    file_path = dicts_to_file_as_csv(row_data, "test.csv")
+
+    importer = DatasetFileImporter(
+        task_with_intermediate_outputs,
+        ImportConfig(
+            dataset_type=DatasetImportFormat.CSV,
+            dataset_path=file_path,
+            dataset_name="test.csv",
+        ),
+    )
+
+    importer.create_runs_from_file()
+
+    assert len(task_with_intermediate_outputs.runs()) == 1
+
+    for run in task_with_intermediate_outputs.runs():
+        # identify the row data with same input as the run
+        match = next(
+            (row for row in row_data if row["input"] == run.input),
+            None,
+        )
+        assert match is not None
+        assert run.input == match["input"]
+        assert run.output.output == match["output"]
+        assert run.intermediate_outputs["chain_of_thought"] == match["chain_of_thought"]
+        assert run.intermediate_outputs["reasoning"] == match["reasoning"]
         compare_tags(run.tags, match["tags"])
 
 
@@ -461,3 +555,9 @@ def test_import_csv_invalid_tags(base_task: Task):
     # the row number is +1 because of the header
     assert e.value.row_number == 2
     assert "Tags cannot contain spaces" in str(e.value)
+
+
+def test_without_none_values():
+    assert without_none_values({"a": 1, "b": None}) == {"a": 1}
+    assert without_none_values({"a": None, "b": 2}) == {"b": 2}
+    assert without_none_values({"a": None, "b": None}) == {}
