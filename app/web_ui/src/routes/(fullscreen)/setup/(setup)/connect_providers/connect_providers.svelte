@@ -150,6 +150,19 @@
         "With Vertex AI, you must deploy some models manually.\nSee our docs for details: https://docs.getkiln.ai/docs/models-and-ai-providers#google-vertex-ai",
     },
     {
+      name: "Together.ai",
+      id: "together_ai",
+      description: "Inference service from Together.ai",
+      image: "/images/together_ai.svg",
+      featured: false,
+      api_key_steps: [
+        "Create a Together account.",
+        "Create an API Key (or user key) here: https://api.together.ai/settings/api-keys",
+        "Copy the API Key, paste it below and click 'Connect'",
+      ],
+      api_key_fields: ["API Key"],
+    },
+    {
       name: "Amazon Bedrock",
       id: "amazon_bedrock",
       description: "So your company has an AWS contract?",
@@ -242,6 +255,12 @@
       custom_description: null,
     },
     azure_openai: {
+      connected: false,
+      connecting: false,
+      error: null,
+      custom_description: null,
+    },
+    together_ai: {
       connected: false,
       connecting: false,
       error: null,
@@ -501,6 +520,9 @@
       }
       if (data["huggingface_api_key"]) {
         status.huggingface.connected = true
+      }
+      if (data["together_api_key"]) {
+        status.together_ai.connected = true
       }
       if (
         data["openai_compatible_providers"] &&

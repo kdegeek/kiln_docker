@@ -31,6 +31,7 @@ class ModelProviderName(str, Enum):
     azure_openai = "azure_openai"
     huggingface = "huggingface"
     vertex = "vertex"
+    together_ai = "together_ai"
 
 
 class ModelFamily(str, Enum):
@@ -575,6 +576,12 @@ built_in_models: List[KilnModel] = [
                 provider_finetune_id="accounts/fireworks/models/llama-v3p1-8b-instruct",
                 model_id="accounts/fireworks/models/llama-v3p1-8b-instruct",
             ),
+            KilnModelProvider(
+                name=ModelProviderName.together_ai,
+                model_id="meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo",
+                supports_data_gen=False,
+                structured_output_mode=StructuredOutputMode.function_calling_weak,
+            ),
         ],
     ),
     # Llama 3.1 70b
@@ -610,6 +617,12 @@ built_in_models: List[KilnModel] = [
                 provider_finetune_id="accounts/fireworks/models/llama-v3p1-70b-instruct",
                 model_id="accounts/fireworks/models/llama-v3p1-70b-instruct",
             ),
+            KilnModelProvider(
+                name=ModelProviderName.together_ai,
+                model_id="meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo",
+                supports_data_gen=False,
+                structured_output_mode=StructuredOutputMode.function_calling_weak,
+            ),
         ],
     ),
     # Llama 3.1 405b
@@ -639,6 +652,12 @@ built_in_models: List[KilnModel] = [
                 # No finetune support. https://docs.fireworks.ai/fine-tuning/fine-tuning-models
                 structured_output_mode=StructuredOutputMode.function_calling_weak,
                 model_id="accounts/fireworks/models/llama-v3p1-405b-instruct",
+            ),
+            KilnModelProvider(
+                name=ModelProviderName.together_ai,
+                model_id="meta-llama/Meta-Llama-3.1-405B-Instruct-Turbo",
+                supports_data_gen=False,
+                structured_output_mode=StructuredOutputMode.function_calling_weak,
             ),
         ],
     ),
@@ -783,6 +802,12 @@ built_in_models: List[KilnModel] = [
                 supports_structured_output=False,
                 supports_data_gen=False,
             ),
+            KilnModelProvider(
+                name=ModelProviderName.together_ai,
+                model_id="meta-llama/Llama-3.2-11B-Vision-Instruct-Turbo",
+                supports_structured_output=False,
+                supports_data_gen=False,
+            ),
         ],
     ),
     # Llama 3.2 90B
@@ -810,6 +835,12 @@ built_in_models: List[KilnModel] = [
                 # No finetune support. https://docs.fireworks.ai/fine-tuning/fine-tuning-models
                 model_id="accounts/fireworks/models/llama-v3p2-90b-vision-instruct",
                 structured_output_mode=StructuredOutputMode.json_instruction_and_object,
+                supports_data_gen=False,
+            ),
+            KilnModelProvider(
+                name=ModelProviderName.together_ai,
+                model_id="meta-llama/Llama-3.2-90B-Vision-Instruct-Turbo",
+                supports_structured_output=False,
                 supports_data_gen=False,
             ),
         ],
@@ -853,6 +884,11 @@ built_in_models: List[KilnModel] = [
                 # Doesn't work, TODO to debug
                 supports_structured_output=False,
                 supports_data_gen=False,
+            ),
+            KilnModelProvider(
+                name=ModelProviderName.together_ai,
+                model_id="meta-llama/Llama-3.3-70B-Instruct-Turbo",
+                structured_output_mode=StructuredOutputMode.function_calling_weak,
             ),
         ],
     ),
@@ -1117,6 +1153,13 @@ built_in_models: List[KilnModel] = [
                 parser=ModelParserID.r1_thinking,
                 structured_output_mode=StructuredOutputMode.json_instructions,
             ),
+            KilnModelProvider(
+                name=ModelProviderName.together_ai,
+                model_id="Qwen/QwQ-32B",
+                structured_output_mode=StructuredOutputMode.json_instructions,
+                parser=ModelParserID.r1_thinking,
+                reasoning_capable=True,
+            ),
         ],
     ),
     # Qwen 2.5 7B
@@ -1197,6 +1240,11 @@ built_in_models: List[KilnModel] = [
                 supports_structured_output=True,
                 supports_data_gen=False,
             ),
+            KilnModelProvider(
+                name=ModelProviderName.together_ai,
+                model_id="deepseek-ai/DeepSeek-V3",
+                structured_output_mode=StructuredOutputMode.json_instructions,
+            ),
         ],
     ),
     # DeepSeek R1
@@ -1229,6 +1277,13 @@ built_in_models: List[KilnModel] = [
                 structured_output_mode=StructuredOutputMode.json_instructions,
                 reasoning_capable=True,
             ),
+            KilnModelProvider(
+                name=ModelProviderName.together_ai,
+                model_id="deepseek-ai/DeepSeek-R1",
+                structured_output_mode=StructuredOutputMode.json_instructions,
+                parser=ModelParserID.r1_thinking,
+                reasoning_capable=True,
+            ),
         ],
     ),
     # DeepSeek R1 Distill Qwen 32B
@@ -1252,6 +1307,13 @@ built_in_models: List[KilnModel] = [
                 reasoning_capable=True,
                 structured_output_mode=StructuredOutputMode.json_instructions,
                 model_id="deepseek-r1:32b",
+            ),
+            KilnModelProvider(
+                name=ModelProviderName.together_ai,
+                model_id="deepseek-ai/DeepSeek-R1-Distill-Qwen-14B",
+                structured_output_mode=StructuredOutputMode.json_instructions,
+                parser=ModelParserID.r1_thinking,
+                reasoning_capable=True,
             ),
         ],
     ),
@@ -1277,6 +1339,12 @@ built_in_models: List[KilnModel] = [
                 reasoning_capable=True,
                 structured_output_mode=StructuredOutputMode.json_instructions,
                 model_id="deepseek-r1:70b",
+            ),
+            KilnModelProvider(
+                name=ModelProviderName.together_ai,
+                model_id="deepseek-ai/DeepSeek-R1-Distill-Llama-70B",
+                structured_output_mode=StructuredOutputMode.json_instructions,
+                parser=ModelParserID.r1_thinking,
             ),
         ],
     ),
@@ -1304,6 +1372,12 @@ built_in_models: List[KilnModel] = [
                 reasoning_capable=True,
                 structured_output_mode=StructuredOutputMode.json_instructions,
                 model_id="deepseek-r1:14b",
+            ),
+            KilnModelProvider(
+                name=ModelProviderName.together_ai,
+                model_id="deepseek-ai/DeepSeek-R1-Distill-Qwen-14B",
+                structured_output_mode=StructuredOutputMode.json_instructions,
+                parser=ModelParserID.r1_thinking,
             ),
         ],
     ),
@@ -1375,6 +1449,14 @@ built_in_models: List[KilnModel] = [
                 reasoning_capable=True,
                 structured_output_mode=StructuredOutputMode.json_instructions,
                 model_id="deepseek-r1:1.5b",
+            ),
+            KilnModelProvider(
+                name=ModelProviderName.together_ai,
+                model_id="deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B",
+                structured_output_mode=StructuredOutputMode.json_instructions,
+                parser=ModelParserID.r1_thinking,
+                supports_structured_output=False,
+                supports_data_gen=False,
             ),
         ],
     ),

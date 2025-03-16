@@ -231,6 +231,7 @@ def test_tool_call_params_strict(config, mock_task):
         (ModelProviderName.azure_openai, "azure"),
         (ModelProviderName.huggingface, "huggingface"),
         (ModelProviderName.vertex, "vertex_ai"),
+        (ModelProviderName.together_ai, "together_ai"),
     ],
 )
 def test_litellm_model_id_standard_providers(

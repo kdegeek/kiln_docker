@@ -110,6 +110,11 @@ class Config:
                 str,
                 env_var="VERTEX_PROJECT_ID",
             ),
+            "together_api_key": ConfigProperty(
+                str,
+                env_var="TOGETHERAI_API_KEY",
+                sensitive=True,
+            ),
             "custom_models": ConfigProperty(
                 list,
                 default_lambda=lambda: [],
