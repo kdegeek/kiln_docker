@@ -30,6 +30,7 @@ class ModelProviderName(str, Enum):
     gemini_api = "gemini_api"
     azure_openai = "azure_openai"
     huggingface = "huggingface"
+    vertex = "vertex"
 
 
 class ModelFamily(str, Enum):
@@ -365,6 +366,11 @@ built_in_models: List[KilnModel] = [
                 name=ModelProviderName.anthropic,
                 model_id="claude-3-haiku-20240307",
             ),
+            KilnModelProvider(
+                name=ModelProviderName.vertex,
+                model_id="claude-3-haiku",
+                structured_output_mode=StructuredOutputMode.json_instruction_and_object,
+            ),
         ],
     ),
     # Claude 3.5 Sonnet
@@ -381,6 +387,11 @@ built_in_models: List[KilnModel] = [
             KilnModelProvider(
                 name=ModelProviderName.anthropic,
                 model_id="claude-3-5-sonnet-20241022",
+            ),
+            KilnModelProvider(
+                name=ModelProviderName.vertex,
+                model_id="claude-3-5-sonnet",
+                structured_output_mode=StructuredOutputMode.json_instruction_and_object,
             ),
         ],
     ),
@@ -441,6 +452,11 @@ built_in_models: List[KilnModel] = [
                 model_id="gemini-1.5-pro",
                 structured_output_mode=StructuredOutputMode.json_instruction_and_object,
             ),
+            KilnModelProvider(
+                name=ModelProviderName.vertex,
+                model_id="gemini-1.5-pro",
+                structured_output_mode=StructuredOutputMode.json_instruction_and_object,
+            ),
         ],
     ),
     # Gemini 1.5 Flash
@@ -456,6 +472,11 @@ built_in_models: List[KilnModel] = [
             ),
             KilnModelProvider(
                 name=ModelProviderName.gemini_api,
+                model_id="gemini-1.5-flash",
+                structured_output_mode=StructuredOutputMode.json_instruction_and_object,
+            ),
+            KilnModelProvider(
+                name=ModelProviderName.vertex,
                 model_id="gemini-1.5-flash",
                 structured_output_mode=StructuredOutputMode.json_instruction_and_object,
             ),
@@ -494,6 +515,11 @@ built_in_models: List[KilnModel] = [
             ),
             KilnModelProvider(
                 name=ModelProviderName.gemini_api,
+                model_id="gemini-2.0-flash",
+                structured_output_mode=StructuredOutputMode.json_instruction_and_object,
+            ),
+            KilnModelProvider(
+                name=ModelProviderName.vertex,
                 model_id="gemini-2.0-flash",
                 structured_output_mode=StructuredOutputMode.json_instruction_and_object,
             ),
@@ -820,6 +846,13 @@ built_in_models: List[KilnModel] = [
                 # Tool calling forces schema -- fireworks doesn't support json_schema, just json_mode
                 structured_output_mode=StructuredOutputMode.function_calling_weak,
                 model_id="accounts/fireworks/models/llama-v3p3-70b-instruct",
+            ),
+            KilnModelProvider(
+                name=ModelProviderName.vertex,
+                model_id="meta/llama-3.3-70b-instruct-maas",
+                # Doesn't work, TODO to debug
+                supports_structured_output=False,
+                supports_data_gen=False,
             ),
         ],
     ),

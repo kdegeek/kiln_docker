@@ -133,6 +133,23 @@
       api_key_fields: ["API Key"],
     },
     {
+      name: "Google Vertex AI",
+      id: "vertex",
+      description:
+        "Google's Vertex AI API. Not to be confused with Gemini AI Studio.",
+      image: "/images/google_logo.svg",
+      featured: false,
+      api_key_steps: [
+        "Create a Google Cloud account.",
+        "Install the glcoud CLI, then run `gcloud auth application-default login` in the terminal. This will add Google Vertex credentials to you environment.",
+        "Create a project in the console, then enable Vertex AI for that project.",
+        "Add the project ID below, then click connect.",
+      ],
+      api_key_fields: ["Project ID"],
+      api_key_warning:
+        "With Vertex AI, you must deploy some models manually.\nSee our docs for details: https://docs.getkiln.ai/docs/models-and-ai-providers#google-vertex-ai",
+    },
+    {
       name: "Amazon Bedrock",
       id: "amazon_bedrock",
       description: "So your company has an AWS contract?",
@@ -201,6 +218,12 @@
       custom_description: null,
     },
     anthropic: {
+      connected: false,
+      connecting: false,
+      error: null,
+      custom_description: null,
+    },
+    vertex: {
       connected: false,
       connecting: false,
       error: null,
@@ -461,6 +484,9 @@
       if (data["fireworks_api_key"] && data["fireworks_account_id"]) {
         status.fireworks_ai.connected = true
       }
+      if (data["vertex_project_id"]) {
+        status.vertex.connected = true
+      }
       if (data["ollama_base_url"]) {
         custom_ollama_url = data["ollama_base_url"]
       }
@@ -603,8 +629,13 @@
   {#if api_key_provider}
     <div class="grow h-full max-w-[400px] flex flex-col place-content-center">
       <div class="grow"></div>
+
+      <h1 class="text-xl font-medium flex-none text-center">
+        Connect {api_key_provider.name}
+      </h1>
+
       {#if api_key_provider.api_key_warning}
-        <div class="pb-6">
+        <div class="pt-2">
           <Warning
             warning_color="warning"
             warning_message={api_key_provider.api_key_warning}
@@ -612,10 +643,6 @@
           />
         </div>
       {/if}
-
-      <h1 class="text-xl font-medium flex-none text-center">
-        Connect {api_key_provider.name} with API Key
-      </h1>
 
       <ol class="flex-none my-2 text-gray-700">
         {#each api_key_provider.api_key_steps || [] as step}

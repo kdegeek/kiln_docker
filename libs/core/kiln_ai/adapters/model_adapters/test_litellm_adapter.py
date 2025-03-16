@@ -230,6 +230,7 @@ def test_tool_call_params_strict(config, mock_task):
         (ModelProviderName.amazon_bedrock, "bedrock"),
         (ModelProviderName.azure_openai, "azure"),
         (ModelProviderName.huggingface, "huggingface"),
+        (ModelProviderName.vertex, "vertex_ai"),
     ],
 )
 def test_litellm_model_id_standard_providers(
