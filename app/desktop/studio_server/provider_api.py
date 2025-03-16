@@ -267,6 +267,8 @@ def connect_provider_api(app: FastAPI):
                 return await connect_huggingface(parse_api_key(key_data))
             case ModelProviderName.vertex:
                 return await connect_vertex(parse_api_field(key_data, "Project ID"))
+            case ModelProviderName.together_ai:
+                return await connect_together(parse_api_key(key_data))
             case (
                 ModelProviderName.kiln_custom_registry
                 | ModelProviderName.kiln_fine_tune
@@ -313,6 +315,8 @@ def connect_provider_api(app: FastAPI):
                 Config.shared().huggingface_api_key = None
             case ModelProviderName.vertex:
                 Config.shared().vertex_project_id = None
+            case ModelProviderName.together_ai:
+                Config.shared().together_api_key = None
             case (
                 ModelProviderName.kiln_custom_registry
                 | ModelProviderName.kiln_fine_tune
@@ -542,6 +546,38 @@ async def connect_vertex(project_id: str):
         return JSONResponse(
             status_code=400,
             content={"message": f"Failed to connect to Vertex. Error: {str(e)}"},
+        )
+
+
+async def connect_together(key: str):
+    try:
+        headers = {
+            "Authorization": f"Bearer {key}",
+            "Content-Type": "application/json",
+        }
+        response = requests.get(
+            "https://api.together.xyz/v1/models",
+            headers=headers,
+        )
+
+        if response.status_code == 401:
+            return JSONResponse(
+                status_code=401,
+                content={
+                    "message": "Failed to connect to Together.ai. Invalid API key."
+                },
+            )
+        else:
+            # Any non-401 status code is okay - auth passed. We expect other errors, but we don't care.
+            Config.shared().together_api_key = key
+            return JSONResponse(
+                status_code=200,
+                content={"message": "Connected to Together.ai"},
+            )
+    except Exception as e:
+        return JSONResponse(
+            status_code=400,
+            content={"message": f"Failed to connect to Together.ai. Error: {str(e)}"},
         )
 
 

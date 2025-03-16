@@ -331,6 +331,8 @@ class LiteLlmAdapter(BaseAdapter):
                 litellm_provider_name = "huggingface"
             case ModelProviderName.vertex:
                 litellm_provider_name = "vertex_ai"
+            case ModelProviderName.together_ai:
+                litellm_provider_name = "together_ai"
             case ModelProviderName.openai_compatible:
                 is_custom = True
             case ModelProviderName.kiln_custom_registry:

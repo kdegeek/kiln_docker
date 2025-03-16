@@ -32,6 +32,7 @@ from app.desktop.studio_server.provider_api import (
     connect_ollama,
     connect_openrouter,
     connect_provider_api,
+    connect_together,
     connect_vertex,
     custom_models,
     model_from_ollama_tag,
@@ -1950,3 +1951,107 @@ async def test_connect_vertex_failure(mock_config_shared, mock_litellm_acompleti
         not hasattr(mock_config, "vertex_project_id")
         or mock_config.vertex_project_id != "invalid-project-id"
     )
+
+
+@pytest.mark.asyncio
+@patch("app.desktop.studio_server.provider_api.requests.get")
+@patch("app.desktop.studio_server.provider_api.Config.shared")
+async def test_connect_together_success(mock_config_shared, mock_requests_get):
+    # Setup
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.text = '{"models": []}'
+    mock_requests_get.return_value = mock_response
+
+    mock_config = MagicMock()
+    mock_config_shared.return_value = mock_config
+
+    # Execute
+    result = await connect_together("test_api_key")
+
+    # Assert
+    mock_requests_get.assert_called_once_with(
+        "https://api.together.xyz/v1/models",
+        headers={
+            "Authorization": "Bearer test_api_key",
+            "Content-Type": "application/json",
+        },
+    )
+    mock_config.together_api_key = "test_api_key"
+    assert result.status_code == 200
+    assert result.body == b'{"message":"Connected to Together.ai"}'
+
+
+@pytest.mark.asyncio
+@patch("app.desktop.studio_server.provider_api.requests.get")
+@patch("app.desktop.studio_server.provider_api.Config.shared")
+async def test_connect_together_invalid_api_key(mock_config_shared, mock_requests_get):
+    # Setup
+    mock_response = MagicMock()
+    mock_response.status_code = 401
+    mock_response.text = '{"error": "Invalid API key"}'
+    mock_requests_get.return_value = mock_response
+
+    # Execute
+    result = await connect_together("invalid_api_key")
+
+    # Assert
+    mock_requests_get.assert_called_once_with(
+        "https://api.together.xyz/v1/models",
+        headers={
+            "Authorization": "Bearer invalid_api_key",
+            "Content-Type": "application/json",
+        },
+    )
+    mock_config_shared.assert_not_called()  # Config should not be updated with invalid key
+    assert result.status_code == 401
+    assert (
+        result.body
+        == b'{"message":"Failed to connect to Together.ai. Invalid API key."}'
+    )
+
+
+@pytest.mark.asyncio
+@patch("app.desktop.studio_server.provider_api.requests.get")
+@patch("app.desktop.studio_server.provider_api.Config.shared")
+async def test_connect_together_request_exception(
+    mock_config_shared, mock_requests_get
+):
+    # Setup
+    mock_requests_get.side_effect = Exception("Connection error")
+
+    # Execute
+    result = await connect_together("test_api_key")
+
+    # Assert
+    mock_requests_get.assert_called_once()
+    mock_config_shared.assert_not_called()  # Config should not be updated on error
+    assert result.status_code == 400
+    assert (
+        result.body
+        == b'{"message":"Failed to connect to Together.ai. Error: Connection error"}'
+    )
+
+
+@pytest.mark.asyncio
+@patch("app.desktop.studio_server.provider_api.requests.get")
+@patch("app.desktop.studio_server.provider_api.Config.shared")
+async def test_connect_together_non_401_response(mock_config_shared, mock_requests_get):
+    # Setup
+    mock_response = MagicMock()
+    mock_response.status_code = 500  # Any non-401 status code
+    mock_response.text = '{"error": "Server error"}'
+    mock_requests_get.return_value = mock_response
+
+    mock_config = MagicMock()
+    mock_config_shared.return_value = mock_config
+
+    # Execute
+    result = await connect_together("test_api_key")
+
+    # Assert
+    mock_requests_get.assert_called_once()
+    # Even with a 500 error, if it's not 401, we consider the key valid
+    mock_config.together_api_key = "test_api_key"
+    assert result.status_code == 200
+    assert result.body == b'{"message":"Connected to Together.ai"}'

@@ -162,6 +162,19 @@ def adapter_for_task(
                     },
                 ),
             )
+        case ModelProviderName.together_ai:
+            return LiteLlmAdapter(
+                kiln_task=kiln_task,
+                prompt_id=prompt_id,
+                base_adapter_config=base_adapter_config,
+                config=LiteLlmConfig(
+                    model_name=model_name,
+                    provider_name=provider,
+                    additional_body_options={
+                        "api_key": Config.shared().together_api_key,
+                    },
+                ),
+            )
         case ModelProviderName.azure_openai:
             return LiteLlmAdapter(
                 kiln_task=kiln_task,

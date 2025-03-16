@@ -340,6 +340,8 @@ def provider_name_from_id(id: str) -> str:
                 return "Hugging Face"
             case ModelProviderName.vertex:
                 return "Google Vertex AI"
+            case ModelProviderName.together_ai:
+                return "Together AI"
             case _:
                 # triggers pyright warning if I miss a case
                 raise_exhaustive_enum_error(enum_id)
@@ -393,5 +395,9 @@ provider_warnings: Dict[ModelProviderName, ModelProviderWarning] = {
     ModelProviderName.vertex: ModelProviderWarning(
         required_config_keys=["vertex_project_id"],
         message="Attempted to use Vertex without a project ID set. \nGet your project ID from the Vertex AI console.",
+    ),
+    ModelProviderName.together_ai: ModelProviderWarning(
+        required_config_keys=["together_api_key"],
+        message="Attempted to use Together without an API key set. \nGet your API key from https://together.ai/settings/keys",
     ),
 }
