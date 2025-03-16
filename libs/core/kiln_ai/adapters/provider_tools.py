@@ -338,6 +338,8 @@ def provider_name_from_id(id: str) -> str:
                 return "Anthropic"
             case ModelProviderName.huggingface:
                 return "Hugging Face"
+            case ModelProviderName.vertex:
+                return "Google Vertex AI"
             case _:
                 # triggers pyright warning if I miss a case
                 raise_exhaustive_enum_error(enum_id)
@@ -387,5 +389,9 @@ provider_warnings: Dict[ModelProviderName, ModelProviderWarning] = {
     ModelProviderName.huggingface: ModelProviderWarning(
         required_config_keys=["huggingface_api_key"],
         message="Attempted to use Hugging Face without an API key set. \nGet your API key from https://huggingface.co/settings/tokens",
+    ),
+    ModelProviderName.vertex: ModelProviderWarning(
+        required_config_keys=["vertex_project_id"],
+        message="Attempted to use Vertex without a project ID set. \nGet your project ID from the Vertex AI console.",
     ),
 }

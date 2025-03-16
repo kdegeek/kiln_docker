@@ -32,6 +32,7 @@ from app.desktop.studio_server.provider_api import (
     connect_ollama,
     connect_openrouter,
     connect_provider_api,
+    connect_vertex,
     custom_models,
     model_from_ollama_tag,
     openai_compatible_providers,
@@ -1896,3 +1897,56 @@ async def test_connect_huggingface_non_401_response(
     mock_config.huggingface_api_key = "test_api_key"
     assert result.status_code == 200
     assert json.loads(result.body)["message"] == "Connected to Huggingface"
+
+
+@pytest.mark.asyncio
+@patch("app.desktop.studio_server.provider_api.litellm.acompletion")
+@patch("app.desktop.studio_server.provider_api.Config.shared")
+async def test_connect_vertex_success(mock_config_shared, mock_litellm_acompletion):
+    # Setup
+    mock_config = MagicMock()
+    mock_config_shared.return_value = mock_config
+    mock_litellm_acompletion.return_value = {
+        "choices": [{"message": {"content": "Hello!"}}]
+    }
+
+    # Execute
+    response = await connect_vertex("test-project-id")
+
+    # Verify
+    assert response.status_code == 200
+    assert "Connected to Vertex" in response.body.decode()
+    mock_litellm_acompletion.assert_called_once_with(
+        model="vertex_ai/gemini-1.5-flash",
+        messages=[{"content": "Hello, how are you?", "role": "user"}],
+        vertex_project="test-project-id",
+    )
+    assert mock_config.vertex_project_id == "test-project-id"
+
+
+@pytest.mark.asyncio
+@patch("app.desktop.studio_server.provider_api.litellm.acompletion")
+@patch("app.desktop.studio_server.provider_api.Config.shared")
+async def test_connect_vertex_failure(mock_config_shared, mock_litellm_acompletion):
+    # Setup
+    mock_config = MagicMock()
+    mock_config_shared.return_value = mock_config
+    mock_litellm_acompletion.side_effect = Exception("Invalid project ID")
+
+    # Execute
+    response = await connect_vertex("invalid-project-id")
+
+    # Verify
+    assert response.status_code == 400
+    assert "Failed to connect to Vertex" in response.body.decode()
+    assert "Invalid project ID" in response.body.decode()
+    mock_litellm_acompletion.assert_called_once_with(
+        model="vertex_ai/gemini-1.5-flash",
+        messages=[{"content": "Hello, how are you?", "role": "user"}],
+        vertex_project="invalid-project-id",
+    )
+    # Verify project ID was not saved
+    assert (
+        not hasattr(mock_config, "vertex_project_id")
+        or mock_config.vertex_project_id != "invalid-project-id"
+    )

@@ -149,6 +149,19 @@ def adapter_for_task(
                     },
                 ),
             )
+        case ModelProviderName.vertex:
+            return LiteLlmAdapter(
+                kiln_task=kiln_task,
+                prompt_id=prompt_id,
+                base_adapter_config=base_adapter_config,
+                config=LiteLlmConfig(
+                    model_name=model_name,
+                    provider_name=provider,
+                    additional_body_options={
+                        "vertex_project": Config.shared().vertex_project_id,
+                    },
+                ),
+            )
         case ModelProviderName.azure_openai:
             return LiteLlmAdapter(
                 kiln_task=kiln_task,

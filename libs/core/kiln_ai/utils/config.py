@@ -106,6 +106,10 @@ class Config:
                 env_var="HUGGINGFACE_API_KEY",
                 sensitive=True,
             ),
+            "vertex_project_id": ConfigProperty(
+                str,
+                env_var="VERTEX_PROJECT_ID",
+            ),
             "custom_models": ConfigProperty(
                 list,
                 default_lambda=lambda: [],

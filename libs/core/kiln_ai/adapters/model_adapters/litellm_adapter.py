@@ -329,6 +329,8 @@ class LiteLlmAdapter(BaseAdapter):
                 litellm_provider_name = "azure"
             case ModelProviderName.huggingface:
                 litellm_provider_name = "huggingface"
+            case ModelProviderName.vertex:
+                litellm_provider_name = "vertex_ai"
             case ModelProviderName.openai_compatible:
                 is_custom = True
             case ModelProviderName.kiln_custom_registry:

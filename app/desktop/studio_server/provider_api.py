@@ -216,7 +216,10 @@ def connect_provider_api(app: FastAPI):
         )
 
     def parse_api_key(key_data: dict) -> str:
-        api_key = key_data.get("API Key")
+        return parse_api_field(key_data, "API Key")
+
+    def parse_api_field(key_data: dict, field_name: str) -> str:
+        api_key = key_data.get(field_name)
         if not api_key or not isinstance(api_key, str):
             raise HTTPException(
                 status_code=400,
@@ -262,6 +265,8 @@ def connect_provider_api(app: FastAPI):
                 return await connect_azure_openai(parse_api_key(key_data), endpoint)
             case ModelProviderName.huggingface:
                 return await connect_huggingface(parse_api_key(key_data))
+            case ModelProviderName.vertex:
+                return await connect_vertex(parse_api_field(key_data, "Project ID"))
             case (
                 ModelProviderName.kiln_custom_registry
                 | ModelProviderName.kiln_fine_tune
@@ -306,6 +311,8 @@ def connect_provider_api(app: FastAPI):
                 Config.shared().azure_openai_endpoint = None
             case ModelProviderName.huggingface:
                 Config.shared().huggingface_api_key = None
+            case ModelProviderName.vertex:
+                Config.shared().vertex_project_id = None
             case (
                 ModelProviderName.kiln_custom_registry
                 | ModelProviderName.kiln_fine_tune
@@ -514,6 +521,27 @@ async def connect_gemini(key: str):
         return JSONResponse(
             status_code=400,
             content={"message": f"Failed to connect to Gemini. Error: {str(e)}"},
+        )
+
+
+async def connect_vertex(project_id: str):
+    try:
+        await litellm.acompletion(
+            model="vertex_ai/gemini-1.5-flash",
+            messages=[{"content": "Hello, how are you?", "role": "user"}],
+            vertex_project=project_id,
+        )
+
+        Config.shared().vertex_project_id = project_id
+
+        return JSONResponse(
+            status_code=200,
+            content={"message": "Connected to Vertex"},
+        )
+    except Exception as e:
+        return JSONResponse(
+            status_code=400,
+            content={"message": f"Failed to connect to Vertex. Error: {str(e)}"},
         )
 
 
