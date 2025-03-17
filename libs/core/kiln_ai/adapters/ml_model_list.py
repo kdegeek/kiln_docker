@@ -581,6 +581,7 @@ built_in_models: List[KilnModel] = [
                 model_id="meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo",
                 supports_data_gen=False,
                 structured_output_mode=StructuredOutputMode.function_calling_weak,
+                provider_finetune_id="meta-llama/Meta-Llama-3.1-8B-Instruct",
             ),
         ],
     ),
@@ -622,6 +623,7 @@ built_in_models: List[KilnModel] = [
                 model_id="meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo",
                 supports_data_gen=False,
                 structured_output_mode=StructuredOutputMode.function_calling_weak,
+                provider_finetune_id="meta-llama/Meta-Llama-3.1-70B-Instruct",
             ),
         ],
     ),
@@ -725,6 +727,12 @@ built_in_models: List[KilnModel] = [
             KilnModelProvider(
                 name=ModelProviderName.huggingface,
                 model_id="meta-llama/Llama-3.2-1B-Instruct",
+                supports_structured_output=False,
+                supports_data_gen=False,
+            ),
+            KilnModelProvider(
+                name=ModelProviderName.together_ai,
+                model_id="meta-llama/Llama-3.2-1B-Instruct-Turbo",
                 supports_structured_output=False,
                 supports_data_gen=False,
             ),
@@ -1209,6 +1217,7 @@ built_in_models: List[KilnModel] = [
                 model_id="accounts/fireworks/models/qwen2p5-72b-instruct",
                 # Tool calling forces schema -- fireworks doesn't support json_schema, just json_mode
                 structured_output_mode=StructuredOutputMode.function_calling_weak,
+                provider_finetune_id="Qwen/Qwen2.5-72B-Instruct",
             ),
         ],
     ),

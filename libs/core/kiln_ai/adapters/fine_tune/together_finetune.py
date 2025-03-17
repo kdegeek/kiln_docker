@@ -103,12 +103,11 @@ class TogetherFinetune(BaseFinetuneAdapter):
         if not task:
             raise ValueError("Task is required to start a fine-tune")
 
-        # TODO: check if these are the correct formats
         format = DatasetFormat.OPENAI_CHAT_JSONL
         if task.output_json_schema:
             # This formatter will check it's valid JSON, and normalize the output (chat format just uses exact string).
             format = DatasetFormat.OPENAI_CHAT_JSON_SCHEMA_JSONL
-            # TODO P0 - fix this. it should work
+            # TODO P0 - fix this.
             # Since we're training with JSON string output, we'll use json mode at call time
             self.datamodel.structured_output_mode = (
                 StructuredOutputMode.json_instructions
@@ -121,8 +120,6 @@ class TogetherFinetune(BaseFinetuneAdapter):
         # Max 40 characters, helps id the fine-tune job
         display_name = f"kiln_ai_{self.datamodel.id}"[:40]
 
-        # TODO P0: don't hardcode these
-        parameters = self.datamodel.parameters
         together_finetune = self.client.fine_tuning.create(
             training_file=train_file_id,
             model=self.datamodel.base_model_id,
