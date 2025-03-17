@@ -766,6 +766,13 @@ built_in_models: List[KilnModel] = [
                 supports_structured_output=False,
                 supports_data_gen=False,
             ),
+            KilnModelProvider(
+                name=ModelProviderName.together_ai,
+                model_id="meta-llama/Llama-3.2-3B-Instruct-Turbo",
+                supports_structured_output=False,
+                supports_data_gen=False,
+                provider_finetune_id="meta-llama/Llama-3.2-3B-Instruct",
+            ),
         ],
     ),
     # Llama 3.2 11B

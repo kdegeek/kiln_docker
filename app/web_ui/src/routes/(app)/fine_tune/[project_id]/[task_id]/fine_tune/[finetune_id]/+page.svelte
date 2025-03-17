@@ -105,6 +105,8 @@
   function job_link(): string | undefined {
     if (finetune?.finetune.provider === "openai") {
       return `https://platform.openai.com/finetune/${finetune.finetune.provider_id}`
+    } else if (finetune?.finetune.provider === "together_ai") {
+      return `https://api.together.ai/jobs/${finetune.finetune.provider_id}`
     } else if (finetune?.finetune.provider === "fireworks_ai") {
       const url_id = finetune.finetune.provider_id?.split("/").pop()
       if (finetune.finetune.properties["endpoint_version"] === "v2") {
