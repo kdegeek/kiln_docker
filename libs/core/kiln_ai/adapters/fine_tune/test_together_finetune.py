@@ -395,7 +395,7 @@ async def test_generate_and_upload_jsonl_error(
     [
         (
             '{"type": "object", "properties": {"key": {"type": "string"}}}',
-            StructuredOutputMode.json_instructions,
+            StructuredOutputMode.json_custom_instructions,
             DatasetFormat.OPENAI_CHAT_JSON_SCHEMA_JSONL,
         ),
         (None, None, DatasetFormat.OPENAI_CHAT_JSONL),
@@ -475,3 +475,25 @@ async def test_deploy_always_succeeds(together_finetune, mock_api_key):
     # Together automatically deploys, so _deploy should always return True
     result = await together_finetune._deploy()
     assert result is True
+
+
+def test_augment_system_message(mock_task):
+    system_message = "You are a helpful assistant."
+
+    # Plaintext == no change
+    augmented_system_message = TogetherFinetune.augment_system_message(
+        system_message, mock_task
+    )
+    assert augmented_system_message == "You are a helpful assistant."
+
+    # Now with JSON == append JSON instructions
+    mock_task.output_json_schema = (
+        '{"type": "object", "properties": {"key": {"type": "string"}}}'
+    )
+    augmented_system_message = TogetherFinetune.augment_system_message(
+        system_message, mock_task
+    )
+    assert (
+        augmented_system_message
+        == "You are a helpful assistant.\n\nReturn only JSON. Do not include any non JSON text.\n"
+    )

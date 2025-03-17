@@ -107,10 +107,12 @@ class TogetherFinetune(BaseFinetuneAdapter):
         if task.output_json_schema:
             # This formatter will check it's valid JSON, and normalize the output (chat format just uses exact string).
             format = DatasetFormat.OPENAI_CHAT_JSON_SCHEMA_JSONL
-            # TODO P0 - fix this.
-            # Since we're training with JSON string output, we'll use json mode at call time
+            # Together doesn't support JSON-mode for fine-tunes, so we use JSON instructions in the system message. However not our standard json_instructions mode.
+            # Instead we augment the system message with custom JSON instructions for a fine-tune (see augment_system_message). A nice simple instructions.
+            # Why: Fine-tunes tend to need less coaching to get JSON format correct, as they have seen examples. And they are often on smaller models that have trouble following longer/complex JSON-schema prompts so our default is a poor choice.
+            # We save json_custom_instructions mode so it knows what to do at call time.
             self.datamodel.structured_output_mode = (
-                StructuredOutputMode.json_instructions
+                StructuredOutputMode.json_custom_instructions
             )
 
         train_file_id = await self.generate_and_upload_jsonl(
@@ -140,6 +142,22 @@ class TogetherFinetune(BaseFinetuneAdapter):
 
         if self.datamodel.path:
             self.datamodel.save_to_file()
+
+    @classmethod
+    def augment_system_message(cls, system_message: str, task: Task) -> str:
+        """
+        Augment the system message with custom JSON instructions for a fine-tune.
+
+        This is a shorter version of the JSON instructions, as fine-tunes tend to need less coaching to get JSON format correct. Plus smaller models are often finetuned, and don't do well following our detailed JSON-schema instructions from json_instructions.
+
+        Together doesn't support JSON-mode for fine-tunes, so this is needed where it isn't needed with other providers.
+        """
+        if task.output_json_schema:
+            return (
+                system_message
+                + "\n\nReturn only JSON. Do not include any non JSON text.\n"
+            )
+        return system_message
 
     def epochs(self) -> int:
         parameters = self.datamodel.parameters
