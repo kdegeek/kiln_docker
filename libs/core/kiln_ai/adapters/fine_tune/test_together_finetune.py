@@ -445,6 +445,7 @@ async def test_start_success(
         mock_together_client.fine_tuning.create.assert_called_once_with(
             training_file=mock_file_id,
             model=together_finetune.datamodel.base_model_id,
+            lora=True,
             n_epochs=together_finetune.epochs(),
             learning_rate=together_finetune.learning_rate(),
             batch_size=together_finetune.batch_size(),

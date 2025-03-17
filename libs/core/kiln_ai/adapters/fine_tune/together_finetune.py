@@ -125,6 +125,8 @@ class TogetherFinetune(BaseFinetuneAdapter):
         together_finetune = self.client.fine_tuning.create(
             training_file=train_file_id,
             model=self.datamodel.base_model_id,
+            # Always make Loras for now. Will add non-Lora support later. For now we're filtering to serverless loras.
+            lora=True,
             n_epochs=self.epochs(),
             learning_rate=self.learning_rate(),
             batch_size=self.batch_size(),
