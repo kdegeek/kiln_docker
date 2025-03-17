@@ -169,9 +169,61 @@ def test_batch_size(together_finetune, parameters, expected):
     assert together_finetune.batch_size() == expected
 
 
+@pytest.mark.parametrize(
+    "parameters,expected",
+    [
+        ({"min_lr_ratio": 0.1}, 0.1),
+        ({}, 0.0),  # Default
+        ({"min_lr_ratio": "not_a_float"}, 0.0),  # Invalid, uses default
+    ],
+)
+def test_min_lr_ratio(together_finetune, parameters, expected):
+    together_finetune.datamodel.parameters = parameters
+    assert together_finetune.min_lr_ratio() == expected
+
+
+@pytest.mark.parametrize(
+    "parameters,expected",
+    [
+        ({"warmup_ratio": 0.2}, 0.2),
+        ({}, 0.0),  # Default
+        ({"warmup_ratio": "not_a_float"}, 0.0),  # Invalid, uses default
+    ],
+)
+def test_warmup_ratio(together_finetune, parameters, expected):
+    together_finetune.datamodel.parameters = parameters
+    assert together_finetune.warmup_ratio() == expected
+
+
+@pytest.mark.parametrize(
+    "parameters,expected",
+    [
+        ({"max_grad_norm": 5.0}, 5.0),
+        ({}, 1.0),  # Default
+        ({"max_grad_norm": "not_a_float"}, 1.0),  # Invalid, uses default
+    ],
+)
+def test_max_grad_norm(together_finetune, parameters, expected):
+    together_finetune.datamodel.parameters = parameters
+    assert together_finetune.max_grad_norm() == expected
+
+
+@pytest.mark.parametrize(
+    "parameters,expected",
+    [
+        ({"weight_decay": 0.01}, 0.01),
+        ({}, 0.0),  # Default
+        ({"weight_decay": "not_a_float"}, 0.0),  # Invalid, uses default
+    ],
+)
+def test_weight_decay(together_finetune, parameters, expected):
+    together_finetune.datamodel.parameters = parameters
+    assert together_finetune.weight_decay() == expected
+
+
 def test_available_parameters():
     parameters = TogetherFinetune.available_parameters()
-    assert len(parameters) == 4
+    assert len(parameters) == 8
     assert all(isinstance(p, FineTuneParameter) for p in parameters)
 
     # Check specific parameters
@@ -180,6 +232,10 @@ def test_available_parameters():
     assert "learning_rate" in param_names
     assert "batch_size" in param_names
     assert "num_checkpoints" in param_names
+    assert "min_lr_ratio" in param_names
+    assert "warmup_ratio" in param_names
+    assert "max_grad_norm" in param_names
+    assert "weight_decay" in param_names
 
 
 async def test_status_missing_provider_id(together_finetune, mock_api_key):
@@ -394,6 +450,10 @@ async def test_start_success(
             batch_size=together_finetune.batch_size(),
             n_checkpoints=together_finetune.num_checkpoints(),
             suffix=f"kiln_ai_{together_finetune.datamodel.id}"[:40],
+            min_lr_ratio=together_finetune.min_lr_ratio(),
+            warmup_ratio=together_finetune.warmup_ratio(),
+            max_grad_norm=together_finetune.max_grad_norm(),
+            weight_decay=together_finetune.weight_decay(),
         )
 
         # Check that datamodel was updated correctly

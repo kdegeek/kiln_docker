@@ -127,6 +127,10 @@ class TogetherFinetune(BaseFinetuneAdapter):
             learning_rate=self.learning_rate(),
             batch_size=self.batch_size(),
             n_checkpoints=self.num_checkpoints(),
+            min_lr_ratio=self.min_lr_ratio(),
+            warmup_ratio=self.warmup_ratio(),
+            max_grad_norm=self.max_grad_norm(),
+            weight_decay=self.weight_decay(),
             suffix=display_name,
         )
 
@@ -164,6 +168,38 @@ class TogetherFinetune(BaseFinetuneAdapter):
         if "batch_size" in parameters and isinstance(parameters["batch_size"], int):
             return parameters["batch_size"]
         return "max"
+
+    def min_lr_ratio(self) -> float:
+        parameters = self.datamodel.parameters
+        if "min_lr_ratio" in parameters and isinstance(
+            parameters["min_lr_ratio"], float
+        ):
+            return parameters["min_lr_ratio"]
+        return 0.0
+
+    def warmup_ratio(self) -> float:
+        parameters = self.datamodel.parameters
+        if "warmup_ratio" in parameters and isinstance(
+            parameters["warmup_ratio"], float
+        ):
+            return parameters["warmup_ratio"]
+        return 0.0
+
+    def max_grad_norm(self) -> float:
+        parameters = self.datamodel.parameters
+        if "max_grad_norm" in parameters and isinstance(
+            parameters["max_grad_norm"], float
+        ):
+            return parameters["max_grad_norm"]
+        return 1.0
+
+    def weight_decay(self) -> float:
+        parameters = self.datamodel.parameters
+        if "weight_decay" in parameters and isinstance(
+            parameters["weight_decay"], float
+        ):
+            return parameters["weight_decay"]
+        return 0.0
 
     async def generate_and_upload_jsonl(
         self, dataset: DatasetSplit, split_name: str, task: Task, format: DatasetFormat
@@ -210,6 +246,30 @@ class TogetherFinetune(BaseFinetuneAdapter):
                 name="num_checkpoints",
                 description="The number of checkpoints to save during training. If not specified, defaults to 1.",
                 type="int",
+                optional=True,
+            ),
+            FineTuneParameter(
+                name="min_lr_ratio",
+                description="The ratio of the final learning rate to the peak learning rate. Defaults to 0.",
+                type="float",
+                optional=True,
+            ),
+            FineTuneParameter(
+                name="warmup_ratio",
+                description="The percent of steps at the start of training to linearly increase the learning rate. Defaults to 0.",
+                type="float",
+                optional=True,
+            ),
+            FineTuneParameter(
+                name="max_grad_norm",
+                description="Max gradient norm to be used for gradient clipping. Set to 0 to disable. Defaults to 1.",
+                type="float",
+                optional=True,
+            ),
+            FineTuneParameter(
+                name="weight_decay",
+                description="The weight decay. Defaults to 0.",
+                type="float",
                 optional=True,
             ),
         ]
