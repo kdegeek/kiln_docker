@@ -142,10 +142,12 @@
       api_key_steps: [
         "Create a Google Cloud account.",
         "Install the glcoud CLI, then run `gcloud auth application-default login` in the terminal. This will add Google Vertex credentials to you environment.",
-        "Create a project in the console, then enable Vertex AI for that project.",
-        "Add the project ID below, then click connect.",
+        "Create a project in the console, enable Vertex AI for that project, and click 'Enable Recommended APIs' in the Vertex AI console.",
+        "Add the project ID below. Be sure to use the project ID, not the project name.",
+        "Add the project location below. This should match the location of the project you created. Example: 'us-central1'.",
+        "Click connect.",
       ],
-      api_key_fields: ["Project ID"],
+      api_key_fields: ["Project ID", "Project Location"],
       api_key_warning:
         "With Vertex AI, you must deploy some models manually.\nSee our docs for details: https://docs.getkiln.ai/docs/models-and-ai-providers#google-vertex-ai",
     },
@@ -503,7 +505,7 @@
       if (data["fireworks_api_key"] && data["fireworks_account_id"]) {
         status.fireworks_ai.connected = true
       }
-      if (data["vertex_project_id"]) {
+      if (data["vertex_project_id"] && data["vertex_location"]) {
         status.vertex.connected = true
       }
       if (data["ollama_base_url"]) {

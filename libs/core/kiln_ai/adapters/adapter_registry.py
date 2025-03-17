@@ -159,6 +159,7 @@ def adapter_for_task(
                     provider_name=provider,
                     additional_body_options={
                         "vertex_project": Config.shared().vertex_project_id,
+                        "vertex_location": Config.shared().vertex_location,
                     },
                 ),
             )

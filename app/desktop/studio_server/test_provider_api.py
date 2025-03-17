@@ -1922,7 +1922,7 @@ async def test_connect_vertex_success(mock_config_shared, mock_litellm_acompleti
     }
 
     # Execute
-    response = await connect_vertex("test-project-id")
+    response = await connect_vertex("test-project-id", "us-central1")
 
     # Verify
     assert response.status_code == 200
@@ -1931,6 +1931,7 @@ async def test_connect_vertex_success(mock_config_shared, mock_litellm_acompleti
         model="vertex_ai/gemini-1.5-flash",
         messages=[{"content": "Hello, how are you?", "role": "user"}],
         vertex_project="test-project-id",
+        vertex_location="us-central1",
     )
     assert mock_config.vertex_project_id == "test-project-id"
 
@@ -1945,7 +1946,7 @@ async def test_connect_vertex_failure(mock_config_shared, mock_litellm_acompleti
     mock_litellm_acompletion.side_effect = Exception("Invalid project ID")
 
     # Execute
-    response = await connect_vertex("invalid-project-id")
+    response = await connect_vertex("invalid-project-id", "us-central1")
 
     # Verify
     assert response.status_code == 400
@@ -1955,11 +1956,16 @@ async def test_connect_vertex_failure(mock_config_shared, mock_litellm_acompleti
         model="vertex_ai/gemini-1.5-flash",
         messages=[{"content": "Hello, how are you?", "role": "user"}],
         vertex_project="invalid-project-id",
+        vertex_location="us-central1",
     )
     # Verify project ID was not saved
     assert (
         not hasattr(mock_config, "vertex_project_id")
         or mock_config.vertex_project_id != "invalid-project-id"
+    )
+    assert (
+        not hasattr(mock_config, "vertex_location")
+        or mock_config.vertex_location != "us-central1"
     )
 
 
