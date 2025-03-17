@@ -24,6 +24,9 @@ def get_all_models_and_providers():
     model_provider_pairs = []
     for model in built_in_models:
         for provider in model.providers:
+            if not provider.model_id:
+                # it's possible for models to not have an ID (fine-tune only model)
+                continue
             model_provider_pairs.append((model.name, provider.name))
     return model_provider_pairs
 
