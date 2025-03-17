@@ -223,7 +223,7 @@ def connect_provider_api(app: FastAPI):
         if not api_key or not isinstance(api_key, str):
             raise HTTPException(
                 status_code=400,
-                detail="API Key not found",
+                detail=f"{field_name} not found",
             )
         return api_key
 
@@ -266,7 +266,10 @@ def connect_provider_api(app: FastAPI):
             case ModelProviderName.huggingface:
                 return await connect_huggingface(parse_api_key(key_data))
             case ModelProviderName.vertex:
-                return await connect_vertex(parse_api_field(key_data, "Project ID"))
+                return await connect_vertex(
+                    parse_api_field(key_data, "Project ID"),
+                    parse_api_field(key_data, "Project Location"),
+                )
             case ModelProviderName.together_ai:
                 return await connect_together(parse_api_key(key_data))
             case (
@@ -315,6 +318,7 @@ def connect_provider_api(app: FastAPI):
                 Config.shared().huggingface_api_key = None
             case ModelProviderName.vertex:
                 Config.shared().vertex_project_id = None
+                Config.shared().vertex_location = None
             case ModelProviderName.together_ai:
                 Config.shared().together_api_key = None
             case (
@@ -528,15 +532,17 @@ async def connect_gemini(key: str):
         )
 
 
-async def connect_vertex(project_id: str):
+async def connect_vertex(project_id: str, project_location: str):
     try:
         await litellm.acompletion(
             model="vertex_ai/gemini-1.5-flash",
             messages=[{"content": "Hello, how are you?", "role": "user"}],
             vertex_project=project_id,
+            vertex_location=project_location,
         )
 
         Config.shared().vertex_project_id = project_id
+        Config.shared().vertex_location = project_location
 
         return JSONResponse(
             status_code=200,

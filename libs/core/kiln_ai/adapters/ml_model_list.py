@@ -365,12 +365,12 @@ built_in_models: List[KilnModel] = [
             ),
             KilnModelProvider(
                 name=ModelProviderName.anthropic,
-                model_id="claude-3-haiku-20240307",
+                model_id="claude-3-5-haiku-20241022",
             ),
             KilnModelProvider(
                 name=ModelProviderName.vertex,
-                model_id="claude-3-haiku",
-                structured_output_mode=StructuredOutputMode.json_instruction_and_object,
+                model_id="claude-3-5-haiku",
+                structured_output_mode=StructuredOutputMode.function_calling_weak,
             ),
         ],
     ),

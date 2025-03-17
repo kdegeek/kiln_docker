@@ -110,6 +110,10 @@ class Config:
                 str,
                 env_var="VERTEX_PROJECT_ID",
             ),
+            "vertex_location": ConfigProperty(
+                str,
+                env_var="VERTEX_LOCATION",
+            ),
             "together_api_key": ConfigProperty(
                 str,
                 env_var="TOGETHERAI_API_KEY",
