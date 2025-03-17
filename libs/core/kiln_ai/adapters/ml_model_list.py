@@ -361,17 +361,18 @@ built_in_models: List[KilnModel] = [
         providers=[
             KilnModelProvider(
                 name=ModelProviderName.openrouter,
-                structured_output_mode=StructuredOutputMode.json_instruction_and_object,
+                structured_output_mode=StructuredOutputMode.function_calling,
                 model_id="anthropic/claude-3-5-haiku",
             ),
             KilnModelProvider(
                 name=ModelProviderName.anthropic,
                 model_id="claude-3-haiku-20240307",
+                structured_output_mode=StructuredOutputMode.function_calling,
             ),
             KilnModelProvider(
                 name=ModelProviderName.vertex,
                 model_id="claude-3-haiku",
-                structured_output_mode=StructuredOutputMode.json_instruction_and_object,
+                structured_output_mode=StructuredOutputMode.function_calling_weak,
             ),
         ],
     ),
@@ -383,17 +384,18 @@ built_in_models: List[KilnModel] = [
         providers=[
             KilnModelProvider(
                 name=ModelProviderName.openrouter,
-                structured_output_mode=StructuredOutputMode.json_instruction_and_object,
+                structured_output_mode=StructuredOutputMode.function_calling,
                 model_id="anthropic/claude-3.5-sonnet",
             ),
             KilnModelProvider(
                 name=ModelProviderName.anthropic,
                 model_id="claude-3-5-sonnet-20241022",
+                structured_output_mode=StructuredOutputMode.function_calling,
             ),
             KilnModelProvider(
                 name=ModelProviderName.vertex,
                 model_id="claude-3-5-sonnet",
-                structured_output_mode=StructuredOutputMode.json_instruction_and_object,
+                structured_output_mode=StructuredOutputMode.function_calling_weak,
             ),
         ],
     ),
