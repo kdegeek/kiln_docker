@@ -199,8 +199,8 @@ class TogetherFinetune(BaseFinetuneAdapter):
         ):
             properties["weight_decay"] = parameters["weight_decay"]
 
-        if "lora_r" in parameters and isinstance(parameters["lora_r"], int):
-            properties["lora_r"] = parameters["lora_r"]
+        if "lora_rank" in parameters and isinstance(parameters["lora_rank"], int):
+            properties["lora_r"] = parameters["lora_rank"]
 
         if "lora_dropout" in parameters and isinstance(
             parameters["lora_dropout"], float
@@ -300,7 +300,7 @@ class TogetherFinetune(BaseFinetuneAdapter):
                 optional=True,
             ),
             FineTuneParameter(
-                name="lora_r",
+                name="lora_rank",
                 description="Rank of LoRA adapters. Default: 8, Min: 1, Max: 64",
                 type="int",
                 optional=True,
@@ -313,7 +313,7 @@ class TogetherFinetune(BaseFinetuneAdapter):
             ),
             FineTuneParameter(
                 name="lora_alpha",
-                description="Alpha value for LoRA adapter training. Default: 8. Min: 1. If a value less than 1 is given, it will default to lora_r value to follow the recommendation of 1:1 scaling.",
+                description="Alpha value for LoRA adapter training. Default: 8. Min: 1. If a value less than 1 is given, it will default to lora_rank value to follow the recommendation of 1:1 scaling.",
                 type="float",
                 optional=True,
             ),

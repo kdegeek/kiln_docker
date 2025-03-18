@@ -129,7 +129,7 @@ def test_available_parameters():
     assert "warmup_ratio" in param_names
     assert "max_grad_norm" in param_names
     assert "weight_decay" in param_names
-    assert "lora_r" in param_names
+    assert "lora_rank" in param_names
     assert "lora_dropout" in param_names
     assert "lora_alpha" in param_names
 
@@ -428,9 +428,9 @@ def test_augment_system_message(mock_task):
         # weight_decay tests
         ("weight_decay", 0.01, "weight_decay", 0.01, True),
         ("weight_decay", "not_a_float", "weight_decay", None, False),
-        # lora_r tests
-        ("lora_r", 16, "lora_r", 16, True),
-        ("lora_r", "not_an_int", "lora_r", None, False),
+        # lora_rank tests
+        ("lora_rank", 16, "lora_r", 16, True),
+        ("lora_rank", "not_an_int", "lora_r", None, False),
         # lora_dropout tests
         ("lora_dropout", 0.1, "lora_dropout", 0.1, True),
         ("lora_dropout", "not_a_float", "lora_dropout", None, False),
