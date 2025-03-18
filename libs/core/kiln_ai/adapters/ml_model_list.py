@@ -796,7 +796,9 @@ built_in_models: List[KilnModel] = [
             ),
             KilnModelProvider(
                 name=ModelProviderName.openrouter,
+                # Best mode, but fails to often to enable without warning
                 structured_output_mode=StructuredOutputMode.json_instruction_and_object,
+                supports_structured_output=False,
                 supports_data_gen=False,
                 model_id="meta-llama/llama-3.2-11b-vision-instruct",
             ),
@@ -1009,7 +1011,9 @@ built_in_models: List[KilnModel] = [
             ),
             KilnModelProvider(
                 name=ModelProviderName.openrouter,
+                # Best mode, but fails to often to enable without warning
                 structured_output_mode=StructuredOutputMode.json_instruction_and_object,
+                supports_structured_output=False,
                 supports_data_gen=False,
                 model_id="google/gemma-2-9b-it",
             ),
@@ -1426,8 +1430,10 @@ built_in_models: List[KilnModel] = [
         providers=[
             KilnModelProvider(
                 name=ModelProviderName.openrouter,
+                supports_structured_output=False,
                 supports_data_gen=False,
                 reasoning_capable=True,
+                # Best mode, but fails to often to enable without warning
                 structured_output_mode=StructuredOutputMode.json_instructions,
                 model_id="deepseek/deepseek-r1-distill-llama-8b",
                 r1_openrouter_options=True,
@@ -1437,9 +1443,11 @@ built_in_models: List[KilnModel] = [
             ),
             KilnModelProvider(
                 name=ModelProviderName.ollama,
+                supports_structured_output=False,
                 supports_data_gen=False,
                 parser=ModelParserID.r1_thinking,
                 reasoning_capable=True,
+                # Best mode, but fails to often to enable without warning
                 structured_output_mode=StructuredOutputMode.json_instructions,
                 model_id="deepseek-r1:8b",
             ),
@@ -1453,6 +1461,8 @@ built_in_models: List[KilnModel] = [
         providers=[
             KilnModelProvider(
                 name=ModelProviderName.ollama,
+                # Best mode, but fails to often to enable without warning
+                supports_structured_output=False,
                 supports_data_gen=False,
                 parser=ModelParserID.r1_thinking,
                 reasoning_capable=True,
@@ -1481,6 +1491,7 @@ built_in_models: List[KilnModel] = [
             ),
             KilnModelProvider(
                 name=ModelProviderName.ollama,
+                supports_structured_output=False,
                 supports_data_gen=False,
                 parser=ModelParserID.r1_thinking,
                 reasoning_capable=True,
