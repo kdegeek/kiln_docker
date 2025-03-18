@@ -329,7 +329,9 @@ async def test_get_available_models(app, client):
             name="model1",
             friendly_name="Model 1",
             family="",
-            providers=[KilnModelProvider(name=ModelProviderName.openai)],
+            providers=[
+                KilnModelProvider(name=ModelProviderName.openai, model_id="oai1")
+            ],
         ),
         KilnModel(
             name="model2",
@@ -338,6 +340,7 @@ async def test_get_available_models(app, client):
             providers=[
                 KilnModelProvider(
                     name=ModelProviderName.amazon_bedrock,
+                    model_id="bedrock1",
                     supports_structured_output=False,
                     supports_data_gen=False,
                 ),
@@ -345,6 +348,11 @@ async def test_get_available_models(app, client):
                     name=ModelProviderName.ollama,
                     supports_structured_output=True,
                     model_id="ollama_model2",
+                ),
+                # Fine-tune only model should not appear in the list of available models
+                KilnModelProvider(
+                    name=ModelProviderName.together_ai,
+                    provider_finetune_id="together_model2",
                 ),
             ],
         ),
@@ -442,7 +450,9 @@ async def test_get_available_models_ollama_exception(app, client):
             name="model1",
             family="",
             friendly_name="Model 1",
-            providers=[KilnModelProvider(name=ModelProviderName.openai)],
+            providers=[
+                KilnModelProvider(name=ModelProviderName.openai, model_id="123")
+            ],
         ),
     ]
 

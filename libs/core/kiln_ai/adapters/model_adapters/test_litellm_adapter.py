@@ -129,8 +129,15 @@ async def test_response_format_options_function_calling(config, mock_task, mode)
         # full tool structure validated below
 
 
+@pytest.mark.parametrize(
+    "mode",
+    [
+        StructuredOutputMode.json_custom_instructions,
+        StructuredOutputMode.json_instructions,
+    ],
+)
 @pytest.mark.asyncio
-async def test_response_format_options_json_instructions(config, mock_task):
+async def test_response_format_options_json_instructions(config, mock_task, mode):
     adapter = LiteLlmAdapter(config=config, kiln_task=mock_task)
 
     with (

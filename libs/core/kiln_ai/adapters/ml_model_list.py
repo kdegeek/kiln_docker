@@ -100,6 +100,7 @@ class ModelName(str, Enum):
     nemotron_70b = "nemotron_70b"
     mixtral_8x7b = "mixtral_8x7b"
     qwen_2p5_7b = "qwen_2p5_7b"
+    qwen_2p5_14b = "qwen_2p5_14b"
     qwen_2p5_72b = "qwen_2p5_72b"
     qwq_32b = "qwq_32b"
     deepseek_3 = "deepseek_3"
@@ -360,12 +361,13 @@ built_in_models: List[KilnModel] = [
         providers=[
             KilnModelProvider(
                 name=ModelProviderName.openrouter,
-                structured_output_mode=StructuredOutputMode.json_instruction_and_object,
+                structured_output_mode=StructuredOutputMode.function_calling,
                 model_id="anthropic/claude-3-5-haiku",
             ),
             KilnModelProvider(
                 name=ModelProviderName.anthropic,
                 model_id="claude-3-5-haiku-20241022",
+                structured_output_mode=StructuredOutputMode.function_calling,
             ),
             KilnModelProvider(
                 name=ModelProviderName.vertex,
@@ -382,17 +384,18 @@ built_in_models: List[KilnModel] = [
         providers=[
             KilnModelProvider(
                 name=ModelProviderName.openrouter,
-                structured_output_mode=StructuredOutputMode.json_instruction_and_object,
+                structured_output_mode=StructuredOutputMode.function_calling,
                 model_id="anthropic/claude-3.5-sonnet",
             ),
             KilnModelProvider(
                 name=ModelProviderName.anthropic,
                 model_id="claude-3-5-sonnet-20241022",
+                structured_output_mode=StructuredOutputMode.function_calling,
             ),
             KilnModelProvider(
                 name=ModelProviderName.vertex,
                 model_id="claude-3-5-sonnet",
-                structured_output_mode=StructuredOutputMode.json_instruction_and_object,
+                structured_output_mode=StructuredOutputMode.function_calling_weak,
             ),
         ],
     ),
@@ -581,6 +584,7 @@ built_in_models: List[KilnModel] = [
                 model_id="meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo",
                 supports_data_gen=False,
                 structured_output_mode=StructuredOutputMode.function_calling_weak,
+                provider_finetune_id="meta-llama/Meta-Llama-3.1-8B-Instruct",
             ),
         ],
     ),
@@ -622,6 +626,7 @@ built_in_models: List[KilnModel] = [
                 model_id="meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo",
                 supports_data_gen=False,
                 structured_output_mode=StructuredOutputMode.function_calling_weak,
+                provider_finetune_id="meta-llama/Meta-Llama-3.1-70B-Instruct",
             ),
         ],
     ),
@@ -728,6 +733,10 @@ built_in_models: List[KilnModel] = [
                 supports_structured_output=False,
                 supports_data_gen=False,
             ),
+            KilnModelProvider(
+                name=ModelProviderName.together_ai,
+                provider_finetune_id="meta-llama/Llama-3.2-1B-Instruct",
+            ),
         ],
     ),
     # Llama 3.2 3B
@@ -765,6 +774,13 @@ built_in_models: List[KilnModel] = [
                 model_id="meta-llama/Llama-3.2-3B-Instruct",
                 supports_structured_output=False,
                 supports_data_gen=False,
+            ),
+            KilnModelProvider(
+                name=ModelProviderName.together_ai,
+                model_id="meta-llama/Llama-3.2-3B-Instruct-Turbo",
+                supports_structured_output=False,
+                supports_data_gen=False,
+                provider_finetune_id="meta-llama/Llama-3.2-3B-Instruct",
             ),
         ],
     ),
@@ -1179,6 +1195,23 @@ built_in_models: List[KilnModel] = [
             ),
         ],
     ),
+    # Qwen 2.5 14B
+    KilnModel(
+        family=ModelFamily.qwen,
+        name=ModelName.qwen_2p5_14b,
+        friendly_name="Qwen 2.5 14B",
+        providers=[
+            KilnModelProvider(
+                name=ModelProviderName.together_ai,
+                provider_finetune_id="Qwen/Qwen2.5-14B-Instruct",
+            ),
+            KilnModelProvider(
+                name=ModelProviderName.ollama,
+                model_id="qwen2.5:14b",
+                supports_data_gen=False,
+            ),
+        ],
+    ),
     # Qwen 2.5 72B
     KilnModel(
         family=ModelFamily.qwen,
@@ -1202,6 +1235,10 @@ built_in_models: List[KilnModel] = [
                 model_id="accounts/fireworks/models/qwen2p5-72b-instruct",
                 # Tool calling forces schema -- fireworks doesn't support json_schema, just json_mode
                 structured_output_mode=StructuredOutputMode.function_calling_weak,
+            ),
+            KilnModelProvider(
+                name=ModelProviderName.together_ai,
+                provider_finetune_id="Qwen/Qwen2.5-72B-Instruct",
             ),
         ],
     ),

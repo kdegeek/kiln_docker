@@ -187,7 +187,10 @@ class LiteLlmAdapter(BaseAdapter):
             case StructuredOutputMode.function_calling:
                 return self.tool_call_params(strict=True)
             case StructuredOutputMode.json_instructions:
-                # JSON done via instructions in prompt, not the API response format. Do not ask for json_object (see option below).
+                # JSON instructions dynamically injected in prompt, not the API response format. Do not ask for json_object (see option below).
+                return {}
+            case StructuredOutputMode.json_custom_instructions:
+                # JSON instructions statically injected in system prompt, not the API response format. Do not ask for json_object (see option above).
                 return {}
             case StructuredOutputMode.json_instruction_and_object:
                 # We set response_format to json_object and also set json instructions in the prompt
