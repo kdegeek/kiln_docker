@@ -40,7 +40,7 @@ The library has a [comprehensive set of docs](https://kiln-ai.github.io/Kiln/kil
   - [Using your Kiln Dataset in a Notebook or Project](#using-your-kiln-dataset-in-a-notebook-or-project)
   - [Using Kiln Dataset in Pandas](#using-kiln-dataset-in-pandas)
   - [Building and Running a Kiln Task from Code](#building-and-running-a-kiln-task-from-code)
-  - [Adding Custom Model or AI Provier from Code](#adding-custom-model-or-ai-provier-from-code)
+  - [Adding Custom Model or AI Provider from Code](#adding-custom-model-or-ai-provider-from-code)
 - [Full API Reference](#full-api-reference)
 
 ## Installation
@@ -228,7 +228,7 @@ response = await adapter.invoke(task_input)
 print(f"Output: {response.output.output}")
 
 # Step 4 (optional): Load the task from disk and print the results.
-#  This will only work if the task was loaded from disk, or you called task.save_to_file() before invoking the adapter (epemerial tasks don't save their result to disk)
+#  This will only work if the task was loaded from disk, or you called task.save_to_file() before invoking the adapter (ephemeral tasks don't save their result to disk)
 task = datamodel.Task.load_from_file(tmp_path / "test_task.kiln")
 for run in task.runs():
     print(f"Run: {run.id}")
@@ -237,7 +237,7 @@ for run in task.runs():
 
 ```
 
-### Adding Custom Model or AI Provier from Code
+### Adding Custom Model or AI Provider from Code
 
 You can add additional AI models and providers to Kiln.
 
@@ -249,7 +249,7 @@ See our docs for more information, including how to add these from the UI:
 You can also add these from code. The kiln_ai.utils.Config class helps you manage the Kiln config file (stored at `~/.kiln_settings/config.yaml`):
 
 ```python
-# Addding a OpenAI compatible provider
+# Addding an OpenAI compatible provider
 name = "CustomOllama"
 base_url = "http://localhost:1234/api/v1"
 api_key = "12345"
