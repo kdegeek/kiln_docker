@@ -119,23 +119,18 @@ class TogetherFinetune(BaseFinetuneAdapter):
             dataset, self.datamodel.train_split_name, task, format
         )
 
-        # Max 40 characters, helps id the fine-tune job
-        display_name = f"kiln_ai_{self.datamodel.id}"[:40]
+        # Their library defaults to "" and not None, so we follow that convention.
+        validation_file_id = ""
+        if self.datamodel.validation_split_name:
+            validation_file_id = await self.generate_and_upload_jsonl(
+                dataset, self.datamodel.validation_split_name, task, format
+            )
 
         together_finetune = self.client.fine_tuning.create(
             training_file=train_file_id,
+            validation_file=validation_file_id,
             model=self.datamodel.base_model_id,
-            # Always make Loras for now. Will add non-Lora support later. For now we're filtering to serverless loras.
-            lora=True,
-            n_epochs=self.epochs(),
-            learning_rate=self.learning_rate(),
-            batch_size=self.batch_size(),
-            n_checkpoints=self.num_checkpoints(),
-            min_lr_ratio=self.min_lr_ratio(),
-            warmup_ratio=self.warmup_ratio(),
-            max_grad_norm=self.max_grad_norm(),
-            weight_decay=self.weight_decay(),
-            suffix=display_name,
+            **self._build_finetune_parameters(),
         )
 
         # 2 different IDs, output_name is the name of the model that results from the fine-tune job, the finetune_job_id is the ID of the fine-tune job
@@ -144,6 +139,78 @@ class TogetherFinetune(BaseFinetuneAdapter):
 
         if self.datamodel.path:
             self.datamodel.save_to_file()
+
+    def _build_finetune_parameters(self) -> dict:
+        """
+        Build the parameters dictionary for fine-tuning with Together.ai.
+        Only includes parameters that exist in the datamodel and have valid types.
+
+        Args:
+            train_file_id: The ID of the uploaded training file
+            display_name: The display name for the fine-tune job
+
+        Returns:
+            Dictionary of parameters to pass to Together's fine-tuning API
+        """
+        parameters = self.datamodel.parameters
+
+        # Start with required parameters
+        properties = {
+            # Force LoRA for now. We only support serverless Loras at the moment. We can remove this later when we add support for full-finetunes.
+            "lora": True,
+            # Suffix must be truncated to 40 characters
+            "suffix": f"kiln_ai_{self.datamodel.id}",
+        }
+
+        # Add optional parameters only if they exist and have correct types
+        if "epochs" in parameters and isinstance(parameters["epochs"], int):
+            properties["n_epochs"] = parameters["epochs"]
+
+        if "learning_rate" in parameters and isinstance(
+            parameters["learning_rate"], float
+        ):
+            properties["learning_rate"] = parameters["learning_rate"]
+
+        if "batch_size" in parameters and isinstance(parameters["batch_size"], int):
+            properties["batch_size"] = parameters["batch_size"]
+
+        if "num_checkpoints" in parameters and isinstance(
+            parameters["num_checkpoints"], int
+        ):
+            properties["n_checkpoints"] = parameters["num_checkpoints"]
+
+        if "min_lr_ratio" in parameters and isinstance(
+            parameters["min_lr_ratio"], float
+        ):
+            properties["min_lr_ratio"] = parameters["min_lr_ratio"]
+
+        if "warmup_ratio" in parameters and isinstance(
+            parameters["warmup_ratio"], float
+        ):
+            properties["warmup_ratio"] = parameters["warmup_ratio"]
+
+        if "max_grad_norm" in parameters and isinstance(
+            parameters["max_grad_norm"], float
+        ):
+            properties["max_grad_norm"] = parameters["max_grad_norm"]
+
+        if "weight_decay" in parameters and isinstance(
+            parameters["weight_decay"], float
+        ):
+            properties["weight_decay"] = parameters["weight_decay"]
+
+        if "lora_r" in parameters and isinstance(parameters["lora_r"], int):
+            properties["lora_r"] = parameters["lora_r"]
+
+        if "lora_dropout" in parameters and isinstance(
+            parameters["lora_dropout"], float
+        ):
+            properties["lora_dropout"] = parameters["lora_dropout"]
+
+        if "lora_alpha" in parameters and isinstance(parameters["lora_alpha"], float):
+            properties["lora_alpha"] = parameters["lora_alpha"]
+
+        return properties
 
     @classmethod
     def augment_system_message(cls, system_message: str, task: Task) -> str:
@@ -160,66 +227,6 @@ class TogetherFinetune(BaseFinetuneAdapter):
                 + "\n\nReturn only JSON. Do not include any non JSON text.\n"
             )
         return system_message
-
-    def epochs(self) -> int:
-        parameters = self.datamodel.parameters
-        if "epochs" in parameters and isinstance(parameters["epochs"], int):
-            return parameters["epochs"]
-        return 1
-
-    def learning_rate(self) -> float:
-        parameters = self.datamodel.parameters
-        if "learning_rate" in parameters and isinstance(
-            parameters["learning_rate"], float
-        ):
-            return parameters["learning_rate"]
-        return 1e-5
-
-    def num_checkpoints(self) -> int:
-        parameters = self.datamodel.parameters
-        if "num_checkpoints" in parameters and isinstance(
-            parameters["num_checkpoints"], int
-        ):
-            return parameters["num_checkpoints"]
-        return 1
-
-    def batch_size(self) -> int | Literal["max"]:
-        parameters = self.datamodel.parameters
-        if "batch_size" in parameters and isinstance(parameters["batch_size"], int):
-            return parameters["batch_size"]
-        return "max"
-
-    def min_lr_ratio(self) -> float:
-        parameters = self.datamodel.parameters
-        if "min_lr_ratio" in parameters and isinstance(
-            parameters["min_lr_ratio"], float
-        ):
-            return parameters["min_lr_ratio"]
-        return 0.0
-
-    def warmup_ratio(self) -> float:
-        parameters = self.datamodel.parameters
-        if "warmup_ratio" in parameters and isinstance(
-            parameters["warmup_ratio"], float
-        ):
-            return parameters["warmup_ratio"]
-        return 0.0
-
-    def max_grad_norm(self) -> float:
-        parameters = self.datamodel.parameters
-        if "max_grad_norm" in parameters and isinstance(
-            parameters["max_grad_norm"], float
-        ):
-            return parameters["max_grad_norm"]
-        return 1.0
-
-    def weight_decay(self) -> float:
-        parameters = self.datamodel.parameters
-        if "weight_decay" in parameters and isinstance(
-            parameters["weight_decay"], float
-        ):
-            return parameters["weight_decay"]
-        return 0.0
 
     async def generate_and_upload_jsonl(
         self, dataset: DatasetSplit, split_name: str, task: Task, format: DatasetFormat
@@ -246,49 +253,67 @@ class TogetherFinetune(BaseFinetuneAdapter):
         return [
             FineTuneParameter(
                 name="epochs",
-                description="The number of epochs to fine-tune for. If not provided, defaults to 1.",
+                description="Number of epochs to fine-tune for. Integer. Default: 1, Min: 1, Max: 20.",
                 type="int",
                 optional=True,
             ),
             FineTuneParameter(
                 name="learning_rate",
-                description="The learning rate to use for fine-tuning. If not provided, defaults to 0.00001",
+                description="Learning rate to use for fine-tuning. Float. Defaults to 0.00001",
                 type="float",
                 optional=True,
             ),
             FineTuneParameter(
                 name="batch_size",
-                description="The batch size of dataset used in training can be configured with a positive integer less than 1024 and in power of 2. If not specified, defaults to the max supported value for this model.",
+                description="Batch size used in training. Can be configured with a positive integer less than 1024 and in power of 2. If not specified, defaults to the max supported value for this model. See together model pages for min/max values for each model.",
                 type="int",
                 optional=True,
             ),
             FineTuneParameter(
                 name="num_checkpoints",
-                description="The number of checkpoints to save during training. If not specified, defaults to 1.",
+                description="Number of checkpoints to save during training. Integer. Defaults to 1.",
                 type="int",
                 optional=True,
             ),
             FineTuneParameter(
                 name="min_lr_ratio",
-                description="The ratio of the final learning rate to the peak learning rate. Defaults to 0.",
+                description="The ratio of the final learning rate to the peak learning rate. Float. Default: 0.0, Min: 0.0, Max: 1.0.",
                 type="float",
                 optional=True,
             ),
             FineTuneParameter(
                 name="warmup_ratio",
-                description="The percent of steps at the start of training to linearly increase the learning rate. Defaults to 0.",
+                description="The percent of steps at the start of training to linearly increase the learning rate. Float. Defaults to 0.0, Min: 0.0, Max: 1.0.",
                 type="float",
                 optional=True,
             ),
             FineTuneParameter(
                 name="max_grad_norm",
-                description="Max gradient norm to be used for gradient clipping. Set to 0 to disable. Defaults to 1.",
+                description="Max gradient norm for gradient clipping. Set to 0 to disable. Float. Defaults to 1.0, Min: 0.0.",
                 type="float",
                 optional=True,
             ),
             FineTuneParameter(
                 name="weight_decay",
-                description="The weight decay. Defaults to 0.",
+                description="Weight decay. Float. Defaults to 0.0.",
+                type="float",
+                optional=True,
+            ),
+            FineTuneParameter(
+                name="lora_r",
+                description="Rank of LoRA adapters. Default: 8, Min: 1, Max: 64",
+                type="int",
+                optional=True,
+            ),
+            FineTuneParameter(
+                name="lora_dropout",
+                description="Dropout rate for LoRA adapters. Default: 0.0, Min: 0.0, Max: 1.0.",
+                type="float",
+                optional=True,
+            ),
+            FineTuneParameter(
+                name="lora_alpha",
+                description="Alpha value for LoRA adapter training. Default: 8. Min: 1. If a value less than 1 is given, it will default to lora_r value to follow the recommendation of 1:1 scaling.",
                 type="float",
                 optional=True,
             ),

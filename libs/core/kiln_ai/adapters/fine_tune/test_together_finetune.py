@@ -7,7 +7,6 @@ from together.types.finetune import FinetuneJobStatus as TogetherFinetuneJobStat
 
 from kiln_ai.adapters.fine_tune.base_finetune import (
     FineTuneParameter,
-    FineTuneStatus,
     FineTuneStatusType,
 )
 from kiln_ai.adapters.fine_tune.dataset_formatter import DatasetFormat, DatasetFormatter
@@ -20,7 +19,6 @@ from kiln_ai.adapters.fine_tune.together_finetune import (
 )
 from kiln_ai.datamodel import (
     DatasetSplit,
-    FinetuneDataStrategy,
     StructuredOutputMode,
     Task,
 )
@@ -116,114 +114,9 @@ def test_init_success(mock_api_key, mock_together_client, finetune):
     TogetherFinetune(datamodel=finetune)
 
 
-@pytest.mark.parametrize(
-    "parameters,expected",
-    [
-        ({"epochs": 5}, 5),
-        ({}, 1),  # Default
-        ({"epochs": "not_an_int"}, 1),  # Invalid, uses default
-    ],
-)
-def test_epochs(together_finetune, parameters, expected):
-    together_finetune.datamodel.parameters = parameters
-    assert together_finetune.epochs() == expected
-
-
-@pytest.mark.parametrize(
-    "parameters,expected",
-    [
-        ({"learning_rate": 0.001}, 0.001),
-        ({}, 1e-5),  # Default
-        ({"learning_rate": "not_a_float"}, 1e-5),  # Invalid, uses default
-    ],
-)
-def test_learning_rate(together_finetune, parameters, expected):
-    together_finetune.datamodel.parameters = parameters
-    assert together_finetune.learning_rate() == expected
-
-
-@pytest.mark.parametrize(
-    "parameters,expected",
-    [
-        ({"num_checkpoints": 3}, 3),
-        ({}, 1),  # Default
-        ({"num_checkpoints": "not_an_int"}, 1),  # Invalid, uses default
-    ],
-)
-def test_num_checkpoints(together_finetune, parameters, expected):
-    together_finetune.datamodel.parameters = parameters
-    assert together_finetune.num_checkpoints() == expected
-
-
-@pytest.mark.parametrize(
-    "parameters,expected",
-    [
-        ({"batch_size": 32}, 32),
-        ({"batch_size": "max"}, "max"),
-        ({}, "max"),  # Default
-        ({"batch_size": "not_an_int"}, "max"),  # Invalid, uses default
-    ],
-)
-def test_batch_size(together_finetune, parameters, expected):
-    together_finetune.datamodel.parameters = parameters
-    assert together_finetune.batch_size() == expected
-
-
-@pytest.mark.parametrize(
-    "parameters,expected",
-    [
-        ({"min_lr_ratio": 0.1}, 0.1),
-        ({}, 0.0),  # Default
-        ({"min_lr_ratio": "not_a_float"}, 0.0),  # Invalid, uses default
-    ],
-)
-def test_min_lr_ratio(together_finetune, parameters, expected):
-    together_finetune.datamodel.parameters = parameters
-    assert together_finetune.min_lr_ratio() == expected
-
-
-@pytest.mark.parametrize(
-    "parameters,expected",
-    [
-        ({"warmup_ratio": 0.2}, 0.2),
-        ({}, 0.0),  # Default
-        ({"warmup_ratio": "not_a_float"}, 0.0),  # Invalid, uses default
-    ],
-)
-def test_warmup_ratio(together_finetune, parameters, expected):
-    together_finetune.datamodel.parameters = parameters
-    assert together_finetune.warmup_ratio() == expected
-
-
-@pytest.mark.parametrize(
-    "parameters,expected",
-    [
-        ({"max_grad_norm": 5.0}, 5.0),
-        ({}, 1.0),  # Default
-        ({"max_grad_norm": "not_a_float"}, 1.0),  # Invalid, uses default
-    ],
-)
-def test_max_grad_norm(together_finetune, parameters, expected):
-    together_finetune.datamodel.parameters = parameters
-    assert together_finetune.max_grad_norm() == expected
-
-
-@pytest.mark.parametrize(
-    "parameters,expected",
-    [
-        ({"weight_decay": 0.01}, 0.01),
-        ({}, 0.0),  # Default
-        ({"weight_decay": "not_a_float"}, 0.0),  # Invalid, uses default
-    ],
-)
-def test_weight_decay(together_finetune, parameters, expected):
-    together_finetune.datamodel.parameters = parameters
-    assert together_finetune.weight_decay() == expected
-
-
 def test_available_parameters():
     parameters = TogetherFinetune.available_parameters()
-    assert len(parameters) == 8
+    assert len(parameters) == 11
     assert all(isinstance(p, FineTuneParameter) for p in parameters)
 
     # Check specific parameters
@@ -236,6 +129,9 @@ def test_available_parameters():
     assert "warmup_ratio" in param_names
     assert "max_grad_norm" in param_names
     assert "weight_decay" in param_names
+    assert "lora_r" in param_names
+    assert "lora_dropout" in param_names
+    assert "lora_alpha" in param_names
 
 
 async def test_status_missing_provider_id(together_finetune, mock_api_key):
@@ -391,14 +287,15 @@ async def test_generate_and_upload_jsonl_error(
 
 
 @pytest.mark.parametrize(
-    "output_schema,expected_mode,expected_format",
+    "output_schema,expected_mode,expected_format,validation_file",
     [
         (
             '{"type": "object", "properties": {"key": {"type": "string"}}}',
             StructuredOutputMode.json_custom_instructions,
             DatasetFormat.OPENAI_CHAT_JSON_SCHEMA_JSONL,
+            True,
         ),
-        (None, None, DatasetFormat.OPENAI_CHAT_JSONL),
+        (None, None, DatasetFormat.OPENAI_CHAT_JSONL, False),
     ],
 )
 async def test_start_success(
@@ -410,6 +307,7 @@ async def test_start_success(
     output_schema,
     expected_mode,
     expected_format,
+    validation_file,
 ):
     # Set output schema on task
     mock_task.output_json_schema = output_schema
@@ -431,30 +329,33 @@ async def test_start_success(
         "generate_and_upload_jsonl",
         AsyncMock(return_value=mock_file_id),
     ):
+        if validation_file:
+            together_finetune.datamodel.validation_split_name = "validation"
+
         await together_finetune._start(mock_dataset)
 
         # Check that generate_and_upload_jsonl was called with correct parameters
-        together_finetune.generate_and_upload_jsonl.assert_called_once_with(
-            mock_dataset,
-            together_finetune.datamodel.train_split_name,
-            mock_task,
-            expected_format,
-        )
+        first_call = together_finetune.generate_and_upload_jsonl.call_args_list[0].args
+        assert first_call[0] == mock_dataset
+        assert first_call[1] == together_finetune.datamodel.train_split_name
+        assert first_call[2] == mock_task
+        assert first_call[3] == expected_format
+        if validation_file:
+            second_call = together_finetune.generate_and_upload_jsonl.call_args_list[
+                1
+            ].args
+            assert second_call[0] == mock_dataset
+            assert second_call[1] == "validation"
+            assert second_call[2] == mock_task
+            assert second_call[3] == expected_format
 
         # Check that fine_tuning.create was called with correct parameters
         mock_together_client.fine_tuning.create.assert_called_once_with(
             training_file=mock_file_id,
+            validation_file=mock_file_id if validation_file else "",
             model=together_finetune.datamodel.base_model_id,
             lora=True,
-            n_epochs=together_finetune.epochs(),
-            learning_rate=together_finetune.learning_rate(),
-            batch_size=together_finetune.batch_size(),
-            n_checkpoints=together_finetune.num_checkpoints(),
             suffix=f"kiln_ai_{together_finetune.datamodel.id}"[:40],
-            min_lr_ratio=together_finetune.min_lr_ratio(),
-            warmup_ratio=together_finetune.warmup_ratio(),
-            max_grad_norm=together_finetune.max_grad_norm(),
-            weight_decay=together_finetune.weight_decay(),
         )
 
         # Check that datamodel was updated correctly
@@ -498,3 +399,133 @@ def test_augment_system_message(mock_task):
         augmented_system_message
         == "You are a helpful assistant.\n\nReturn only JSON. Do not include any non JSON text.\n"
     )
+
+
+@pytest.mark.parametrize(
+    "parameter_name,input_value,expected_key,expected_value,should_exist",
+    [
+        # learning_rate tests
+        ("learning_rate", 0.001, "learning_rate", 0.001, True),
+        ("learning_rate", "not_a_float", "learning_rate", None, False),
+        # epochs tests
+        ("epochs", 5, "n_epochs", 5, True),
+        ("epochs", "not_an_int", "n_epochs", None, False),
+        # num_checkpoints tests
+        ("num_checkpoints", 3, "n_checkpoints", 3, True),
+        ("num_checkpoints", "not_an_int", "n_checkpoints", None, False),
+        # batch_size tests
+        ("batch_size", 32, "batch_size", 32, True),
+        ("batch_size", "not_an_int", "batch_size", None, False),
+        # min_lr_ratio tests
+        ("min_lr_ratio", 0.1, "min_lr_ratio", 0.1, True),
+        ("min_lr_ratio", "not_a_float", "min_lr_ratio", None, False),
+        # warmup_ratio tests
+        ("warmup_ratio", 0.2, "warmup_ratio", 0.2, True),
+        ("warmup_ratio", "not_a_float", "warmup_ratio", None, False),
+        # max_grad_norm tests
+        ("max_grad_norm", 5.0, "max_grad_norm", 5.0, True),
+        ("max_grad_norm", "not_a_float", "max_grad_norm", None, False),
+        # weight_decay tests
+        ("weight_decay", 0.01, "weight_decay", 0.01, True),
+        ("weight_decay", "not_a_float", "weight_decay", None, False),
+        # lora_r tests
+        ("lora_r", 16, "lora_r", 16, True),
+        ("lora_r", "not_an_int", "lora_r", None, False),
+        # lora_dropout tests
+        ("lora_dropout", 0.1, "lora_dropout", 0.1, True),
+        ("lora_dropout", "not_a_float", "lora_dropout", None, False),
+        # lora_alpha tests
+        ("lora_alpha", 32.0, "lora_alpha", 32.0, True),
+        ("lora_alpha", "not_a_float", "lora_alpha", None, False),
+    ],
+)
+def test_build_finetune_parameters(
+    together_finetune,
+    parameter_name,
+    input_value,
+    expected_key,
+    expected_value,
+    should_exist,
+):
+    """Test that _build_finetune_parameters correctly handles different parameters."""
+    # Set the parameter
+    together_finetune.datamodel.parameters = {parameter_name: input_value}
+    together_finetune.datamodel.id = "test-display-name"
+
+    # Call the method to build parameters
+    result = together_finetune._build_finetune_parameters()
+
+    # Check that required parameters are always present
+    assert result["lora"] is True
+    assert result["suffix"] == "kiln_ai_test-display-name"
+
+    # Check the specific parameter we're testing
+    if should_exist:
+        assert expected_key in result
+        assert result[expected_key] == expected_value
+    else:
+        assert expected_key not in result
+
+
+@pytest.mark.parametrize(
+    "parameters,expected_params",
+    [
+        # Test default values when parameters are empty
+        (
+            {},
+            {
+                "lora": True,
+                "suffix": "kiln_ai_1234",
+            },
+        ),
+        # Test multiple parameters together
+        (
+            {
+                "epochs": 3,
+                "learning_rate": 0.0005,
+                "batch_size": 16,
+                "num_checkpoints": 2,
+                "min_lr_ratio": 0.1,
+                "warmup_ratio": 0.2,
+                "max_grad_norm": 2.0,
+                "weight_decay": 0.01,
+            },
+            {
+                "lora": True,
+                "n_epochs": 3,
+                "learning_rate": 0.0005,
+                "batch_size": 16,
+                "n_checkpoints": 2,
+                "min_lr_ratio": 0.1,
+                "warmup_ratio": 0.2,
+                "max_grad_norm": 2.0,
+                "weight_decay": 0.01,
+                "suffix": "kiln_ai_1234",
+            },
+        ),
+        # Test mix of valid and invalid parameters
+        (
+            {
+                "epochs": "invalid",
+                "learning_rate": 0.001,
+                "batch_size": "invalid",
+                "num_checkpoints": "invalid",
+            },
+            {
+                "lora": True,
+                "learning_rate": 0.001,
+                "suffix": "kiln_ai_1234",
+            },
+        ),
+    ],
+)
+def test_build_finetune_parameters_combinations(
+    together_finetune, parameters, expected_params
+):
+    """Test combinations of parameters in _build_finetune_parameters."""
+    together_finetune.datamodel.parameters = parameters
+    together_finetune.datamodel.id = "1234"
+    result = together_finetune._build_finetune_parameters()
+
+    # Check that all expected keys are present with the correct values
+    assert result == expected_params
