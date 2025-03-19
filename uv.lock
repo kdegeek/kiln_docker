@@ -1055,7 +1055,7 @@ dev = [
     { name = "pyright", specifier = "==1.1.376" },
     { name = "pytest", specifier = ">=8.3.3" },
     { name = "pytest-asyncio", specifier = ">=0.24.0" },
-    { name = "pytest-xdist" },
+    { name = "pytest-xdist", specifier = ">=3.5" },
     { name = "python-dotenv", specifier = ">=1.0.1" },
     { name = "ruff", specifier = ">=0.9.0" },
 ]
