@@ -340,6 +340,7 @@ async def test_start_success(
     expected_mode,
     expected_format,
 ):
+    Config.shared().wandb_api_key = "test-api-key"
     mock_task.output_json_schema = output_schema
 
     fireworks_finetune.datamodel.parent = mock_task
@@ -377,6 +378,24 @@ async def test_start_success(
         assert fireworks_finetune.datamodel.provider_id == mock_model_id
         assert fireworks_finetune.datamodel.structured_output_mode == expected_mode
         assert fireworks_finetune.datamodel.properties["endpoint_version"] == "v2"
+
+        # check mockclent.post call values
+        assert mock_client.post.call_count == 1
+        submit_call_values = mock_client.post.call_args[1]
+        assert submit_call_values["json"]["wandbConfig"] == {
+            "enabled": True,
+            "project": "Kiln_AI",
+            "apiKey": "test-api-key",
+        }
+        assert submit_call_values["json"]["baseModel"] == "llama-v2-7b"
+        assert (
+            submit_call_values["json"]["dataset"]
+            == f"accounts/{Config.shared().fireworks_account_id}/datasets/{mock_dataset_id}"
+        )
+        assert (
+            submit_call_values["json"]["displayName"]
+            == f"Kiln AI fine-tuning [ID:{fireworks_finetune.datamodel.id}][name:{fireworks_finetune.datamodel.name}]"
+        )
 
 
 async def test_start_api_error(

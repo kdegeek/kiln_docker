@@ -132,11 +132,18 @@ class FireworksFinetune(BaseFinetuneAdapter):
                 :60
             ]
         )
-        payload = {
+        payload: dict[str, str | dict[str, str | bool]] = {
             "dataset": f"accounts/{account_id}/datasets/{train_file_id}",
             "displayName": display_name,
             "baseModel": self.datamodel.base_model_id,
         }
+        # Add W&B config if API key is set
+        if Config.shared().wandb_api_key:
+            payload["wandbConfig"] = {
+                "enabled": True,
+                "project": "Kiln_AI",
+                "apiKey": Config.shared().wandb_api_key,
+            }
         hyperparameters = self.create_payload_parameters(self.datamodel.parameters)
         payload.update(hyperparameters)
         headers = {
