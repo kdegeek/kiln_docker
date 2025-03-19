@@ -67,4 +67,6 @@ pyinstaller $(printf %s "$PLATFORM_OPTS")  \
   --add-data "./taskbar.png:." --add-data "../../web_ui/build:./web_ui/build" \
   --noconfirm --distpath=./desktop/build/dist --workpath=./desktop/build/work \
   -n Kiln --specpath=./desktop/build --hidden-import=tiktoken_ext.openai_public --hidden-import=tiktoken_ext \
+  --hidden-import=litellm \
+  --collect-data=litellm \
   --paths=. ./desktop/desktop.py
