@@ -46,13 +46,15 @@ The Kiln desktop app is completely free. Available on MacOS, Windows and Linux.
 
 [<img width="220" alt="Download button" src="https://github.com/user-attachments/assets/a5d51b8b-b30a-4a16-a902-ab6ef1d58dc0">](https://github.com/Kiln-AI/Kiln/releases/latest)
 
-## Preview
+## App Preview
 
 <kbd>
 <a href="https://getkiln.ai#kiln-overview-video">
 <img alt="Kiln Preview" src="guides/kiln_preview.gif">
 </a>
 </kbd>
+
+View [full quality](https://getkiln.ai#kiln-overview-video)
 
 ## Docs & Guides
 
