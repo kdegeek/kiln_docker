@@ -362,6 +362,8 @@
   function handle_manual_edit_submit(repair_run_edited: TaskRun) {
     repair_run = repair_run_edited
     repair_edit_mode = false
+    updated_run = repair_run_edited
+    repair_run = null
   }
 </script>
 
@@ -445,7 +447,20 @@
                 bind:value={repair_instructions}
               />
             </FormContainer>
-          {:else if repair_review_available || repair_edit_mode}
+          {:else if repair_edit_mode && repair_run}
+            <p class="text-sm text-gray-500 mb-4">
+              Manually improve or correct the response.
+            </p>
+            <OutputRepairEditForm
+              {task}
+              {run}
+              {repair_run}
+              {project_id}
+              repair_instructions={repair_instructions || ""}
+              on_submit={handle_manual_edit_submit}
+              on_cancel={handle_manual_edit_cancel}
+            />
+          {:else if repair_review_available}
             <p class="text-sm text-gray-500 mb-4">
               The model has attempted to fix the output given <span
                 class="tooltip link"
@@ -453,16 +468,7 @@
                   'No instruction provided'}">your instructions</span
               >. Review the result.
             </p>
-            {#if repair_edit_mode && repair_run}
-              <OutputRepairEditForm
-                {task}
-                {repair_run}
-                on_submit={handle_manual_edit_submit}
-                on_cancel={handle_manual_edit_cancel}
-              />
-            {:else}
-              <Output raw_output={repair_run?.output.output || ""} />
-            {/if}
+            <Output raw_output={repair_run?.output.output || ""} />
           {:else if repair_complete}
             <p class="text-sm text-gray-500 mb-4">
               The model has fixed the output given <span

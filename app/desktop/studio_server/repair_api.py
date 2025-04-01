@@ -79,11 +79,6 @@ def connect_repair_api(app: FastAPI):
     ) -> TaskRun:
         task, run = task_and_run_from_id(project_id, task_id, run_id)
 
-        # the repair must match the task's output schema if structured output is enabled
-        if task.output_json_schema:
-            output = input.repair_run.output.model_dump().get("output", "")
-            validate_schema(json.loads(output), task.output_json_schema)
-
         # manually edited runs are human but the user id is not set
         source = input.repair_run.output.source
         if not source or source.type == DataSourceType.human:
