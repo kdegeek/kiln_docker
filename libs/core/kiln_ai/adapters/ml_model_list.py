@@ -761,12 +761,6 @@ built_in_models: List[KilnModel] = [
                 model_id="llama3.2",
             ),
             KilnModelProvider(
-                name=ModelProviderName.fireworks_ai,
-                supports_structured_output=False,
-                supports_data_gen=False,
-                model_id="accounts/fireworks/models/llama-v3p2-3b-instruct",
-            ),
-            KilnModelProvider(
                 name=ModelProviderName.huggingface,
                 model_id="meta-llama/Llama-3.2-3B-Instruct",
                 supports_structured_output=False,
