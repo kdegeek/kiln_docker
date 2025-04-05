@@ -1192,10 +1192,6 @@ built_in_models: List[KilnModel] = [
                 name=ModelProviderName.ollama,
                 model_id="qwen2.5",
             ),
-            KilnModelProvider(
-                name=ModelProviderName.fireworks_ai,
-                structured_output_mode=StructuredOutputMode.json_instruction_and_object,
-            ),
         ],
     ),
     # Qwen 2.5 14B
