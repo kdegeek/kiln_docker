@@ -29,6 +29,7 @@ from app.desktop.studio_server.finetune_api import (
     CreateDatasetSplitRequest,
     CreateFinetuneRequest,
     DatasetSplitType,
+    FinetuneProviderModel,
     connect_fine_tune_api,
     fetch_fireworks_finetune_models,
     thinking_instructions_from_request,
@@ -192,32 +193,55 @@ def mock_provider_name_from_id():
         yield mock_name
 
 
+@pytest.mark.asyncio
 async def test_get_finetune_providers(
     client, mock_built_in_models, mock_provider_name_from_id, mock_provider_enabled
 ):
-    response = client.get("/api/finetune_providers")
+    # Mock the Fireworks API call
+    with patch(
+        "app.desktop.studio_server.finetune_api.fetch_fireworks_finetune_models",
+        new_callable=AsyncMock,
+    ) as mock_fetch:
+        # Set up mock return value with one model
+        mock_fetch.return_value = [
+            FinetuneProviderModel(name="Fireworks Model", id="fireworks/model-1")
+        ]
 
-    assert response.status_code == 200
-    providers = response.json()
-    assert len(providers) == 2
+        response = client.get("/api/finetune_providers")
 
-    # Check provider1
-    provider1 = next(p for p in providers if p["id"] == "groq")
-    assert provider1["name"] == "Provider groq"
-    assert provider1["enabled"] is True
-    assert len(provider1["models"]) == 2
-    assert provider1["models"][0]["name"] == "Model 1"
-    assert provider1["models"][0]["id"] == "ft_model1"
-    assert provider1["models"][1]["name"] == "Model 2"
-    assert provider1["models"][1]["id"] == "ft_model2"
+        # Verify the mock was called
+        mock_fetch.assert_called_once()
 
-    # Check provider2
-    provider2 = next(p for p in providers if p["id"] == "openai")
-    assert provider2["name"] == "Provider openai"
-    assert provider2["enabled"] is False
-    assert len(provider2["models"]) == 1
-    assert provider2["models"][0]["name"] == "Model 1"
-    assert provider2["models"][0]["id"] == "ft_model1_p2"
+        assert response.status_code == 200
+        providers = response.json()
+        assert len(providers) >= 3  # Now we expect at least 3 providers with Fireworks
+
+        # Check provider1 (groq)
+        provider1 = next(p for p in providers if p["id"] == "groq")
+        assert provider1["name"] == "Provider groq"
+        assert provider1["enabled"] is True
+        assert len(provider1["models"]) == 2
+        assert provider1["models"][0]["name"] == "Model 1"
+        assert provider1["models"][0]["id"] == "ft_model1"
+        assert provider1["models"][1]["name"] == "Model 2"
+        assert provider1["models"][1]["id"] == "ft_model2"
+
+        # Check provider2 (openai)
+        provider2 = next(p for p in providers if p["id"] == "openai")
+        assert provider2["name"] == "Provider openai"
+        assert provider2["enabled"] is False
+        assert len(provider2["models"]) == 1
+        assert provider2["models"][0]["name"] == "Model 1"
+        assert provider2["models"][0]["id"] == "ft_model1_p2"
+
+        # Check Fireworks provider
+        fireworks_provider = next(p for p in providers if p["id"] == "fireworks_ai")
+        assert (
+            fireworks_provider["name"] == "Provider fireworks_ai"
+        )  # Using mock_provider_name_from_id
+        assert len(fireworks_provider["models"]) == 1
+        assert fireworks_provider["models"][0]["name"] == "Fireworks Model"
+        assert fireworks_provider["models"][0]["id"] == "fireworks/model-1"
 
 
 @pytest.fixture
