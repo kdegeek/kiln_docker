@@ -7,7 +7,7 @@ from pydantic import Field, ValidationInfo, model_validator
 from typing_extensions import Self
 
 from kiln_ai.datamodel.basemodel import KilnParentedModel
-from kiln_ai.datamodel.json_schema import validate_schema
+from kiln_ai.datamodel.json_schema import validate_schema_with_value_error
 from kiln_ai.datamodel.strict_mode import strict_mode
 from kiln_ai.datamodel.task_output import DataSource, TaskOutput
 
@@ -87,14 +87,19 @@ class TaskRun(KilnParentedModel):
             # don't validate this relationship until we have a path or parent. Give them time to build it (but will catch it before saving)
             return self
 
-        # validate output
+        # validate input
         if task.input_json_schema is not None:
             try:
-                validate_schema(json.loads(self.input), task.input_json_schema)
+                input_parsed = json.loads(self.input)
             except json.JSONDecodeError:
                 raise ValueError("Input is not a valid JSON object")
-            except jsonschema.exceptions.ValidationError as e:
-                raise ValueError(f"Input does not match task input schema: {e}")
+
+            validate_schema_with_value_error(
+                input_parsed,
+                task.input_json_schema,
+                "Input does not match task input schema.",
+            )
+
         self._last_validated_input = self.input
         return self
 
