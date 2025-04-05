@@ -460,15 +460,19 @@ async def fetch_fireworks_finetune_models() -> list[FinetuneProviderModel]:
     tuneable_models = []
     for model in models:
         if model.get("tunable", False) and "displayName" in model and "name" in model:
+            id = model["name"]
             # Display name is sometimes empty, so use the name from the API name if needed
-            name = model["displayName"]
-            if name.strip() == "":
-                name = model["name"].split("/")[-1]
+            display_name = model["displayName"]
+            id_tail = id.split("/")[-1]
+            if display_name.strip() == "":
+                name = id_tail
+            else:
+                name = display_name + " (" + id_tail + ")"
 
             tuneable_models.append(
                 FinetuneProviderModel(
                     name=name,
-                    id=model["name"],
+                    id=id,
                 )
             )
 

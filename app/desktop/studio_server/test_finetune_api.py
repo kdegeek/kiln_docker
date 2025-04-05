@@ -1188,17 +1188,18 @@ async def test_fetch_fireworks_finetune_models_success(mock_config, mock_httpx_c
     assert len(result) == 3
 
     # Check model details
-    assert result[0].name == "Model One"
+    assert result[0].name == "Model One (model1)"
     assert result[0].id == "accounts/fireworks/models/model1"
 
     # Check that model2 (non-tunable) is not included
     assert all(model.id != "accounts/fireworks/models/model2" for model in result)
 
     # Check that empty display name is handled correctly
+    # Should use the last part of the id as the name
     model3 = next(
         model for model in result if model.id == "accounts/fireworks/models/model3"
     )
-    assert model3.name == "model3"  # Should use the last part of the name
+    assert model3.name == "model3"
 
 
 @pytest.mark.asyncio
