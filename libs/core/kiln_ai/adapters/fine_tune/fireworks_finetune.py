@@ -16,6 +16,7 @@ from kiln_ai.utils.config import Config
 
 logger = logging.getLogger(__name__)
 
+# https://docs.fireworks.ai/fine-tuning/fine-tuning-models#supported-base-models-loras-on-serverless
 serverless_models = [
     "accounts/fireworks/models/llama-v3p1-8b-instruct",
     "accounts/fireworks/models/llama-v3p1-70b-instruct",
