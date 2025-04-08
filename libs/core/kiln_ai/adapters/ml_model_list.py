@@ -97,6 +97,7 @@ class ModelName(str, Enum):
     gemini_1_5_flash_8b = "gemini_1_5_flash_8b"
     gemini_1_5_pro = "gemini_1_5_pro"
     gemini_2_0_flash = "gemini_2_0_flash"
+    gemini_2_0_flash_lite = "gemini_2_0_flash_lite"
     nemotron_70b = "nemotron_70b"
     mixtral_8x7b = "mixtral_8x7b"
     qwen_2p5_7b = "qwen_2p5_7b"
@@ -526,6 +527,31 @@ built_in_models: List[KilnModel] = [
                 name=ModelProviderName.vertex,
                 model_id="gemini-2.0-flash",
                 structured_output_mode=StructuredOutputMode.json_instruction_and_object,
+                provider_finetune_id="gemini-2.0-flash-001",
+            ),
+        ],
+    ),
+    # Gemini 2.0 Flash Lite
+    KilnModel(
+        family=ModelFamily.gemini,
+        name=ModelName.gemini_2_0_flash_lite,
+        friendly_name="Gemini 2.0 Flash Lite",
+        providers=[
+            KilnModelProvider(
+                name=ModelProviderName.openrouter,
+                model_id="google/gemini-2.0-flash-lite-001",
+                structured_output_mode=StructuredOutputMode.json_instruction_and_object,
+            ),
+            KilnModelProvider(
+                name=ModelProviderName.gemini_api,
+                model_id="gemini-2.0-flash-lite",
+                structured_output_mode=StructuredOutputMode.json_instruction_and_object,
+            ),
+            KilnModelProvider(
+                name=ModelProviderName.vertex,
+                model_id="gemini-2.0-flash-lite",
+                structured_output_mode=StructuredOutputMode.json_instruction_and_object,
+                provider_finetune_id="gemini-2.0-flash-lite-001",
             ),
         ],
     ),
