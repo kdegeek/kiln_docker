@@ -268,6 +268,12 @@ def finetune_provider_model(
         model_id=fine_tune.fine_tune_model_id,
     )
 
+    # TODO: improve this trick. Ideally set base model.
+    if provider == ModelProviderName.vertex and fine_tune.fine_tune_model_id:
+        endpoint_id = fine_tune.fine_tune_model_id.split("/")[-1]
+        model_provider.model_id = f"openai/{endpoint_id}"
+        print(model_provider.model_id)
+
     if fine_tune.structured_output_mode is not None:
         # If we know the model was trained with specific output mode, set it
         model_provider.structured_output_mode = fine_tune.structured_output_mode
