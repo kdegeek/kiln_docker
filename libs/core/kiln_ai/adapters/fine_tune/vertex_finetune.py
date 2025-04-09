@@ -127,12 +127,7 @@ class VertexFinetune(BaseFinetuneAdapter):
                 dataset, self.datamodel.validation_split_name, task, format
             )
 
-        # Filter to hyperparameters which are set via the hyperparameters field (some like seed are set via the API)
-        hyperparameters = {
-            k: v
-            for k, v in self.datamodel.parameters.items()
-            if k in ["epochs", "learning_rate_multiplier", "adapter_size"]
-        }
+        hyperparameters = self.datamodel.parameters
 
         project = Config.shared().vertex_project_id
         location = Config.shared().vertex_location
@@ -143,20 +138,19 @@ class VertexFinetune(BaseFinetuneAdapter):
             train_dataset=train_file_id,
             validation_dataset=validation_file_id,
             tuned_model_display_name=f"kiln_finetune_{self.datamodel.id}",
-            # Advanced use only below. It is recommended to use auto-selection and leave them unset
-            epochs=1,
-            adapter_size=4,
-            # learning_rate_multiplier=1.0,
+            # It is recommended to use auto-selection and leave them unset
+            epochs=hyperparameters.get("epochs", None),  # type: ignore
+            adapter_size=hyperparameters.get("adapter_size", None),  # type: ignore
+            learning_rate_multiplier=hyperparameters.get(
+                "learning_rate_multiplier", None
+            ),  # type: ignore
             labels={
                 "source": "kiln",
                 "kiln_finetune_id": str(self.datamodel.id),
                 "kiln_task_id": str(task.id),
             },
-            # TODO set real hyperparameters
         )
-        print(sft_tuning_job)
         self.datamodel.provider_id = sft_tuning_job.resource_name
-        # self.datamodel.fine_tune_model_id = ft.fine_tuned_model
 
         return None
 
