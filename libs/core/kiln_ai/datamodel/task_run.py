@@ -144,11 +144,15 @@ class TaskRun(KilnParentedModel):
                 and task.output_json_schema is not None
             ):
                 try:
-                    validate_schema(
-                        json.loads(self.repaired_output.output), task.output_json_schema
-                    )
+                    output_parsed = json.loads(self.repaired_output.output)
                 except json.JSONDecodeError:
                     raise ValueError("Repaired output is not a valid JSON object")
+
+                validate_schema_with_value_error(
+                    output_parsed,
+                    task.output_json_schema,
+                    "Repaired output does not match task output schema.",
+                )
 
         if self.repair_instructions is None and self.repaired_output is not None:
             raise ValueError(
