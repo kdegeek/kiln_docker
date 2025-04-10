@@ -5,6 +5,7 @@
   import { KilnError } from "../../../../../lib/utils/error_handlers"
   import { client } from "$lib/api_client"
   import { createKilnError } from "$lib/utils/error_handlers"
+  import FormElement from "../../../../../lib/utils/form_element.svelte"
 
   interface TopicNodeWithPath {
     path: string[]
@@ -21,6 +22,8 @@
   export let num_samples_to_generate: number = 8
   export let custom_topics_string: string | null = null
   export let cascade_mode: boolean = false
+  export let generate_samples_mode: "parallel" | "sequential" = "parallel"
+  let ui_show_errors = false
 
   export let on_completed: () => void
 
@@ -52,9 +55,16 @@
     }
   }
 
+  type GenerateSampleResponse = {
+    error: KilnError | null
+  }
+
   let sample_generating: boolean = false
   let sample_generation_error: KilnError | null = null
-  async function generate_samples(topic: TopicNodeWithPath) {
+  let generate_samples_sub_errors: KilnError[] = []
+  async function generate_samples(
+    topic: TopicNodeWithPath,
+  ): Promise<GenerateSampleResponse> {
     try {
       if (!model) {
         throw new KilnError("No model selected.", null)
@@ -102,17 +112,19 @@
         model_provider,
       )
     } catch (e) {
-      // TODO: handle errors better and distinguish between sub-errors and
-      // orchestration errors
       if (e instanceof Error && e.message.includes("Load failed")) {
         sample_generation_error = new KilnError(
           "Could not generate samples, unknown error. If it persists, try another model.",
           null,
         )
-      } else {
-        sample_generation_error = createKilnError(e)
+
+        return { error: sample_generation_error }
       }
+
+      return { error: createKilnError(e) }
     }
+
+    return { error: null }
   }
 
   /**
@@ -151,26 +163,41 @@
       .filter((t) => t.node.sub_topics.length == 0)
   }
 
-  async function generate_samples_for_all_leaf_nodes() {
-    const descendant_leaf_topics = collect_leaf_topic_nodes()
-    for (const topic of descendant_leaf_topics) {
-      await generate_samples(topic)
-    }
-  }
-
   async function generate() {
     sample_generating = true
     sample_generation_error = null
 
-    if (cascade_mode) {
-      await generate_samples_for_all_leaf_nodes()
-    } else {
-      await generate_samples({ path, node: data })
-    }
+    const queue = cascade_mode
+      ? collect_leaf_topic_nodes()
+      : [{ path, node: data }]
+
+    let parallelism = generate_samples_mode === "parallel" ? 25 : 1
+
+    // Create and start N workers
+    const workers = Array(parallelism)
+      .fill(null)
+      .map(() => worker(queue))
+
+    // Wait for all workers to complete
+    await Promise.all(workers)
 
     on_completed()
 
     sample_generating = false
+  }
+
+  async function worker(queue: TopicNodeWithPath[]) {
+    while (queue.length > 0) {
+      const topic = queue.shift()!
+      const result = await generate_samples(topic)
+
+      if (result.error) {
+        generate_samples_sub_errors.push(result.error)
+
+        // Trigger reactivity
+        generate_samples_sub_errors = generate_samples_sub_errors
+      }
+    }
   }
 </script>
 
@@ -203,12 +230,44 @@
           </div>
         {/if}
         <div class="flex flex-row items-center gap-4 mt-4 mb-2">
-          <div class="flex-grow font-medium text-sm">
-            Sample Count for each topic
-          </div>
+          <div class="flex-grow font-medium text-sm">Sample Count</div>
           <IncrementUi bind:value={num_samples_to_generate} />
         </div>
         <AvailableModelsDropdown requires_data_gen={true} bind:model />
+        {#if cascade_mode}
+          <FormElement
+            id="generate_samples_mode_element"
+            inputType="select"
+            info_description="Parallel is ideal for APIs (OpenAI, Fireworks, etc.) as they can handle thousands of requests in parallel. Sequential is ideal for Ollama or other servers that can only handle one request at a time."
+            select_options={[
+              ["parallel", "Parallel - Ideal for APIs (OpenAI, Fireworks)"],
+              ["sequential", "Sequential - Ideal for Ollama"],
+            ]}
+            bind:value={generate_samples_mode}
+            label="Run Mode"
+          />
+        {/if}
+        {#if generate_samples_sub_errors.length > 0}
+          <div class="text-error font-light text-sm mt-4">
+            {generate_samples_sub_errors.length} samples failed to generate. Running
+            again may resolve transient issues.
+            <button
+              class="link"
+              on:click={() => (ui_show_errors = !ui_show_errors)}
+            >
+              {ui_show_errors ? "Hide Errors" : "Show Errors"}
+            </button>
+          </div>
+          <div
+            class="flex flex-col gap-2 mt-4 text-xs text-error {ui_show_errors
+              ? ''
+              : 'hidden'}"
+          >
+            {#each generate_samples_sub_errors as error}
+              <div>{error.getMessage()}</div>
+            {/each}
+          </div>
+        {/if}
         <button
           class="btn mt-6 {custom_topics_string ? '' : 'btn-primary'}"
           on:click={generate}
