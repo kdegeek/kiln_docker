@@ -93,6 +93,7 @@ class TaskRun(KilnParentedModel):
                 validate_schema(json.loads(self.input), task.input_json_schema)
             except json.JSONDecodeError:
                 raise ValueError("Input is not a valid JSON object")
+            # TODO: jsonschema.exceptions.ValidationError is never raised by validate_schema
             except jsonschema.exceptions.ValidationError as e:
                 raise ValueError(f"Input does not match task input schema: {e}")
         self._last_validated_input = self.input
@@ -131,6 +132,20 @@ class TaskRun(KilnParentedModel):
                 raise ValueError(
                     "Repaired output rating must be None. Repaired outputs are assumed to have a perfect rating, as they have been fixed."
                 )
+
+            task = self.parent_task()
+            if (
+                task is not None
+                and self.repaired_output.output is not None
+                and task.output_json_schema is not None
+            ):
+                try:
+                    validate_schema(
+                        json.loads(self.repaired_output.output), task.output_json_schema
+                    )
+                except json.JSONDecodeError:
+                    raise ValueError("Repaired output is not a valid JSON object")
+
         if self.repair_instructions is None and self.repaired_output is not None:
             raise ValueError(
                 "Repair instructions are required if providing a repaired output."
@@ -139,6 +154,7 @@ class TaskRun(KilnParentedModel):
             raise ValueError(
                 "A repaired output is required if providing repair instructions."
             )
+
         return self
 
     @model_validator(mode="after")
