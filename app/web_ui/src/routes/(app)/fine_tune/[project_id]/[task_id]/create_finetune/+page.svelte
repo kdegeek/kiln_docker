@@ -60,7 +60,9 @@
   $: show_automatic_validation_option =
     selected_dataset &&
     selected_dataset_has_val &&
-    (model_provider_id === "openai" || model_provider_id === "together_ai")
+    (model_provider_id === "openai" ||
+      model_provider_id === "together_ai" ||
+      model_provider_id === "vertex")
   $: step_3_visible =
     model_provider !== disabled_header &&
     !!selected_dataset &&

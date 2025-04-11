@@ -117,7 +117,7 @@ class VertexFinetune(BaseFinetuneAdapter):
         if not task:
             raise ValueError("Task is required to start a fine-tune")
 
-        # Use chat format for unstructured output, and JSON for formatted output (was previously function calls)
+        # Use chat format for unstructured output, and JSON for formatted output
         format = DatasetFormat.VERTEX_GEMINI
         if task.output_json_schema:
             self.datamodel.structured_output_mode = StructuredOutputMode.json_mode
@@ -183,7 +183,6 @@ class VertexFinetune(BaseFinetuneAdapter):
         blob = bucket.blob(blob_name)
         blob.upload_from_filename(path)
 
-        print(f"File uploaded to gs://{bucket.name}/{blob.name}")
         return f"gs://{bucket.name}/{blob.name}"
 
     @classmethod
@@ -204,7 +203,7 @@ class VertexFinetune(BaseFinetuneAdapter):
             FineTuneParameter(
                 name="adapter_size",
                 type="int",
-                description="The size of the adapter to use for the fine-tune (Lora Rank). One of 1, 4, 8, or 16. By default Vertex will auto-select a size.",
+                description="The size of the adapter to use for the fine-tune. One of 1, 4, 8, or 16. By default Vertex will auto-select a size.",
                 optional=True,
             ),
         ]
