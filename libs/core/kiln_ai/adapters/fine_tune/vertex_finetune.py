@@ -132,8 +132,7 @@ class VertexFinetune(BaseFinetuneAdapter):
 
         hyperparameters = self.datamodel.parameters
 
-        project = Config.shared().vertex_project_id
-        location = Config.shared().vertex_location
+        project, location = self.get_vertex_provider_location()
         vertexai.init(project=project, location=location)
 
         sft_tuning_job = sft.train(
@@ -165,8 +164,7 @@ class VertexFinetune(BaseFinetuneAdapter):
         )
         path = formatter.dump_to_file(split_name, format, self.datamodel.data_strategy)
 
-        project = Config.shared().vertex_project_id
-        location = Config.shared().vertex_location
+        project, location = self.get_vertex_provider_location()
         storage_client = storage.Client(project=project)
 
         bucket_name = "kiln-ai-data"
@@ -207,3 +205,13 @@ class VertexFinetune(BaseFinetuneAdapter):
                 optional=True,
             ),
         ]
+
+    @classmethod
+    def get_vertex_provider_location(cls) -> tuple[str, str]:
+        project = Config.shared().vertex_project_id
+        location = Config.shared().vertex_location
+        if not project or not location:
+            raise ValueError(
+                "Google Vertex project and location must be set in Kiln settings to fine tune."
+            )
+        return project, location

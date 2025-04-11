@@ -557,3 +557,30 @@ def test_available_parameters():
 
     # Verify all parameters are optional
     assert all(p.optional for p in parameters)
+
+
+@pytest.mark.parametrize(
+    "project_id,location,should_raise",
+    [
+        ("test-project", "us-central1", False),
+        ("", "us-central1", True),
+        (None, "us-central1", True),
+        ("test-project", "", True),
+        ("test-project", None, True),
+        (None, None, True),
+    ],
+)
+def test_get_vertex_provider_location(project_id, location, should_raise):
+    with patch.object(Config, "shared") as mock_config:
+        mock_config.return_value.vertex_project_id = project_id
+        mock_config.return_value.vertex_location = location
+
+        if should_raise:
+            with pytest.raises(
+                ValueError, match="Google Vertex project and location must be set"
+            ):
+                VertexFinetune.get_vertex_provider_location()
+        else:
+            project, loc = VertexFinetune.get_vertex_provider_location()
+            assert project == project_id
+            assert loc == location
