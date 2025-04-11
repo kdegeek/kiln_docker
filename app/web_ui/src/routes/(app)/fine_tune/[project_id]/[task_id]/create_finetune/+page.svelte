@@ -143,8 +143,8 @@
       "Download: HuggingFace chat template with tool calls (JSONL)",
     ])
     available_model_select.push([
-      "download_vertex_gemini_1_5",
-      "Download: Google Vertex-AI Gemini 1.5 format (JSONL)",
+      "download_vertex_gemini",
+      "Download: Google Vertex-AI Gemini format (JSONL)",
     ])
   }
 
@@ -155,7 +155,7 @@
     download_huggingface_chat_template: "huggingface_chat_template_jsonl",
     download_huggingface_chat_template_toolcall:
       "huggingface_chat_template_toolcall_jsonl",
-    download_vertex_gemini_1_5: "vertex_gemini_1_5",
+    download_vertex_gemini: "vertex_gemini",
   }
 
   let datasets: DatasetSplit[] | null = null

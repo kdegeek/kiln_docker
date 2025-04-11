@@ -44,17 +44,16 @@ class VertexFinetune(BaseFinetuneAdapter):
                 message="This fine-tune has not been started or has not been assigned a provider ID.",
             )
 
-        response = sft.SupervisedTuningJob(
-            self.datamodel.provider_id
-            # f"projects/{project}/locations/{location}/tuningJobs/{tune_job_id}"
-        )
+        response = sft.SupervisedTuningJob(self.datamodel.provider_id)
         # If the fine-tuned model ID has been updated, update the datamodel
         try:
             if self.datamodel.fine_tune_model_id != response.tuned_model_endpoint_name:
                 self.datamodel.fine_tune_model_id = response.tuned_model_endpoint_name
-                self.datamodel.save_to_file()
-        except Exception:
+                if self.datamodel.path:
+                    self.datamodel.save_to_file()
+        except Exception as e:
             # Don't let this error crash the status call
+            logger.warning(f"Error updating fine-tune model ID: {e}")
             pass
 
         error = response.error
@@ -80,20 +79,25 @@ class VertexFinetune(BaseFinetuneAdapter):
                 status=FineTuneStatusType.failed, message="Fine Tune Job Cancelled"
             )
         if state in [
-            gca_types.JobState.JOB_STATE_QUEUED,
             gca_types.JobState.JOB_STATE_PENDING,
+            gca_types.JobState.JOB_STATE_QUEUED,
+        ]:
+            return FineTuneStatus(
+                status=FineTuneStatusType.pending, message="Fine Tune Job Pending"
+            )
+        if state in [
             gca_types.JobState.JOB_STATE_RUNNING,
         ]:
             return FineTuneStatus(
                 status=FineTuneStatusType.running,
-                message="Fine tune job is running.",
+                message="Fine Tune Job Running",
             )
         if state in [
             gca_types.JobState.JOB_STATE_SUCCEEDED,
             gca_types.JobState.JOB_STATE_PARTIALLY_SUCCEEDED,
         ]:
             return FineTuneStatus(
-                status=FineTuneStatusType.completed, message="Fine tune job completed"
+                status=FineTuneStatusType.completed, message="Fine Tune Job Completed"
             )
 
         if state not in [
@@ -102,7 +106,7 @@ class VertexFinetune(BaseFinetuneAdapter):
             gca_types.JobState.JOB_STATE_PAUSED,
         ]:
             # While the above states map to "unknown", they are expected unknowns. Log if some new state appears we aren't expecting
-            logger.warning(f"Unknown Vertex AI Finetune status: [{state}]")
+            logger.warning(f"Unknown Vertex AI Fine Tune Status: [{state}]")
 
         return FineTuneStatus(
             status=FineTuneStatusType.unknown, message=f"Unknown state: [{state}]"
@@ -114,7 +118,7 @@ class VertexFinetune(BaseFinetuneAdapter):
             raise ValueError("Task is required to start a fine-tune")
 
         # Use chat format for unstructured output, and JSON for formatted output (was previously function calls)
-        format = DatasetFormat.VERTEX_GEMINI_1_5
+        format = DatasetFormat.VERTEX_GEMINI
         if task.output_json_schema:
             self.datamodel.structured_output_mode = StructuredOutputMode.json_mode
         train_file_id = await self.generate_and_upload_jsonl(
