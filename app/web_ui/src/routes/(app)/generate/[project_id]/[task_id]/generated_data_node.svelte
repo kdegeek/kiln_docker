@@ -273,9 +273,11 @@
       <button class="link" on:click={() => open_generate_samples_modal()}>
         Add data
       </button>
-      <button class="link" on:click={() => open_generate_samples_modal(true)}>
-        Add data to all
-      </button>
+      {#if data.sub_topics.length > 0}
+        <button class="link" on:click={() => open_generate_samples_modal(true)}>
+          Add data to all
+        </button>
+      {/if}
     </div>
   </div>
 {/if}
