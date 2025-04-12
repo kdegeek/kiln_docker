@@ -7,6 +7,14 @@
   import { createKilnError } from "$lib/utils/error_handlers"
   import FormElement from "../../../../../lib/utils/form_element.svelte"
 
+  // the number of workers to use for parallel generation
+  const PARALLEL_WORKER_COUNT = 25
+
+  type GenerateSamplesOutcome = {
+    topic: TopicNodeWithPath
+    error: KilnError | null
+  }
+
   interface TopicNodeWithPath {
     path: string[]
     node: SampleDataNode
@@ -21,9 +29,31 @@
   export let model: string
   export let num_samples_to_generate: number = 8
   export let custom_topics_string: string | null = null
+
+  /**
+   * If true, generate samples for each topic leaf descendant of the current topic.
+   */
   export let cascade_mode: boolean = false
+
+  /**
+   * If true, generate samples in parallel.
+   */
   export let generate_samples_mode: "parallel" | "sequential" = "parallel"
+
   let ui_show_errors = false
+  let generate_samples_outcomes: Record<string, GenerateSamplesOutcome> = {}
+
+  $: topics_succeeded_to_generate = Object.values(
+    generate_samples_outcomes,
+  ).filter((o) => o.error === null)
+
+  $: topics_succeeded_to_generate_count = topics_succeeded_to_generate.length
+
+  $: topics_failed_to_generate = Object.values(
+    generate_samples_outcomes,
+  ).filter((o) => o.error)
+
+  $: topics_failed_to_generate_count = topics_failed_to_generate.length
 
   export let on_completed: () => void
 
@@ -60,9 +90,7 @@
   }
 
   let sample_generating: boolean = false
-  let sample_generation_error: KilnError | null = null
-  let generate_samples_sub_errors: KilnError[] = []
-  async function generate_samples(
+  async function request_generate_samples(
     topic: TopicNodeWithPath,
   ): Promise<GenerateSampleResponse> {
     try {
@@ -112,15 +140,9 @@
         model_provider,
       )
     } catch (e) {
-      if (e instanceof Error && e.message.includes("Load failed")) {
-        sample_generation_error = new KilnError(
-          "Could not generate samples, unknown error. If it persists, try another model.",
-          null,
-        )
-
-        return { error: sample_generation_error }
+      if (e instanceof KilnError) {
+        return { error: e }
       }
-
       return { error: createKilnError(e) }
     }
 
@@ -163,15 +185,16 @@
       .filter((t) => t.node.sub_topics.length == 0)
   }
 
-  async function generate() {
+  async function generate_samples() {
     sample_generating = true
-    sample_generation_error = null
+    generate_samples_outcomes = {}
 
     const queue = cascade_mode
       ? collect_leaf_topic_nodes()
       : [{ path, node: data }]
 
-    let parallelism = generate_samples_mode === "parallel" ? 25 : 1
+    let parallelism =
+      generate_samples_mode === "parallel" ? PARALLEL_WORKER_COUNT : 1
 
     // Create and start N workers
     const workers = Array(parallelism)
@@ -181,23 +204,40 @@
     // Wait for all workers to complete
     await Promise.all(workers)
 
-    on_completed()
-
     sample_generating = false
+
+    // if every topic was generated successfully, move on
+    // otherwise we stay here to show the user the errors
+    if (topics_failed_to_generate_count === 0) {
+      on_completed()
+    }
   }
 
   async function worker(queue: TopicNodeWithPath[]) {
     while (queue.length > 0) {
       const topic = queue.shift()!
-      const result = await generate_samples(topic)
+      const result = await request_generate_samples(topic)
 
+      const path_serialized = serialize_topic_path(topic.path)
       if (result.error) {
-        generate_samples_sub_errors.push(result.error)
-
-        // Trigger reactivity
-        generate_samples_sub_errors = generate_samples_sub_errors
+        generate_samples_outcomes[path_serialized] = {
+          topic,
+          error: result.error,
+        }
+      } else {
+        generate_samples_outcomes[path_serialized] = {
+          topic,
+          error: null,
+        }
       }
+
+      // Trigger reactivity
+      generate_samples_outcomes = generate_samples_outcomes
     }
+  }
+
+  function serialize_topic_path(path: string[]) {
+    return path.join("/")
   }
 </script>
 
@@ -215,7 +255,7 @@
     <p class="text-sm font-light mb-8">
       Add synthetic data samples
       {#if path.length > 0}
-        to {path.join(" → ")}
+        to {cascade_mode ? "each subtopic of " : ""}{path.join(" → ")}
       {/if}
     </p>
     {#if sample_generating}
@@ -224,17 +264,13 @@
       </div>
     {:else}
       <div class="flex flex-col gap-2">
-        {#if sample_generation_error}
-          <div class="alert alert-error">
-            {sample_generation_error.message}
-          </div>
-        {/if}
         <div class="flex flex-row items-center gap-4 mt-4 mb-2">
           <div class="flex-grow font-medium text-sm">Sample Count</div>
           <IncrementUi bind:value={num_samples_to_generate} />
         </div>
         <AvailableModelsDropdown requires_data_gen={true} bind:model />
         {#if cascade_mode}
+          <!-- parallelization only makes sense in cascade mode -->
           <FormElement
             id="generate_samples_mode_element"
             inputType="select"
@@ -247,32 +283,52 @@
             label="Run Mode"
           />
         {/if}
-        {#if generate_samples_sub_errors.length > 0}
-          <div class="text-error font-light text-sm mt-4">
-            {generate_samples_sub_errors.length} samples failed to generate. Running
-            again may resolve transient issues.
-            <button
-              class="link"
-              on:click={() => (ui_show_errors = !ui_show_errors)}
+
+        <!-- display errors after the generation has completed -->
+        {#if topics_failed_to_generate_count > 0}
+          {#if !cascade_mode}
+            <div class="text-error font-light text-sm mt-4">
+              Failed to generate samples for {topics_failed_to_generate[0].topic.path.join(
+                " → ",
+              )}. Running again may resolve transient issues.
+              <div>
+                {topics_failed_to_generate[0].error?.getMessage()}
+              </div>
+            </div>
+          {:else}
+            <div class="text-error font-light text-sm mt-4">
+              {topics_succeeded_to_generate_count} topics generated successfully
+              but failed to generate samples for {topics_failed_to_generate_count}{" "}
+              topics. Running again may resolve transient issues.
+              <button
+                class="link"
+                on:click={() => (ui_show_errors = !ui_show_errors)}
+              >
+                {ui_show_errors ? "Hide Errors" : "Show Errors"}
+              </button>
+            </div>
+            <div
+              class="flex flex-col gap-2 mt-4 text-xs text-error {ui_show_errors
+                ? ''
+                : 'hidden'}"
             >
-              {ui_show_errors ? "Hide Errors" : "Show Errors"}
-            </button>
-          </div>
-          <div
-            class="flex flex-col gap-2 mt-4 text-xs text-error {ui_show_errors
-              ? ''
-              : 'hidden'}"
-          >
-            {#each generate_samples_sub_errors as error}
-              <div>{error.getMessage()}</div>
-            {/each}
-          </div>
+              {#each topics_failed_to_generate as outcome}
+                <div>
+                  {outcome.topic.path.join(" → ")}: {outcome.error?.getMessage()}
+                </div>
+              {/each}
+            </div>
+          {/if}
         {/if}
+
         <button
           class="btn mt-6 {custom_topics_string ? '' : 'btn-primary'}"
-          on:click={generate}
+          on:click={generate_samples}
         >
           Generate {num_samples_to_generate} Samples
+          {#if cascade_mode}
+            (for each subtopic)
+          {/if}
         </button>
       </div>
     {/if}
