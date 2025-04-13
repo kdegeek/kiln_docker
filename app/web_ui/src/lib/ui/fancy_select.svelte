@@ -1,15 +1,12 @@
 <script lang="ts">
-  type OptionGroup = {
-    label: string
-    options: Option[]
-  }
+  import type { Option, OptionGroup } from "./fancy_select_types"
+
   type Option = {
     label: string
     value: string
     description?: string
   }
-
-  export let options: [string, [string, string][]][] = []
+  export let options: OptionGroup[] = []
   export let selected: string
 
   // Add this variable to track scrollability
@@ -49,9 +46,11 @@
   >
     <span class="truncate">
       {(() => {
-        const flatOptions = options.flatMap((group) => group[1])
-        const selectedOption = flatOptions.find((item) => item[0] === selected)
-        return selectedOption ? selectedOption[1] : ""
+        const flatOptions = options.flatMap((group) => group.options)
+        const selectedOption = flatOptions.find(
+          (item) => item.value === selected,
+        )
+        return selectedOption ? selectedOption.label : ""
       })()}
     </span>
   </div>
@@ -67,10 +66,22 @@
       use:scrollableCheck
     >
       {#each options as option}
-        <li class="menu-title">{option[0]}</li>
-        {#each option[1] as item}
+        <li class="menu-title pl-1">{option.label}</li>
+        {#each option.options as item}
           <li>
-            <button on:click={() => (selected = item[0])}>{item[1]}</button>
+            <button
+              class="flex flex-col text-left gap-[1px]"
+              on:click={() => (selected = item.value)}
+            >
+              <div class="w-full">
+                {item.label}
+              </div>
+              {#if item.description}
+                <div class="text-xs font-medium text-base-content/40 w-full">
+                  {item.description}
+                </div>
+              {/if}
+            </button>
           </li>
         {/each}
       {/each}
