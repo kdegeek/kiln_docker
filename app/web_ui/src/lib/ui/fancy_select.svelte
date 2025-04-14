@@ -2,7 +2,7 @@
   import type { OptionGroup } from "./fancy_select_types"
 
   export let options: OptionGroup[] = []
-  export let selected: string
+  export let selected: unknown
 
   // Add this variable to track scrollability
   let isMenuScrollable = false
@@ -13,8 +13,8 @@
   let scrollInterval: number | null = null
 
   // Select a prompt
-  function selectPrompt(prompt: string) {
-    selected = prompt
+  function selectOption(option: unknown) {
+    selected = option
     dropdownElement.blur()
   }
 
@@ -125,7 +125,7 @@
           <li>
             <button
               class="flex flex-col text-left gap-[1px]"
-              on:click={() => selectPrompt(item.value)}
+              on:click={() => selectOption(item.value)}
             >
               <div class="w-full">
                 {item.label}

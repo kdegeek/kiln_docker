@@ -4,6 +4,6 @@ export type OptionGroup = {
 }
 export type Option = {
   label: string
-  value: string
+  value: unknown
   description?: string
 }
