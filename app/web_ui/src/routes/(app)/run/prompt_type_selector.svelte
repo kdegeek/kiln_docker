@@ -43,7 +43,11 @@
       if (generator.chain_of_thought && exclude_cot) {
         continue
       }
-      generators.push({ value: generator.id, label: generator.name })
+      generators.push({
+        value: generator.id,
+        label: generator.name,
+        description: generator.short_description,
+      })
     }
     if (generators.length > 0) {
       grouped_options.push({
