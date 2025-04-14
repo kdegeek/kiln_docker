@@ -46,7 +46,7 @@
         "Copy the new secret key, paste it below and click 'Connect'",
       ],
       api_key_warning:
-        "Note: OpenAI API requires a separate account from ChatGPT.",
+        "Note: the OpenAI API requires a separate account from ChatGPT.",
     },
     {
       name: "Ollama",
