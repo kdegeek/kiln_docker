@@ -40,10 +40,13 @@
       image: "/images/openai.svg",
       featured: false,
       api_key_steps: [
+        "Create an OpenAI Platform account at https://platform.openai.com/signup and add a payment method.",
         "Go to https://platform.openai.com/account/api-keys",
         "Click 'Create new secret key'",
         "Copy the new secret key, paste it below and click 'Connect'",
       ],
+      api_key_warning:
+        "Note: OpenAI API requires a separate account from ChatGPT.",
     },
     {
       name: "Ollama",
