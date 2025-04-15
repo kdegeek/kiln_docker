@@ -119,7 +119,7 @@ _prompt_generators = [
     PromptGenerator(
         id="simple_prompt_builder",
         name="Basic (Zero Shot)",
-        short_description="The prompt from your task definition.",
+        short_description="Just the prompt, no examples.",
         description="A basic prompt generator. It will include the instructions and requirements from your task definition. It won't include any examples from your runs (zero-shot).",
         chain_of_thought=False,
     ),
