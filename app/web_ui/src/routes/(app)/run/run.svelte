@@ -59,6 +59,13 @@
     (s) => s === run?.output?.source?.type,
   )
 
+  $: repair_source =
+    run?.repaired_output?.source?.type === "human"
+      ? { type: "user", name: run.repaired_output.source.properties.created_by }
+      : run?.repaired_output?.source?.type === "synthetic"
+        ? { type: "synthetic" }
+        : null
+
   // Use for some animations on first mount
   let mounted = false
   onMount(() => {
@@ -470,13 +477,19 @@
             </p>
             <Output raw_output={repair_run?.output.output || ""} />
           {:else if repair_complete}
-            <p class="text-sm text-gray-500 mb-4">
-              The model has fixed the output given <span
-                class="tooltip link"
-                data-tip="The instructions you provided to the model: {repair_instructions ||
-                  'No instruction provided'}">your instructions</span
-              >.
-            </p>
+            {#if repair_source?.type === "user"}
+              <p class="text-sm text-gray-500 mb-4">
+                This repaired output was provided by {repair_source.name}.
+              </p>
+            {:else}
+              <p class="text-sm text-gray-500 mb-4">
+                The model has fixed the output given <span
+                  class="tooltip link"
+                  data-tip="The instructions you provided to the model: {repair_instructions ||
+                    'No instruction provided'}">your instructions</span
+                >.
+              </p>
+            {/if}
             <Output raw_output={run?.repaired_output?.output || ""} />
             <div class="mt-2 text-xs text-gray-500 text-right">
               {#if delete_repair_submitting}
