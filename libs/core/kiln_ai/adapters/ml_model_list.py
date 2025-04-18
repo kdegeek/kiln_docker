@@ -70,6 +70,9 @@ class ModelName(str, Enum):
     llama_3_3_70b = "llama_3_3_70b"
     gpt_4o_mini = "gpt_4o_mini"
     gpt_4o = "gpt_4o"
+    gpt_4_1 = "gpt_4_1"
+    gpt_4_1_mini = "gpt_4_1_mini"
+    gpt_4_1_nano = "gpt_4_1_nano"
     gpt_o1_low = "gpt_o1_low"
     gpt_o1_medium = "gpt_o1_medium"
     gpt_o1_high = "gpt_o1_high"
@@ -231,6 +234,42 @@ built_in_models: List[KilnModel] = [
             KilnModelProvider(
                 name=ModelProviderName.azure_openai,
                 model_id="gpt-4o",
+            ),
+        ],
+    ),
+    # GPT 4.1
+    KilnModel(
+        family=ModelFamily.gpt,
+        name=ModelName.gpt_4_1,
+        friendly_name="GPT 4.1",
+        providers=[
+            KilnModelProvider(
+                name=ModelProviderName.openai,
+                model_id="gpt-4.1",
+            ),
+        ],
+    ),
+    # GPT 4.1 Mini
+    KilnModel(
+        family=ModelFamily.gpt,
+        name=ModelName.gpt_4_1_mini,
+        friendly_name="GPT 4.1 Mini",
+        providers=[
+            KilnModelProvider(
+                name=ModelProviderName.openai,
+                model_id="gpt-4.1-mini",
+            ),
+        ],
+    ),
+    # GPT 4.1 Nano
+    KilnModel(
+        family=ModelFamily.gpt,
+        name=ModelName.gpt_4_1_nano,
+        friendly_name="GPT 4.1 Nano",
+        providers=[
+            KilnModelProvider(
+                name=ModelProviderName.openai,
+                model_id="gpt-4.1-nano",
             ),
         ],
     ),
