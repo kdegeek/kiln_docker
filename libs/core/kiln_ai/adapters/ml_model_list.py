@@ -101,6 +101,8 @@ class ModelName(str, Enum):
     gemini_1_5_pro = "gemini_1_5_pro"
     gemini_2_0_flash = "gemini_2_0_flash"
     gemini_2_0_flash_lite = "gemini_2_0_flash_lite"
+    gemini_2_5_pro = "gemini_2_5_pro"
+    gemini_2_5_flash = "gemini_2_5_flash"
     nemotron_70b = "nemotron_70b"
     mixtral_8x7b = "mixtral_8x7b"
     qwen_2p5_7b = "qwen_2p5_7b"
@@ -539,6 +541,44 @@ built_in_models: List[KilnModel] = [
                 model_id="gemini-1.5-pro",
                 structured_output_mode=StructuredOutputMode.json_instruction_and_object,
             ),
+        ],
+    ),
+    # Gemini 2.5 Pro
+    KilnModel(
+        family=ModelFamily.gemini,
+        name=ModelName.gemini_2_5_pro,
+        friendly_name="Gemini 2.5 Pro",
+        providers=[
+            KilnModelProvider(
+                name=ModelProviderName.openrouter,
+                model_id="google/gemini-2.5-pro-preview-03-25",
+                structured_output_mode=StructuredOutputMode.json_schema,
+            ),
+            KilnModelProvider(
+                name=ModelProviderName.gemini_api,
+                model_id="gemini-2.5-pro-preview-03-25",
+                structured_output_mode=StructuredOutputMode.json_schema,
+            ),
+            # TODO add vertex (might need to upgrade LiteLLM)
+        ],
+    ),
+    # Gemini 2.5 Flash
+    KilnModel(
+        family=ModelFamily.gemini,
+        name=ModelName.gemini_2_5_flash,
+        friendly_name="Gemini 2.5 Flash",
+        providers=[
+            KilnModelProvider(
+                name=ModelProviderName.openrouter,
+                model_id="google/gemini-2.5-flash-preview",
+                structured_output_mode=StructuredOutputMode.json_schema,
+            ),
+            KilnModelProvider(
+                name=ModelProviderName.gemini_api,
+                model_id="gemini-2.5-flash-preview-04-17",
+                structured_output_mode=StructuredOutputMode.json_schema,
+            ),
+            # TODO add vertex (might need to upgrade LiteLLM)
         ],
     ),
     # Gemini 1.5 Flash
