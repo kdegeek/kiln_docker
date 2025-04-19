@@ -115,8 +115,8 @@
       image: "/images/azure_openai.svg",
       featured: false,
       api_key_steps: [
-        "Open the Azure portal, and navigate to the Azure OpenAI resource you want to use.",
-        "Open the Keys & Endpoint section. Find your API Key and Endpoint URL. The Endpoint URL will be a URL ending in openai.azure.com",
+        "Open the Azure portal, and navigate to the Azure OpenAI resource you want to use. Create a new resource if you don't have one, we suggest 'East US2' for maximal model support.",
+        "Open the Keys & Endpoint section. Find your API Key and Endpoint URL. The Endpoint URL will look like https://<your-resource-name>.openai.azure.com",
         "Copy the API Key and Endpoint URL, paste them below and click 'Connect'",
       ],
       api_key_fields: ["API Key", "Endpoint URL"],

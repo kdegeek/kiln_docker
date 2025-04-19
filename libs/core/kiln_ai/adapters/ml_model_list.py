@@ -185,29 +185,77 @@ class KilnModel(BaseModel):
 
 
 built_in_models: List[KilnModel] = [
-    # GPT 4o Mini
+    # GPT 4.1
     KilnModel(
         family=ModelFamily.gpt,
-        name=ModelName.gpt_4o_mini,
-        friendly_name="GPT 4o Mini",
+        name=ModelName.gpt_4_1,
+        friendly_name="GPT 4.1",
         providers=[
             KilnModelProvider(
                 name=ModelProviderName.openai,
-                model_id="gpt-4o-mini",
-                provider_finetune_id="gpt-4o-mini-2024-07-18",
+                model_id="gpt-4.1",
+                provider_finetune_id="gpt-4.1-2025-04-14",
                 structured_output_mode=StructuredOutputMode.json_schema,
                 supports_logprobs=True,
             ),
             KilnModelProvider(
                 name=ModelProviderName.openrouter,
-                model_id="openai/gpt-4o-mini",
+                model_id="openai/gpt-4.1",
                 structured_output_mode=StructuredOutputMode.json_schema,
                 supports_logprobs=True,
-                logprobs_openrouter_options=True,
             ),
             KilnModelProvider(
                 name=ModelProviderName.azure_openai,
-                model_id="gpt-4o-mini",
+                model_id="gpt-4.1",
+            ),
+        ],
+    ),
+    # GPT 4.1 Mini
+    KilnModel(
+        family=ModelFamily.gpt,
+        name=ModelName.gpt_4_1_mini,
+        friendly_name="GPT 4.1 Mini",
+        providers=[
+            KilnModelProvider(
+                name=ModelProviderName.openai,
+                model_id="gpt-4.1-mini",
+                provider_finetune_id="gpt-4.1-mini-2025-04-14",
+                structured_output_mode=StructuredOutputMode.json_schema,
+                supports_logprobs=True,
+            ),
+            KilnModelProvider(
+                name=ModelProviderName.openrouter,
+                model_id="openai/gpt-4.1-mini",
+                structured_output_mode=StructuredOutputMode.json_schema,
+                supports_logprobs=True,
+            ),
+            KilnModelProvider(
+                name=ModelProviderName.azure_openai,
+                model_id="gpt-4.1-mini",
+            ),
+        ],
+    ),
+    # GPT 4.1 Nano
+    KilnModel(
+        family=ModelFamily.gpt,
+        name=ModelName.gpt_4_1_nano,
+        friendly_name="GPT 4.1 Nano",
+        providers=[
+            KilnModelProvider(
+                name=ModelProviderName.openai,
+                model_id="gpt-4.1-nano",
+                structured_output_mode=StructuredOutputMode.json_schema,
+                supports_logprobs=True,
+            ),
+            KilnModelProvider(
+                name=ModelProviderName.openrouter,
+                model_id="openai/gpt-4.1-nano",
+                structured_output_mode=StructuredOutputMode.json_schema,
+                supports_logprobs=True,
+            ),
+            KilnModelProvider(
+                name=ModelProviderName.azure_openai,
+                model_id="gpt-4.1-nano",
             ),
         ],
     ),
@@ -237,39 +285,29 @@ built_in_models: List[KilnModel] = [
             ),
         ],
     ),
-    # GPT 4.1
+    # GPT 4o Mini
     KilnModel(
         family=ModelFamily.gpt,
-        name=ModelName.gpt_4_1,
-        friendly_name="GPT 4.1",
+        name=ModelName.gpt_4o_mini,
+        friendly_name="GPT 4o Mini",
         providers=[
             KilnModelProvider(
                 name=ModelProviderName.openai,
-                model_id="gpt-4.1",
+                model_id="gpt-4o-mini",
+                provider_finetune_id="gpt-4o-mini-2024-07-18",
+                structured_output_mode=StructuredOutputMode.json_schema,
+                supports_logprobs=True,
             ),
-        ],
-    ),
-    # GPT 4.1 Mini
-    KilnModel(
-        family=ModelFamily.gpt,
-        name=ModelName.gpt_4_1_mini,
-        friendly_name="GPT 4.1 Mini",
-        providers=[
             KilnModelProvider(
-                name=ModelProviderName.openai,
-                model_id="gpt-4.1-mini",
+                name=ModelProviderName.openrouter,
+                model_id="openai/gpt-4o-mini",
+                structured_output_mode=StructuredOutputMode.json_schema,
+                supports_logprobs=True,
+                logprobs_openrouter_options=True,
             ),
-        ],
-    ),
-    # GPT 4.1 Nano
-    KilnModel(
-        family=ModelFamily.gpt,
-        name=ModelName.gpt_4_1_nano,
-        friendly_name="GPT 4.1 Nano",
-        providers=[
             KilnModelProvider(
-                name=ModelProviderName.openai,
-                model_id="gpt-4.1-nano",
+                name=ModelProviderName.azure_openai,
+                model_id="gpt-4o-mini",
             ),
         ],
     ),
