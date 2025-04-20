@@ -559,7 +559,11 @@ built_in_models: List[KilnModel] = [
                 model_id="gemini-2.5-pro-preview-03-25",
                 structured_output_mode=StructuredOutputMode.json_schema,
             ),
-            # TODO add vertex (might need to upgrade LiteLLM)
+            KilnModelProvider(
+                name=ModelProviderName.vertex,
+                model_id="gemini-2.5-pro-preview-03-25",
+                structured_output_mode=StructuredOutputMode.json_schema,
+            ),
         ],
     ),
     # Gemini 2.5 Flash
@@ -578,7 +582,11 @@ built_in_models: List[KilnModel] = [
                 model_id="gemini-2.5-flash-preview-04-17",
                 structured_output_mode=StructuredOutputMode.json_schema,
             ),
-            # TODO add vertex (might need to upgrade LiteLLM)
+            KilnModelProvider(
+                name=ModelProviderName.vertex,
+                model_id="gemini-2.5-flash-preview-04-17",
+                structured_output_mode=StructuredOutputMode.json_schema,
+            ),
         ],
     ),
     # Gemini 1.5 Flash
