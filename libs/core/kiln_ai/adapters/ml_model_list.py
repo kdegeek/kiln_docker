@@ -520,29 +520,6 @@ built_in_models: List[KilnModel] = [
             ),
         ],
     ),
-    # Gemini 1.5 Pro
-    KilnModel(
-        family=ModelFamily.gemini,
-        name=ModelName.gemini_1_5_pro,
-        friendly_name="Gemini 1.5 Pro",
-        providers=[
-            KilnModelProvider(
-                name=ModelProviderName.openrouter,
-                model_id="google/gemini-pro-1.5",
-                structured_output_mode=StructuredOutputMode.json_instruction_and_object,
-            ),
-            KilnModelProvider(
-                name=ModelProviderName.gemini_api,
-                model_id="gemini-1.5-pro",
-                structured_output_mode=StructuredOutputMode.json_instruction_and_object,
-            ),
-            KilnModelProvider(
-                name=ModelProviderName.vertex,
-                model_id="gemini-1.5-pro",
-                structured_output_mode=StructuredOutputMode.json_instruction_and_object,
-            ),
-        ],
-    ),
     # Gemini 2.5 Pro
     KilnModel(
         family=ModelFamily.gemini,
@@ -586,49 +563,6 @@ built_in_models: List[KilnModel] = [
                 name=ModelProviderName.vertex,
                 model_id="gemini-2.5-flash-preview-04-17",
                 structured_output_mode=StructuredOutputMode.json_schema,
-            ),
-        ],
-    ),
-    # Gemini 1.5 Flash
-    KilnModel(
-        family=ModelFamily.gemini,
-        name=ModelName.gemini_1_5_flash,
-        friendly_name="Gemini 1.5 Flash",
-        providers=[
-            KilnModelProvider(
-                name=ModelProviderName.openrouter,
-                model_id="google/gemini-flash-1.5",
-                structured_output_mode=StructuredOutputMode.json_instruction_and_object,
-            ),
-            KilnModelProvider(
-                name=ModelProviderName.gemini_api,
-                model_id="gemini-1.5-flash",
-                structured_output_mode=StructuredOutputMode.json_instruction_and_object,
-            ),
-            KilnModelProvider(
-                name=ModelProviderName.vertex,
-                model_id="gemini-1.5-flash",
-                structured_output_mode=StructuredOutputMode.json_instruction_and_object,
-            ),
-        ],
-    ),
-    # Gemini 1.5 Flash 8B
-    KilnModel(
-        family=ModelFamily.gemini,
-        name=ModelName.gemini_1_5_flash_8b,
-        friendly_name="Gemini 1.5 Flash 8B",
-        providers=[
-            KilnModelProvider(
-                name=ModelProviderName.openrouter,
-                model_id="google/gemini-flash-1.5-8b",
-                structured_output_mode=StructuredOutputMode.json_instruction_and_object,
-                supports_data_gen=False,
-            ),
-            KilnModelProvider(
-                name=ModelProviderName.gemini_api,
-                model_id="gemini-1.5-flash-8b",
-                structured_output_mode=StructuredOutputMode.json_instruction_and_object,
-                supports_data_gen=False,
             ),
         ],
     ),
@@ -677,6 +611,72 @@ built_in_models: List[KilnModel] = [
                 model_id="gemini-2.0-flash-lite",
                 structured_output_mode=StructuredOutputMode.json_instruction_and_object,
                 provider_finetune_id="gemini-2.0-flash-lite-001",
+            ),
+        ],
+    ),
+    # Gemini 1.5 Pro
+    KilnModel(
+        family=ModelFamily.gemini,
+        name=ModelName.gemini_1_5_pro,
+        friendly_name="Gemini 1.5 Pro",
+        providers=[
+            KilnModelProvider(
+                name=ModelProviderName.openrouter,
+                model_id="google/gemini-pro-1.5",
+                structured_output_mode=StructuredOutputMode.json_instruction_and_object,
+            ),
+            KilnModelProvider(
+                name=ModelProviderName.gemini_api,
+                model_id="gemini-1.5-pro",
+                structured_output_mode=StructuredOutputMode.json_instruction_and_object,
+            ),
+            KilnModelProvider(
+                name=ModelProviderName.vertex,
+                model_id="gemini-1.5-pro",
+                structured_output_mode=StructuredOutputMode.json_instruction_and_object,
+            ),
+        ],
+    ),
+    # Gemini 1.5 Flash
+    KilnModel(
+        family=ModelFamily.gemini,
+        name=ModelName.gemini_1_5_flash,
+        friendly_name="Gemini 1.5 Flash",
+        providers=[
+            KilnModelProvider(
+                name=ModelProviderName.openrouter,
+                model_id="google/gemini-flash-1.5",
+                structured_output_mode=StructuredOutputMode.json_instruction_and_object,
+            ),
+            KilnModelProvider(
+                name=ModelProviderName.gemini_api,
+                model_id="gemini-1.5-flash",
+                structured_output_mode=StructuredOutputMode.json_instruction_and_object,
+            ),
+            KilnModelProvider(
+                name=ModelProviderName.vertex,
+                model_id="gemini-1.5-flash",
+                structured_output_mode=StructuredOutputMode.json_instruction_and_object,
+            ),
+        ],
+    ),
+    # Gemini 1.5 Flash 8B
+    KilnModel(
+        family=ModelFamily.gemini,
+        name=ModelName.gemini_1_5_flash_8b,
+        friendly_name="Gemini 1.5 Flash 8B",
+        providers=[
+            KilnModelProvider(
+                name=ModelProviderName.openrouter,
+                model_id="google/gemini-flash-1.5-8b",
+                structured_output_mode=StructuredOutputMode.json_instruction_and_object,
+                supports_data_gen=False,
+            ),
+            KilnModelProvider(
+                name=ModelProviderName.gemini_api,
+                model_id="gemini-1.5-flash-8b",
+                structured_output_mode=StructuredOutputMode.json_instruction_and_object,
+                supports_data_gen=False,
             ),
         ],
     ),
