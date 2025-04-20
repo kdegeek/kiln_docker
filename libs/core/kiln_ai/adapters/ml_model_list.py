@@ -76,6 +76,9 @@ class ModelName(str, Enum):
     gpt_o1_low = "gpt_o1_low"
     gpt_o1_medium = "gpt_o1_medium"
     gpt_o1_high = "gpt_o1_high"
+    gpt_o4_mini_low = "gpt_o4_mini_low"
+    gpt_o4_mini_medium = "gpt_o4_mini_medium"
+    gpt_o4_mini_high = "gpt_o4_mini_high"
     gpt_o3_mini_low = "gpt_o3_mini_low"
     gpt_o3_mini_medium = "gpt_o3_mini_medium"
     gpt_o3_mini_high = "gpt_o3_mini_high"
@@ -310,6 +313,76 @@ built_in_models: List[KilnModel] = [
             KilnModelProvider(
                 name=ModelProviderName.azure_openai,
                 model_id="gpt-4o-mini",
+            ),
+        ],
+    ),
+    # GPT o4 Mini Low
+    KilnModel(
+        family=ModelFamily.gpt,
+        name=ModelName.gpt_o4_mini_low,
+        friendly_name="GPT o4 Mini - Low",
+        providers=[
+            KilnModelProvider(
+                name=ModelProviderName.openai,
+                model_id="o4-mini",
+                thinking_level="low",
+                structured_output_mode=StructuredOutputMode.json_schema,
+            ),
+            KilnModelProvider(
+                name=ModelProviderName.azure_openai,
+                model_id="o4-mini",
+                structured_output_mode=StructuredOutputMode.json_schema,
+                thinking_level="low",
+            ),
+        ],
+    ),
+    # GPT o4 Mini Medium
+    KilnModel(
+        family=ModelFamily.gpt,
+        name=ModelName.gpt_o4_mini_medium,
+        friendly_name="GPT o4 Mini - Medium",
+        providers=[
+            KilnModelProvider(
+                name=ModelProviderName.openai,
+                model_id="o4-mini",
+                thinking_level="medium",
+                structured_output_mode=StructuredOutputMode.json_schema,
+            ),
+            KilnModelProvider(
+                name=ModelProviderName.azure_openai,
+                model_id="o4-mini",
+                structured_output_mode=StructuredOutputMode.json_schema,
+                thinking_level="medium",
+            ),
+            KilnModelProvider(
+                name=ModelProviderName.openrouter,
+                model_id="openai/o4-mini",
+                structured_output_mode=StructuredOutputMode.json_schema,
+            ),
+        ],
+    ),
+    # GPT o4 Mini High
+    KilnModel(
+        family=ModelFamily.gpt,
+        name=ModelName.gpt_o4_mini_high,
+        friendly_name="GPT o4 Mini - High",
+        providers=[
+            KilnModelProvider(
+                name=ModelProviderName.openai,
+                model_id="o4-mini",
+                thinking_level="high",
+                structured_output_mode=StructuredOutputMode.json_schema,
+            ),
+            KilnModelProvider(
+                name=ModelProviderName.azure_openai,
+                model_id="o4-mini",
+                structured_output_mode=StructuredOutputMode.json_schema,
+                thinking_level="high",
+            ),
+            KilnModelProvider(
+                name=ModelProviderName.openrouter,
+                model_id="openai/o4-mini-high",
+                structured_output_mode=StructuredOutputMode.json_schema,
             ),
         ],
     ),
