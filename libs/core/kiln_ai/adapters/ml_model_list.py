@@ -73,6 +73,9 @@ class ModelName(str, Enum):
     gpt_4_1 = "gpt_4_1"
     gpt_4_1_mini = "gpt_4_1_mini"
     gpt_4_1_nano = "gpt_4_1_nano"
+    gpt_o3_low = "gpt_o3_low"
+    gpt_o3_medium = "gpt_o3_medium"
+    gpt_o3_high = "gpt_o3_high"
     gpt_o1_low = "gpt_o1_low"
     gpt_o1_medium = "gpt_o1_medium"
     gpt_o1_high = "gpt_o1_high"
@@ -441,6 +444,66 @@ built_in_models: List[KilnModel] = [
             KilnModelProvider(
                 name=ModelProviderName.azure_openai,
                 model_id="o3-mini",
+                structured_output_mode=StructuredOutputMode.json_schema,
+                thinking_level="high",
+            ),
+        ],
+    ),
+    # GPT o3 Low
+    KilnModel(
+        family=ModelFamily.gpt,
+        name=ModelName.gpt_o3_low,
+        friendly_name="GPT o3 - Low",
+        providers=[
+            KilnModelProvider(
+                name=ModelProviderName.openai,
+                model_id="o3",
+                thinking_level="low",
+                structured_output_mode=StructuredOutputMode.json_schema,
+            ),
+            KilnModelProvider(
+                name=ModelProviderName.azure_openai,
+                model_id="o3",
+                structured_output_mode=StructuredOutputMode.json_schema,
+                thinking_level="low",
+            ),
+        ],
+    ),
+    # GPT o3 Medium
+    KilnModel(
+        family=ModelFamily.gpt,
+        name=ModelName.gpt_o3_medium,
+        friendly_name="GPT o3 - Medium",
+        providers=[
+            KilnModelProvider(
+                name=ModelProviderName.openai,
+                model_id="o3",
+                thinking_level="medium",
+                structured_output_mode=StructuredOutputMode.json_schema,
+            ),
+            KilnModelProvider(
+                name=ModelProviderName.azure_openai,
+                model_id="o3",
+                structured_output_mode=StructuredOutputMode.json_schema,
+                thinking_level="medium",
+            ),
+        ],
+    ),
+    # GPT o3 High
+    KilnModel(
+        family=ModelFamily.gpt,
+        name=ModelName.gpt_o3_high,
+        friendly_name="GPT o3 - High",
+        providers=[
+            KilnModelProvider(
+                name=ModelProviderName.openai,
+                model_id="o3",
+                thinking_level="high",
+                structured_output_mode=StructuredOutputMode.json_schema,
+            ),
+            KilnModelProvider(
+                name=ModelProviderName.azure_openai,
+                model_id="o3",
                 structured_output_mode=StructuredOutputMode.json_schema,
                 thinking_level="high",
             ),
