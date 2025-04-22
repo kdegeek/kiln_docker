@@ -63,7 +63,6 @@
     model_name: string,
     model_provider: string,
   ) {
-    // Add ignoring dupes and empty strings
     for (const sample of samples) {
       if (!sample) {
         continue
@@ -249,9 +248,7 @@
         >✕</button
       >
     </form>
-    <h3 class="text-lg font-bold">
-      Generate Samples{cascade_mode ? " (cascade)" : ""}
-    </h3>
+    <h3 class="text-lg font-bold">Generate Data</h3>
     <p class="text-sm font-light mb-8">
       Add synthetic data samples
       {#if path.length > 0}
@@ -297,9 +294,8 @@
             </div>
           {:else}
             <div class="text-error font-light text-sm mt-4">
-              {topics_succeeded_to_generate_count} topics generated successfully
-              but failed to generate samples for {topics_failed_to_generate_count}{" "}
-              topics. Running again may resolve transient issues.
+              {topics_failed_to_generate_count} topics failed. Running again may
+              resolve transient issues.
               <button
                 class="link"
                 on:click={() => (ui_show_errors = !ui_show_errors)}
@@ -327,7 +323,7 @@
         >
           Generate {num_samples_to_generate} Samples
           {#if cascade_mode}
-            (for each subtopic)
+            For Each Topic
           {/if}
         </button>
       </div>
