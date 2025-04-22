@@ -21,11 +21,6 @@ export type SchemaModelProperty = {
   description: string
   type: "number" | "string" | "integer" | "boolean" | "array" | "object"
   required: boolean
-
-  /**
-   * The original JSON schema property, if model is derived from a JSON schema.
-   */
-  raw_schema?: JsonSchemaProperty
 }
 
 export type SchemaModel = {
@@ -40,7 +35,6 @@ export function model_from_schema(s: JsonSchema): SchemaModel {
       description: options.description,
       type: options.type,
       required: !!s.required.includes(id),
-      raw_schema: options,
     })),
   }
 }
