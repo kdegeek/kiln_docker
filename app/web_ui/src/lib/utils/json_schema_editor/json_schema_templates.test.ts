@@ -257,7 +257,6 @@ describe("model_from_schema", () => {
           description: "The user's full name",
           type: "string",
           required: true,
-          raw_schema: schema.properties.user_name,
         },
         {
           id: "age",
@@ -265,7 +264,6 @@ describe("model_from_schema", () => {
           description: "User's age in years",
           type: "integer",
           required: false,
-          raw_schema: schema.properties.age,
         },
         {
           id: "contact_emails",
@@ -273,7 +271,6 @@ describe("model_from_schema", () => {
           description: "The user's contact emails",
           type: "array",
           required: false,
-          raw_schema: schema.properties.contact_emails,
         },
         {
           id: "siblings",
@@ -281,7 +278,6 @@ describe("model_from_schema", () => {
           description: "The user's siblings",
           type: "array",
           required: false,
-          raw_schema: schema.properties.siblings,
         },
       ],
     }
@@ -374,16 +370,6 @@ describe("model_from_schema", () => {
 
     const result = model_from_schema(schema)
     expect(result.properties[0].type).toBe("array")
-    expect(result.properties[0].raw_schema).toEqual({
-      type: "array",
-      title: "Ingredients",
-      description: "The ingredients to be used",
-      items: {
-        type: "string",
-        title: "Ingredient",
-        description: "The name of the ingredient to be used",
-      },
-    })
   })
 })
 
