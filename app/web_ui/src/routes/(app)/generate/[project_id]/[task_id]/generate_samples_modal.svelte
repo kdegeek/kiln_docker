@@ -43,12 +43,6 @@
   let ui_show_errors = false
   let generate_samples_outcomes: Record<string, GenerateSamplesOutcome> = {}
 
-  $: topics_succeeded_to_generate = Object.values(
-    generate_samples_outcomes,
-  ).filter((o) => o.error === null)
-
-  $: topics_succeeded_to_generate_count = topics_succeeded_to_generate.length
-
   $: topics_failed_to_generate = Object.values(
     generate_samples_outcomes,
   ).filter((o) => o.error)
