@@ -9,7 +9,8 @@ export type JsonSchema = {
 export type JsonSchemaProperty = {
   title: string
   description: string
-  type: "number" | "string" | "integer" | "boolean"
+  type: "number" | "string" | "integer" | "boolean" | "array"
+  items?: JsonSchemaProperty | JsonSchema
 }
 
 // We have our own model type.
@@ -18,9 +19,15 @@ export type SchemaModelProperty = {
   id: string
   title: string
   description: string
-  type: "number" | "string" | "integer" | "boolean"
+  type: "number" | "string" | "integer" | "boolean" | "array"
   required: boolean
+
+  /**
+   * The original JSON schema property, if model is derived from a JSON schema.
+   */
+  raw_schema?: JsonSchemaProperty
 }
+
 export type SchemaModel = {
   properties: SchemaModelProperty[]
 }
@@ -33,6 +40,7 @@ export function model_from_schema(s: JsonSchema): SchemaModel {
       description: options.description,
       type: options.type,
       required: !!s.required.includes(id),
+      raw_schema: options,
     })),
   }
 }
@@ -146,6 +154,20 @@ export function typed_json_from_schema_model(
         )
       }
       parsed_data[prop_id] = parsedValue
+    } else if (property.type === "array") {
+      try {
+        const parsed_value = JSON.parse(prop_value)
+        if (!Array.isArray(parsed_value)) {
+          errors.push(
+            `Property ${prop_id} must be an array, got: ${prop_value}`,
+          )
+        }
+        parsed_data[prop_id] = parsed_value
+      } catch (e) {
+        errors.push(
+          `Property ${prop_id} must be a valid JSON array, got: ${prop_value}`,
+        )
+      }
     } else {
       errors.push(
         "Unsupported property type: " +
