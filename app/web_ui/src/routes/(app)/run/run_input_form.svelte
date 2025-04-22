@@ -53,6 +53,8 @@
       base_description = "'true' or 'false'"
     } else if (property.type === "array") {
       base_description = "JSON Array"
+    } else if (property.type === "object") {
+      base_description = "JSON Object"
     } else {
       base_description = "Unknown type"
     }
@@ -64,7 +66,7 @@
   }
 
   function get_input_type(property: SchemaModelProperty): "textarea" | "input" {
-    const types = ["string", "array"]
+    const types = ["string", "array", "object"]
     if (types.includes(property.type)) {
       return "textarea"
     }
@@ -75,7 +77,10 @@
     property: SchemaModelProperty,
   ): string | undefined {
     if (property.type === "array") {
-      return "A list of items in JSON format. For example `[item_1, item_2]`"
+      return "A list of items in JSON format. For example: [item_1, item_2]"
+    }
+    if (property.type === "object") {
+      return 'A JSON object. For example: {"key_1": "value_1", "key_2": "value_2"}'
     }
     return undefined
   }
