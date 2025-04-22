@@ -52,7 +52,7 @@
     } else if (property.type === "boolean") {
       base_description = "'true' or 'false'"
     } else if (property.type === "array") {
-      base_description = "JSON array"
+      base_description = "JSON Array"
     } else {
       base_description = "Unknown type"
     }
@@ -74,9 +74,8 @@
   function get_info_description(
     property: SchemaModelProperty,
   ): string | undefined {
-    const types = ["array"]
-    if (types.includes(property.type)) {
-      return JSON.stringify(property.raw_schema, null, 2)
+    if (property.type === "array") {
+      return "A list of items in JSON format. For example `[item_1, item_2]`"
     }
     return undefined
   }
