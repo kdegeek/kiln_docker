@@ -7,18 +7,12 @@ from fastapi.responses import StreamingResponse
 from kiln_ai.adapters.fine_tune.base_finetune import FineTuneParameter, FineTuneStatus
 from kiln_ai.adapters.fine_tune.dataset_formatter import DatasetFormat, DatasetFormatter
 from kiln_ai.adapters.fine_tune.finetune_registry import finetune_registry
-from kiln_ai.adapters.ml_model_list import (
-    ModelProviderName,
-    built_in_models,
-)
+from kiln_ai.adapters.ml_model_list import ModelProviderName, built_in_models
 from kiln_ai.adapters.prompt_builders import (
     chain_of_thought_prompt,
     prompt_builder_from_id,
 )
-from kiln_ai.adapters.provider_tools import (
-    provider_enabled,
-    provider_name_from_id,
-)
+from kiln_ai.adapters.provider_tools import provider_enabled, provider_name_from_id
 from kiln_ai.datamodel import (
     DatasetSplit,
     Finetune,
@@ -26,9 +20,7 @@ from kiln_ai.datamodel import (
     FineTuneStatusType,
     Task,
 )
-from kiln_ai.datamodel.dataset_filters import (
-    DatasetFilterId,
-)
+from kiln_ai.datamodel.dataset_filters import DatasetFilterId
 from kiln_ai.datamodel.dataset_split import (
     AllSplitDefinition,
     Train60Test20Val20SplitDefinition,
@@ -287,6 +279,8 @@ def connect_fine_tune_api(app: FastAPI):
             task, request.data_strategy, request.custom_thinking_instructions
         )
 
+        # TODO: check data_strategy == FinetuneDataStrategy.r1_style_thinking
+
         _, finetune_model = await finetune_adapter_class.create_and_start(
             dataset=dataset,
             provider_id=request.provider,
@@ -326,6 +320,9 @@ def connect_fine_tune_api(app: FastAPI):
                 status_code=400,
                 detail=f"Data strategy '{data_strategy}' not found",
             )
+
+        # TODO: handle data_strategy == FinetuneDataStrategy.r1_style_thinking
+
         data_strategy_typed = FinetuneDataStrategy(data_strategy)
 
         task = task_from_id(project_id, task_id)
@@ -406,6 +403,8 @@ def thinking_instructions_from_request(
     data_strategy: FinetuneDataStrategy,
     custom_thinking_instructions: str | None,
 ) -> str | None:
+    # TODO: check data_strategy == FinetuneDataStrategy.r1_style_thinking
+
     if data_strategy != FinetuneDataStrategy.final_and_intermediate:
         # Not using COT/Thinking style
         return None

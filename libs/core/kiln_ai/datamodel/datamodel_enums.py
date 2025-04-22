@@ -58,3 +58,4 @@ class FineTuneStatusType(str, Enum):
 class FinetuneDataStrategy(str, Enum):
     final_only = "final_only"
     final_and_intermediate = "final_and_intermediate"
+    r1_style_thinking = "r1_style_thinking"

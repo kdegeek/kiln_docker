@@ -397,6 +397,8 @@ class DatasetFormatter:
 
         generator = FORMAT_GENERATORS[format_type]
 
+        # TODO: check data_strategy == FinetuneDataStrategy.r1_style_thinking
+
         include_cot = data_strategy == FinetuneDataStrategy.final_and_intermediate
 
         # Write to a temp file if no path is provided

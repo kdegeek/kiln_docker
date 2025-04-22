@@ -113,6 +113,8 @@ class VertexFinetune(BaseFinetuneAdapter):
         )
 
     async def _start(self, dataset: DatasetSplit) -> None:
+        # TODO: check data_strategy == FinetuneDataStrategy.r1_style_thinking
+
         task = self.datamodel.parent_task()
         if not task:
             raise ValueError("Task is required to start a fine-tune")

@@ -657,6 +657,7 @@
             </div>
           {/if}
           <div>
+            <!-- TODO: add R1 style thinking and prevent picking anything else if dealing with an R1 style model -->
             <FormElement
               label="Model Type / Training Strategy"
               description="Should the model be trained on only the final response, or also include intermediate thinking?"
