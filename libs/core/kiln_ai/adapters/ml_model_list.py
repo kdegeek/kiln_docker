@@ -1069,10 +1069,6 @@ built_in_models: List[KilnModel] = [
         friendly_name="Llama 3.2 11B",
         providers=[
             KilnModelProvider(
-                name=ModelProviderName.groq,
-                model_id="llama-3.2-11b-vision-preview",
-            ),
-            KilnModelProvider(
                 name=ModelProviderName.openrouter,
                 # Best mode, but fails to often to enable without warning
                 structured_output_mode=StructuredOutputMode.json_instruction_and_object,
