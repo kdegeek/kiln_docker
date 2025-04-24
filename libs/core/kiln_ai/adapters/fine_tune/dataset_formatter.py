@@ -43,6 +43,7 @@ class ModelTrainingData:
     thinking_instructions: str | None = None
     thinking: str | None = None
     thinking_final_answer_prompt: str | None = None
+    thinking_r1_style: bool = False
 
     def supports_cot(self) -> bool:
         return (
@@ -64,7 +65,7 @@ class FormatGenerator(Protocol):
 def build_training_data(
     task_run: TaskRun,
     system_message: str,
-    include_cot: bool,
+    data_strategy: FinetuneDataStrategy,
     thinking_instructions: str | None = None,
 ) -> ModelTrainingData:
     """
@@ -82,7 +83,10 @@ def build_training_data(
     thinking_final_answer_prompt = None
     parent_task = task_run.parent_task()
 
-    if include_cot and task_run.has_thinking_training_data():
+    if (
+        data_strategy == FinetuneDataStrategy.final_and_intermediate
+        and task_run.has_thinking_training_data()
+    ):
         if not parent_task:
             raise ValueError(
                 "TaskRuns for training required a parent Task for building a chain of thought prompts. Train without COT, or save this TaskRun to a parent Task."
@@ -109,7 +113,16 @@ def build_training_data(
         thinking=thinking,
         thinking_instructions=thinking_instructions,
         thinking_final_answer_prompt=thinking_final_answer_prompt,
+        thinking_r1_style=data_strategy
+        == FinetuneDataStrategy.final_and_intermediate_r1_compatible,
     )
+
+
+def serialize_r1_style_message(thinking: str | None, final_output: str):
+    if thinking is None or len(thinking) == 0:
+        return final_output
+
+    return f"<think>{thinking}</think>{final_output}"
 
 
 def generate_chat_message_response(
@@ -123,16 +136,26 @@ def generate_chat_message_response(
     ]
 
     if training_data.supports_cot():
-        messages.extend(
-            [
-                {"role": "user", "content": training_data.thinking_instructions},
-                {"role": "assistant", "content": training_data.thinking},
-                {
-                    "role": "user",
-                    "content": training_data.thinking_final_answer_prompt,
-                },
-            ]
-        )
+        if training_data.thinking_r1_style:
+            messages.extend(
+                [
+                    {
+                        "role": "assistant",
+                        "content": serialize_r1_style_message(training_data),
+                    }
+                ]
+            )
+        else:
+            messages.extend(
+                [
+                    {"role": "user", "content": training_data.thinking_instructions},
+                    {"role": "assistant", "content": training_data.thinking},
+                    {
+                        "role": "user",
+                        "content": training_data.thinking_final_answer_prompt,
+                    },
+                ]
+            )
 
     messages.append({"role": "assistant", "content": training_data.final_output})
 
@@ -158,16 +181,26 @@ def generate_json_schema_message(
     ]
 
     if training_data.supports_cot():
-        messages.extend(
-            [
-                {"role": "user", "content": training_data.thinking_instructions},
-                {"role": "assistant", "content": training_data.thinking},
-                {
-                    "role": "user",
-                    "content": training_data.thinking_final_answer_prompt,
-                },
-            ]
-        )
+        if training_data.thinking_r1_style:
+            messages.extend(
+                [
+                    {
+                        "role": "assistant",
+                        "content": serialize_r1_style_message(training_data),
+                    }
+                ]
+            )
+        else:
+            messages.extend(
+                [
+                    {"role": "user", "content": training_data.thinking_instructions},
+                    {"role": "assistant", "content": training_data.thinking},
+                    {
+                        "role": "user",
+                        "content": training_data.thinking_final_answer_prompt,
+                    },
+                ]
+            )
 
     messages.append({"role": "assistant", "content": json_string})
 
@@ -189,16 +222,26 @@ def generate_chat_message_toolcall(
     ]
 
     if training_data.supports_cot():
-        messages.extend(
-            [
-                {"role": "user", "content": training_data.thinking_instructions},
-                {"role": "assistant", "content": training_data.thinking},
-                {
-                    "role": "user",
-                    "content": training_data.thinking_final_answer_prompt,
-                },
-            ]
-        )
+        if training_data.thinking_r1_style:
+            messages.extend(
+                [
+                    {
+                        "role": "assistant",
+                        "content": serialize_r1_style_message(training_data),
+                    }
+                ]
+            )
+        else:
+            messages.extend(
+                [
+                    {"role": "user", "content": training_data.thinking_instructions},
+                    {"role": "assistant", "content": training_data.thinking},
+                    {
+                        "role": "user",
+                        "content": training_data.thinking_final_answer_prompt,
+                    },
+                ]
+            )
 
     messages.append(
         {
@@ -232,13 +275,26 @@ def generate_huggingface_chat_template(
     ]
 
     if training_data.supports_cot():
-        conversations.extend(
-            [
-                {"role": "user", "content": training_data.thinking_instructions},
-                {"role": "assistant", "content": training_data.thinking},
-                {"role": "user", "content": training_data.thinking_final_answer_prompt},
-            ]
-        )
+        if training_data.thinking_r1_style:
+            conversations.extend(
+                [
+                    {
+                        "role": "assistant",
+                        "content": serialize_r1_style_message(training_data),
+                    }
+                ]
+            )
+        else:
+            conversations.extend(
+                [
+                    {"role": "user", "content": training_data.thinking_instructions},
+                    {"role": "assistant", "content": training_data.thinking},
+                    {
+                        "role": "user",
+                        "content": training_data.thinking_final_answer_prompt,
+                    },
+                ]
+            )
 
     conversations.append({"role": "assistant", "content": training_data.final_output})
 
@@ -261,13 +317,26 @@ def generate_huggingface_chat_template_toolcall(
     ]
 
     if training_data.supports_cot():
-        conversations.extend(
-            [
-                {"role": "user", "content": training_data.thinking_instructions},
-                {"role": "assistant", "content": training_data.thinking},
-                {"role": "user", "content": training_data.thinking_final_answer_prompt},
-            ]
-        )
+        if training_data.thinking_r1_style:
+            conversations.extend(
+                [
+                    {
+                        "role": "assistant",
+                        "content": serialize_r1_style_message(training_data),
+                    }
+                ]
+            )
+        else:
+            conversations.extend(
+                [
+                    {"role": "user", "content": training_data.thinking_instructions},
+                    {"role": "assistant", "content": training_data.thinking},
+                    {
+                        "role": "user",
+                        "content": training_data.thinking_final_answer_prompt,
+                    },
+                ]
+            )
 
     conversations.append(
         {
@@ -306,19 +375,29 @@ def generate_vertex_gemini(
     ]
 
     if training_data.supports_cot():
-        contents.extend(
-            [
-                {
-                    "role": "user",
-                    "parts": [{"text": training_data.thinking_instructions}],
-                },
-                {"role": "model", "parts": [{"text": training_data.thinking}]},
-                {
-                    "role": "user",
-                    "parts": [{"text": training_data.thinking_final_answer_prompt}],
-                },
-            ]
-        )
+        if training_data.thinking_r1_style:
+            contents.extend(
+                [
+                    {
+                        "role": "assistant",
+                        "parts": [{"text": serialize_r1_style_message(training_data)}],
+                    }
+                ]
+            )
+        else:
+            contents.extend(
+                [
+                    {
+                        "role": "user",
+                        "parts": [{"text": training_data.thinking_instructions}],
+                    },
+                    {"role": "model", "parts": [{"text": training_data.thinking}]},
+                    {
+                        "role": "user",
+                        "parts": [{"text": training_data.thinking_final_answer_prompt}],
+                    },
+                ]
+            )
 
     contents.append(
         {
@@ -397,9 +476,11 @@ class DatasetFormatter:
 
         generator = FORMAT_GENERATORS[format_type]
 
-        # TODO: check data_strategy == FinetuneDataStrategy.r1_style_thinking
-
-        include_cot = data_strategy == FinetuneDataStrategy.final_and_intermediate
+        include_cot = (
+            data_strategy == FinetuneDataStrategy.final_and_intermediate
+            or data_strategy
+            == FinetuneDataStrategy.final_and_intermediate_r1_compatible
+        )
 
         # Write to a temp file if no path is provided
         output_path = (
@@ -423,7 +504,7 @@ class DatasetFormatter:
                 training_data = build_training_data(
                     task_run=task_run,
                     system_message=self.system_message,
-                    include_cot=include_cot,
+                    data_strategy=data_strategy,
                     thinking_instructions=self.thinking_instructions,
                 )
                 example = generator(training_data)

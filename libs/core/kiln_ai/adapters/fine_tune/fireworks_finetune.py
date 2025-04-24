@@ -125,8 +125,6 @@ class FireworksFinetune(BaseFinetuneAdapter):
             # Fireworks doesn't support function calls or json schema, so we'll use json mode at call time
             self.datamodel.structured_output_mode = StructuredOutputMode.json_mode
 
-        # TODO: check data_strategy == FinetuneDataStrategy.r1_style_thinking
-
         train_file_id = await self.generate_and_upload_jsonl(
             dataset, self.datamodel.train_split_name, task, format
         )

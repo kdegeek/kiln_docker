@@ -220,6 +220,8 @@
     get_hyperparameters(model_provider.split("/")[0])
   }
 
+  $: base_model_id = model_provider.split("/").slice(1).join("/")
+
   let hyperparameters: FineTuneParameter[] | null = null
   let hyperparameters_error: KilnError | null = null
   let hyperparameters_loading = true
@@ -380,8 +382,8 @@
             },
             body: {
               dataset_id: dataset_id,
-              provider: model_provider.split("/")[0],
-              base_model_id: model_provider.split("/").slice(1).join("/"),
+              provider: model_provider_id,
+              base_model_id: base_model_id,
               train_split_name: selected_dataset_training_set_name || "",
               name: finetune_name ? finetune_name : undefined,
               description: finetune_description
@@ -484,6 +486,33 @@
 
     window.open(base_url + "/api/download_dataset_jsonl?" + query_string)
   }
+
+  const data_strategies_labels: Record<FinetuneDataStrategy, string> = {
+    final_only: "Standard - Learn only from final response",
+    final_and_intermediate:
+      "Reasoning - Learn intermediate thinking and final response",
+    final_and_intermediate_r1_compatible:
+      "Reasoning (R1 compatible) - Learn intermediate thinking and final response",
+  }
+
+  function get_data_strategies_supported(
+    base_model_id: string,
+  ): FinetuneDataStrategy[] {
+    return (
+      available_models
+        ?.map((model) => model.models)
+        .flat()
+        .find((model) => model.id === base_model_id)
+        ?.data_strategies_supported ?? []
+    )
+  }
+
+  $: data_strategy_select_options = get_data_strategies_supported(
+    base_model_id,
+  ).map((strategy) => [strategy, data_strategies_labels[strategy]]) as [
+    FinetuneDataStrategy,
+    string,
+  ][]
 </script>
 
 <div class="max-w-[1400px]">
@@ -657,23 +686,17 @@
             </div>
           {/if}
           <div>
-            <!-- TODO: add R1 style thinking and prevent picking anything else if dealing with an R1 style model -->
+            <!-- TODO: fix issue when changing the model where data_strategy current value refers to an option that is no longer there -->
             <FormElement
               label="Model Type / Training Strategy"
               description="Should the model be trained on only the final response, or also include intermediate thinking?"
               info_description="If you select 'Reasoning', the model will also be trained on the intermediate thinking such as reasoning or chain of thought. Use this if you want to call the tuned model with a chain-of-thought prompt for additional inference time compute."
               inputType="select"
               id="data_strategy"
-              select_options={[
-                ["final_only", "Standard - Learn only from final response"],
-                [
-                  "final_and_intermediate",
-                  "Reasoning - Learn intermediate thinking and final response",
-                ],
-              ]}
+              select_options={data_strategy_select_options}
               bind:value={data_strategy}
             />
-            {#if data_strategy === "final_and_intermediate" && !selecting_thinking_dataset}
+            {#if (data_strategy === "final_and_intermediate" || data_strategy === "final_and_intermediate_r1_compatible") && !selecting_thinking_dataset}
               <Warning
                 warning_message="You are training a model for inference-time thinking, but are not using a dataset filtered to samples with reasoning or chain-of-thought training data. This is not recommended, as it may lead to poor performance. We suggest creating a new dataset with a thinking filter."
               />

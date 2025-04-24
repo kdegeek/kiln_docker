@@ -60,9 +60,9 @@ class LiteLlmAdapter(BaseAdapter):
             {"role": "user", "content": user_msg},
         ]
 
+        # TODO: if the fine-tune is an R1 compatible fine-tune,
+        # we will be hitting cot_as_message here
         run_strategy, cot_prompt = self.run_strategy()
-
-        # TODO: check run_strategy == "r1_style_thinking"
 
         if run_strategy == "cot_as_message":
             # Used for reasoning-capable models that can output thinking and structured format
