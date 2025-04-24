@@ -157,16 +157,22 @@
         class="menu overflow-y-auto overflow-x-hidden flex-nowrap pt-0 mt-2 custom-scrollbar"
         use:scrollableCheck
       >
-        {#each options as option}
+        {#each options as option, sectionIndex}
           <li class="menu-title pl-1 sticky top-0 bg-white z-10">
             {option.label}
           </li>
           {#each option.options as item, index}
+            {@const overallIndex =
+              options
+                .slice(0, sectionIndex)
+                .reduce((count, group) => count + group.options.length, 0) +
+              index}
             <li>
               <button
                 role="option"
-                aria-selected={focusedIndex === index}
-                class="flex flex-col text-left gap-[1px] {focusedIndex === index
+                aria-selected={focusedIndex === overallIndex}
+                class="flex flex-col text-left gap-[1px] {focusedIndex ===
+                overallIndex
                   ? ' active'
                   : 'hover:bg-transparent'}"
                 on:click={(event) => {
@@ -174,7 +180,7 @@
                   selectOption(item.value)
                 }}
                 on:mouseenter={() => {
-                  focusedIndex = index
+                  focusedIndex = overallIndex
                 }}
               >
                 <div class="w-full">
