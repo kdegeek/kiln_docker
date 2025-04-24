@@ -49,6 +49,18 @@
     if (document.activeElement === selectedElement) {
       event.preventDefault()
       selectedElement.blur()
+    } else {
+      // Set the --dropdown-top CSS variable when the dropdown is opened
+      setTimeout(() => {
+        updateDropdownTop()
+      }, 0)
+    }
+  }
+
+  function updateDropdownTop() {
+    if (dropdownElement && selectedElement) {
+      const rect = selectedElement.getBoundingClientRect()
+      dropdownElement.style.setProperty("--dropdown-top", `${rect.top}px`)
     }
   }
 
@@ -109,12 +121,15 @@
   <!--svelte-ignore a11y-no-noninteractive-tabindex -->
   <div
     tabindex="0"
-    class="dropdown-content relative bg-base-100 rounded-box z-[1] w-full p-2 pt-0 shadow absolute max-h-[50vh] flex flex-col relative"
-    style="bottom: auto; top: 100%; max-height: min(50vh, calc(100vh - var(--dropdown-top, 0px) - 20px));"
+    class="dropdown-content relative bg-base-100 rounded-box z-[1] w-full p-2 pt-0 shadow absolute max-h-[50vh] flex flex-col relative border"
+    style="bottom: auto; top: 100%; max-height: calc(100vh - var(--dropdown-top, 0px) - 60px);"
     bind:this={dropdownElement}
+    on:focus={() => {
+      updateDropdownTop()
+    }}
   >
     <ul
-      class="menu overflow-y-auto overflow-x-hidden flex-nowrap pt-0 mt-2"
+      class="menu overflow-y-auto overflow-x-hidden flex-nowrap pt-0 mt-2 custom-scrollbar"
       use:scrollableCheck
     >
       {#each options as option}
@@ -146,12 +161,12 @@
       <div class="h-5">&nbsp;</div>
       <!--svelte-ignore a11y-no-static-element-interactions -->
       <div
-        class="absolute bottom-0 left-0 right-0 pointer-events-auto rounded-b-md stroke-[2px] hover:stroke-[4px]"
+        class="absolute bottom-0 left-0 right-0 pointer-events-auto rounded-b-md stroke-[2px] hover:stroke-[4px] border-t border-base-200"
         on:mouseenter={startScroll}
         on:mouseleave={stopScroll}
       >
         <div
-          class="bg-gradient-to-b from-transparent to-white mx-3 w-full flex justify-center items-center py-1 cursor-pointer"
+          class="bg-gradient-to-b from-transparent to-white w-full flex justify-center items-center py-1 cursor-pointer rounded-b-xl"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -171,3 +186,25 @@
     {/if}
   </div>
 </div>
+
+<style>
+  /* Custom scrollbar styling */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: rgba(115, 115, 115, 0.5);
+    border-radius: 20px;
+  }
+
+  /* Firefox */
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(115, 115, 115, 0.5) transparent;
+  }
+</style>
