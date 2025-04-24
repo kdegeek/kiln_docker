@@ -11,11 +11,13 @@
   let selectedElement: HTMLElement
   let scrolling = false
   let scrollInterval: number | null = null
+  let focusedIndex = -1
+  let listVisible = false
 
   // Select a prompt
   function selectOption(option: unknown) {
     selected = option
-    dropdownElement.blur()
+    listVisible = false
   }
 
   // Function to check if menu is scrollable
@@ -42,19 +44,9 @@
   } // Watch for changes to options and recheck scrollability
   $: options, setTimeout(checkIfScrollable, 0)
 
-  // Toggle dropdown
-  function toggleSelectedElement(event: MouseEvent) {
-    // If the element is already focused when clicked, prevent default focus behavior
-    // and blur it instead
-    if (document.activeElement === selectedElement) {
-      event.preventDefault()
-      selectedElement.blur()
-    } else {
-      // Set the --dropdown-top CSS variable when the dropdown is opened
-      setTimeout(() => {
-        updateDropdownTop()
-      }, 0)
-    }
+  // Set the dropdown top when the list is made
+  $: if (listVisible) {
+    updateDropdownTop()
   }
 
   function updateDropdownTop() {
@@ -102,10 +94,47 @@
 <div class="dropdown w-full relative">
   <div
     tabindex="0"
-    role="button"
-    class="select select-bordered w-full flex items-center"
+    role="listbox"
+    class="select select-bordered w-full flex items-center focus:ring-2 focus:ring-offset-2 focus:ring-base-300"
     bind:this={selectedElement}
-    on:mousedown={toggleSelectedElement}
+    on:mousedown={() => {
+      listVisible = true
+    }}
+    on:blur={() => {
+      listVisible = false
+    }}
+    on:keydown={(event) => {
+      if (
+        !listVisible &&
+        (event.key === "ArrowDown" ||
+          event.key === "ArrowUp" ||
+          event.key === "Enter")
+      ) {
+        event.preventDefault()
+        listVisible = true
+        focusedIndex = 0
+        return
+      }
+      if (event.key === "Escape") {
+        event.preventDefault()
+        listVisible = false
+        return
+      }
+      if (event.key === "ArrowDown") {
+        event.preventDefault()
+        focusedIndex = Math.min(
+          focusedIndex + 1,
+          options.flatMap((group) => group.options).length - 1,
+        )
+      } else if (event.key === "ArrowUp") {
+        event.preventDefault()
+        focusedIndex = Math.max(focusedIndex - 1, 0)
+      } else if (event.key === "Enter") {
+        selectOption(
+          options.flatMap((group) => group.options)[focusedIndex].value,
+        )
+      }
+    }}
   >
     <span class="truncate">
       {(() => {
@@ -116,74 +145,81 @@
         return selectedOption ? selectedOption.label : ""
       })()}
     </span>
-  </div>
 
-  <!--svelte-ignore a11y-no-noninteractive-tabindex -->
-  <div
-    tabindex="0"
-    class="dropdown-content relative bg-base-100 rounded-box z-[1] w-full p-2 pt-0 shadow absolute max-h-[50vh] flex flex-col relative border"
-    style="bottom: auto; top: 100%; max-height: calc(100vh - var(--dropdown-top, 0px) - 60px);"
-    bind:this={dropdownElement}
-    on:focus={() => {
-      updateDropdownTop()
-    }}
-  >
-    <ul
-      class="menu overflow-y-auto overflow-x-hidden flex-nowrap pt-0 mt-2 custom-scrollbar"
-      use:scrollableCheck
+    <div
+      class="dropdown-content relative bg-base-100 rounded-box z-[1] w-full p-2 pt-0 shadow absolute max-h-[50vh] flex flex-col relative border {listVisible
+        ? 'block'
+        : 'hidden'}"
+      style="bottom: auto; left: 0; top: 0; max-height: calc(100vh - var(--dropdown-top, 0px) - 60px);"
+      bind:this={dropdownElement}
     >
-      {#each options as option}
-        <li class="menu-title pl-1 sticky top-0 bg-white z-10">
-          {option.label}
-        </li>
-        {#each option.options as item}
-          <li>
-            <button
-              class="flex flex-col text-left gap-[1px]"
-              on:click={() => selectOption(item.value)}
-            >
-              <div class="w-full">
-                {item.label}
-              </div>
-              {#if item.description}
-                <div class="text-xs font-medium text-base-content/40 w-full">
-                  {item.description}
-                </div>
-              {/if}
-            </button>
-          </li>
-        {/each}
-      {/each}
-    </ul>
-
-    <!-- Scroll indicator - only show if scrollable -->
-    {#if isMenuScrollable}
-      <div class="h-5">&nbsp;</div>
-      <!--svelte-ignore a11y-no-static-element-interactions -->
-      <div
-        class="absolute bottom-0 left-0 right-0 pointer-events-auto rounded-b-md stroke-[2px] hover:stroke-[4px] border-t border-base-200"
-        on:mouseenter={startScroll}
-        on:mouseleave={stopScroll}
+      <ul
+        class="menu overflow-y-auto overflow-x-hidden flex-nowrap pt-0 mt-2 custom-scrollbar"
+        use:scrollableCheck
       >
+        {#each options as option}
+          <li class="menu-title pl-1 sticky top-0 bg-white z-10">
+            {option.label}
+          </li>
+          {#each option.options as item, index}
+            <li>
+              <button
+                role="option"
+                aria-selected={focusedIndex === index}
+                class="flex flex-col text-left gap-[1px] {focusedIndex === index
+                  ? ' active'
+                  : 'hover:bg-transparent'}"
+                on:click={(event) => {
+                  event.preventDefault()
+                  selectOption(item.value)
+                }}
+                on:mouseenter={() => {
+                  focusedIndex = index
+                }}
+              >
+                <div class="w-full">
+                  {item.label}
+                </div>
+                {#if item.description}
+                  <div class="text-xs font-medium text-base-content/40 w-full">
+                    {item.description}
+                  </div>
+                {/if}
+              </button>
+            </li>
+          {/each}
+        {/each}
+      </ul>
+
+      <!-- Scroll indicator - only show if scrollable -->
+      {#if isMenuScrollable}
+        <div class="h-5">&nbsp;</div>
+        <!--svelte-ignore a11y-no-static-element-interactions -->
         <div
-          class="bg-gradient-to-b from-transparent to-white w-full flex justify-center items-center py-1 cursor-pointer rounded-b-xl"
+          class="absolute bottom-0 left-0 right-0 pointer-events-auto rounded-b-md stroke-[2px] hover:stroke-[4px] border-t border-base-200"
+          on:mouseenter={startScroll}
+          on:mouseleave={stopScroll}
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            class="opacity-60"
+          <div
+            class="bg-gradient-to-b from-transparent to-white w-full flex justify-center items-center py-1 cursor-pointer rounded-b-xl"
           >
-            <polyline points="6 9 12 15 18 9"></polyline>
-          </svg>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="opacity-60"
+            >
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </div>
         </div>
-      </div>
-    {/if}
+      {/if}
+    </div>
   </div>
 </div>
 
