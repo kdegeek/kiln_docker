@@ -13,11 +13,15 @@
   let scrollInterval: number | null = null
   let focusedIndex = -1
   let listVisible = false
+  const id = Math.random().toString(36).substring(2, 15)
 
   // Select a prompt
   function selectOption(option: unknown) {
     selected = option
-    listVisible = false
+    // Delay hiding the dropdown to ensure the click event is fully processed
+    setTimeout(() => {
+      listVisible = false
+    }, 0)
   }
 
   // Function to check if menu is scrollable
@@ -89,13 +93,36 @@
   onDestroy(() => {
     stopScroll()
   })
+
+  function scrollToFocusedIndex() {
+    if (listVisible && menuElement) {
+      const optionElement = document.getElementById(
+        `option-${id}-${focusedIndex}`,
+      )
+      if (optionElement) {
+        // Check if the element is fully in view
+        const menuRect = menuElement.getBoundingClientRect()
+        const optionRect = optionElement.getBoundingClientRect()
+
+        const isInView =
+          optionRect.top >= menuRect.top && optionRect.bottom <= menuRect.bottom
+
+        // Only scroll if the element is not in view
+        if (!isInView) {
+          optionElement.scrollIntoView({ block: "nearest" })
+        }
+      }
+    }
+  }
 </script>
 
 <div class="dropdown w-full relative">
   <div
     tabindex="0"
     role="listbox"
-    class="select select-bordered w-full flex items-center focus:ring-2 focus:ring-offset-2 focus:ring-base-300"
+    class="select select-bordered w-full flex items-center {!listVisible
+      ? 'focus:ring-2 focus:ring-offset-2 focus:ring-base-300'
+      : 'border-none'}"
     bind:this={selectedElement}
     on:mousedown={() => {
       listVisible = true
@@ -126,9 +153,11 @@
           focusedIndex + 1,
           options.flatMap((group) => group.options).length - 1,
         )
+        scrollToFocusedIndex()
       } else if (event.key === "ArrowUp") {
         event.preventDefault()
         focusedIndex = Math.max(focusedIndex - 1, 0)
+        scrollToFocusedIndex()
       } else if (event.key === "Enter") {
         selectOption(
           options.flatMap((group) => group.options)[focusedIndex].value,
@@ -167,16 +196,16 @@
                 .slice(0, sectionIndex)
                 .reduce((count, group) => count + group.options.length, 0) +
               index}
-            <li>
+            <li id={`option-${id}-${overallIndex}`}>
               <button
                 role="option"
                 aria-selected={focusedIndex === overallIndex}
-                class="flex flex-col text-left gap-[1px] {focusedIndex ===
+                class="flex flex-col text-left gap-[1px] pointer-events-auto {focusedIndex ===
                 overallIndex
                   ? ' active'
                   : 'hover:bg-transparent'}"
-                on:click={(event) => {
-                  event.preventDefault()
+                on:mousedown={(event) => {
+                  event.stopPropagation()
                   selectOption(item.value)
                 }}
                 on:mouseenter={() => {
