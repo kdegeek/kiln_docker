@@ -276,8 +276,13 @@ def finetune_provider_model(
         name=provider,
         model_id=fine_tune.fine_tune_model_id,
         parser=parser_from_data_strategy(fine_tune.data_strategy),
-        reasoning_capable=fine_tune.data_strategy
-        == FinetuneDataStrategy.final_and_intermediate_r1_compatible,
+        reasoning_capable=(
+            fine_tune.data_strategy
+            in [
+                FinetuneDataStrategy.final_and_intermediate,
+                FinetuneDataStrategy.final_and_intermediate_r1_compatible,
+            ]
+        ),
     )
 
     if provider == ModelProviderName.vertex and fine_tune.fine_tune_model_id:

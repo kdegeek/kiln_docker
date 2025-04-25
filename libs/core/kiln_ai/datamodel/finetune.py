@@ -88,18 +88,22 @@ class Finetune(KilnParentedModel):
 
     @model_validator(mode="after")
     def validate_thinking_instructions(self) -> Self:
+        valid_thinking_data_strategies = [
+            FinetuneDataStrategy.final_and_intermediate,
+            FinetuneDataStrategy.final_and_intermediate_r1_compatible,
+        ]
         if (
             self.thinking_instructions is not None
-            and self.data_strategy != FinetuneDataStrategy.final_and_intermediate
+            and self.data_strategy not in valid_thinking_data_strategies
         ):
             raise ValueError(
-                "Thinking instructions can only be used when data_strategy is final_and_intermediate"
+                "Thinking instructions can only be used when data_strategy is final_and_intermediate or final_and_intermediate_r1_compatible"
             )
         if (
             self.thinking_instructions is None
-            and self.data_strategy == FinetuneDataStrategy.final_and_intermediate
+            and self.data_strategy in valid_thinking_data_strategies
         ):
             raise ValueError(
-                "Thinking instructions are required when data_strategy is final_and_intermediate"
+                "Thinking instructions are required when data_strategy is final_and_intermediate or final_and_intermediate_r1_compatible"
             )
         return self

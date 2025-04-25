@@ -547,19 +547,33 @@ def test_prompt_parent_task():
             False,
             None,
         ),
-        # Test 3: Invalid case - thinking instructions with final_only
+        # Test 3: Valid case - thinking instructions with final_and_intermediate_r1_compatible
+        (
+            "Think step by step",
+            FinetuneDataStrategy.final_and_intermediate_r1_compatible,
+            False,
+            None,
+        ),
+        # Test 4: Invalid case - thinking instructions with final_only
         (
             "Think step by step",
             FinetuneDataStrategy.final_only,
             True,
-            "Thinking instructions can only be used when data_strategy is final_and_intermediate",
+            "Thinking instructions can only be used when data_strategy is final_and_intermediate or final_and_intermediate_r1_compatible",
         ),
-        # Test 4: Invalid case - no thinking instructions with final_and_intermediate
+        # Test 5: Invalid case - no thinking instructions with final_and_intermediate
         (
             None,
             FinetuneDataStrategy.final_and_intermediate,
             True,
-            "Thinking instructions are required when data_strategy is final_and_intermediate",
+            "Thinking instructions are required when data_strategy is final_and_intermediate or final_and_intermediate_r1_compatible",
+        ),
+        # Test 6: Invalid case - no thinking instructions with final_and_intermediate_r1_compatible
+        (
+            None,
+            FinetuneDataStrategy.final_and_intermediate_r1_compatible,
+            True,
+            "Thinking instructions are required when data_strategy is final_and_intermediate or final_and_intermediate_r1_compatible",
         ),
     ],
 )

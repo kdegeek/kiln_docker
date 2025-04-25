@@ -686,7 +686,6 @@
             </div>
           {/if}
           <div>
-            <!-- TODO: fix issue when changing the model where data_strategy current value refers to an option that is no longer there -->
             <FormElement
               label="Model Type / Training Strategy"
               description="Should the model be trained on only the final response, or also include intermediate thinking?"

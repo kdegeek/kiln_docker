@@ -196,7 +196,6 @@ class BaseAdapter(metaclass=ABCMeta):
         cot_prompt = self.prompt_builder.chain_of_thought_prompt()
         reasoning_capable = self.model_provider().reasoning_capable
 
-        # TODO: R1 compatible fine-tunes will be returning cot_as_message here
         if cot_prompt and reasoning_capable:
             # 1: "Thinking" LLM designed to output thinking in a structured format
             # A simple message with the COT prompt appended to the message list is sufficient

@@ -50,6 +50,10 @@ class ModelTrainingData:
             self.thinking_instructions is not None
             and self.thinking is not None
             and self.thinking_final_answer_prompt is not None
+        ) or (
+            self.thinking_r1_style
+            and self.thinking_instructions is not None
+            and self.thinking is not None
         )
 
 
@@ -83,10 +87,12 @@ def build_training_data(
     thinking_final_answer_prompt = None
     parent_task = task_run.parent_task()
 
-    if (
+    include_cot = (
         data_strategy == FinetuneDataStrategy.final_and_intermediate
-        and task_run.has_thinking_training_data()
-    ):
+        or data_strategy == FinetuneDataStrategy.final_and_intermediate_r1_compatible
+    )
+
+    if include_cot and task_run.has_thinking_training_data():
         if not parent_task:
             raise ValueError(
                 "TaskRuns for training required a parent Task for building a chain of thought prompts. Train without COT, or save this TaskRun to a parent Task."
@@ -98,7 +104,12 @@ def build_training_data(
             "chain_of_thought"
         )
 
-        thinking_final_answer_prompt = COT_FINAL_ANSWER_PROMPT
+        # For R1 style, we don't need the final answer prompt (only used for COT multi-message)
+        thinking_final_answer_prompt = (
+            COT_FINAL_ANSWER_PROMPT
+            if data_strategy == FinetuneDataStrategy.final_and_intermediate
+            else None
+        )
 
         # Always use the passed thinking instructions, but check they are present for COT
         if not thinking_instructions:
@@ -141,10 +152,15 @@ def generate_chat_message_response(
                 [
                     {
                         "role": "assistant",
-                        "content": serialize_r1_style_message(training_data),
+                        "content": serialize_r1_style_message(
+                            thinking=training_data.thinking,
+                            final_output=training_data.final_output,
+                        ),
                     }
                 ]
             )
+
+            return {"messages": messages}
         else:
             messages.extend(
                 [
@@ -186,7 +202,10 @@ def generate_json_schema_message(
                 [
                     {
                         "role": "assistant",
-                        "content": serialize_r1_style_message(training_data),
+                        "content": serialize_r1_style_message(
+                            thinking=training_data.thinking,
+                            final_output=training_data.final_output,
+                        ),
                     }
                 ]
             )
@@ -227,7 +246,10 @@ def generate_chat_message_toolcall(
                 [
                     {
                         "role": "assistant",
-                        "content": serialize_r1_style_message(training_data),
+                        "content": serialize_r1_style_message(
+                            thinking=training_data.thinking,
+                            final_output=training_data.final_output,
+                        ),
                     }
                 ]
             )
@@ -280,10 +302,15 @@ def generate_huggingface_chat_template(
                 [
                     {
                         "role": "assistant",
-                        "content": serialize_r1_style_message(training_data),
+                        "content": serialize_r1_style_message(
+                            thinking=training_data.thinking,
+                            final_output=training_data.final_output,
+                        ),
                     }
                 ]
             )
+
+            return {"conversations": conversations}
         else:
             conversations.extend(
                 [
@@ -322,10 +349,24 @@ def generate_huggingface_chat_template_toolcall(
                 [
                     {
                         "role": "assistant",
-                        "content": serialize_r1_style_message(training_data),
+                        "content": serialize_r1_style_message(
+                            thinking=training_data.thinking,
+                            final_output=training_data.final_output,
+                        ),
+                        "tool_calls": [
+                            {
+                                "type": "function",
+                                "function": {
+                                    "name": "task_response",
+                                    "id": str(uuid4()).replace("-", "")[:9],
+                                    "arguments": arguments,
+                                },
+                            }
+                        ],
                     }
                 ]
             )
+            return {"conversations": conversations}
         else:
             conversations.extend(
                 [
@@ -379,11 +420,30 @@ def generate_vertex_gemini(
             contents.extend(
                 [
                     {
-                        "role": "assistant",
-                        "parts": [{"text": serialize_r1_style_message(training_data)}],
+                        "role": "model",
+                        "parts": [
+                            {
+                                "text": serialize_r1_style_message(
+                                    thinking=training_data.thinking,
+                                    final_output=training_data.final_output,
+                                )
+                            }
+                        ],
                     }
                 ]
             )
+
+            return {
+                "systemInstruction": {
+                    "role": "system",
+                    "parts": [
+                        {
+                            "text": training_data.system_message,
+                        }
+                    ],
+                },
+                "contents": contents,
+            }
         else:
             contents.extend(
                 [
