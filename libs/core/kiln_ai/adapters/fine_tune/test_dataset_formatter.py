@@ -252,10 +252,6 @@ def test_generate_chat_message_toolcall_thinking_r1_style():
             {
                 "role": "assistant",
                 "content": '<think>thinking output</think>{"key": "value"}',
-            },
-            {
-                "role": "assistant",
-                "content": None,
                 "tool_calls": [
                     {
                         "id": "call_1",

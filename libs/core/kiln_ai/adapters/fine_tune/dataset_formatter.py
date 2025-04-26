@@ -209,6 +209,8 @@ def generate_json_schema_message(
                     }
                 ]
             )
+
+            return {"messages": messages}
         else:
             messages.extend(
                 [
@@ -250,9 +252,24 @@ def generate_chat_message_toolcall(
                             thinking=training_data.thinking,
                             final_output=training_data.final_output,
                         ),
+                        "tool_calls": [
+                            {
+                                "id": "call_1",
+                                "type": "function",
+                                "function": {
+                                    "name": "task_response",
+                                    # Yes we parse then dump again. This ensures it's valid JSON, and ensures it goes to 1 line
+                                    "arguments": json.dumps(
+                                        arguments, ensure_ascii=False
+                                    ),
+                                },
+                            }
+                        ],
                     }
                 ]
             )
+
+            return {"messages": messages}
         else:
             messages.extend(
                 [
