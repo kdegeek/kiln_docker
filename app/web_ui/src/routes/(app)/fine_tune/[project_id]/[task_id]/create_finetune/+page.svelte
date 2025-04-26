@@ -497,7 +497,15 @@
 
   function get_data_strategies_supported(
     base_model_id: string,
+    is_download: boolean,
   ): FinetuneDataStrategy[] {
+    if (is_download) {
+      return [
+        "final_and_intermediate",
+        "final_and_intermediate_r1_compatible",
+        "final_only",
+      ]
+    }
     return (
       available_models
         ?.map((model) => model.models)
@@ -509,6 +517,7 @@
 
   $: data_strategy_select_options = get_data_strategies_supported(
     base_model_id,
+    is_download,
   ).map((strategy) => [strategy, data_strategies_labels[strategy]]) as [
     FinetuneDataStrategy,
     string,
