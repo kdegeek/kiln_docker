@@ -35,7 +35,7 @@ from kiln_ai.datamodel.dataset_split import (
 from kiln_ai.utils.config import Config
 from kiln_ai.utils.name_generator import generate_memorable_name
 from kiln_server.task_api import task_from_id
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
 
@@ -45,10 +45,12 @@ class FinetuneProviderModel(BaseModel):
 
     name: str
     id: str
-    data_strategies_supported: list[FinetuneDataStrategy] = [
-        FinetuneDataStrategy.final_only,
-        FinetuneDataStrategy.final_and_intermediate,
-    ]
+    data_strategies_supported: list[FinetuneDataStrategy] = Field(
+        default_factory=lambda: [
+            FinetuneDataStrategy.final_only,
+            FinetuneDataStrategy.final_and_intermediate,
+        ]
+    )
 
 
 class FinetuneProvider(BaseModel):

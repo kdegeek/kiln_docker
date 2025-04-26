@@ -110,6 +110,18 @@ def client():
     return TestClient(app)
 
 
+def test_finetune_provider_model_defaults():
+    model = FinetuneProviderModel(
+        name="Test Provider",
+        id="test_provider",
+    )
+
+    assert model.data_strategies_supported == [
+        FinetuneDataStrategy.final_only,
+        FinetuneDataStrategy.final_and_intermediate,
+    ]
+
+
 def test_get_dataset_splits(client, mock_task_from_id_disk_backed, test_task):
     response = client.get("/api/projects/project1/tasks/task1/dataset_splits")
 
