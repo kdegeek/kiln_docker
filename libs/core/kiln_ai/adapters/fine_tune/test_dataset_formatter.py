@@ -926,9 +926,8 @@ def test_dataset_formatter_dump_to_file_json_schema_format(mock_dataset, tmp_pat
 @pytest.mark.parametrize(
     "thinking,final_output,expected_output",
     [
-        (None, "final output", "final output"),
-        ("", "final output", "final output"),
         ("thinking", "final output", "<think>thinking</think>final output"),
+        ("thinking", '{"name":"joe"}', '<think>thinking</think>{"name":"joe"}'),
     ],
 )
 def test_serialize_r1_style_message(thinking, final_output, expected_output):
@@ -936,3 +935,16 @@ def test_serialize_r1_style_message(thinking, final_output, expected_output):
         serialize_r1_style_message(thinking=thinking, final_output=final_output)
         == expected_output
     )
+
+
+@pytest.mark.parametrize(
+    "thinking,final_output",
+    [
+        (None, "final output"),
+        ("", "final output"),
+        (" ", "final output"),
+    ],
+)
+def test_serialize_r1_style_message_missing_thinking(thinking, final_output):
+    with pytest.raises(ValueError, match="Thinking data is required for R1 style"):
+        serialize_r1_style_message(thinking=thinking, final_output=final_output)

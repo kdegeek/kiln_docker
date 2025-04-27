@@ -128,8 +128,8 @@ def build_training_data(
 
 
 def serialize_r1_style_message(thinking: str | None, final_output: str):
-    if thinking is None or len(thinking) == 0:
-        return final_output
+    if thinking is None or len(thinking.strip()) == 0:
+        raise ValueError("Thinking data is required for R1 style")
 
     return f"<think>{thinking}</think>{final_output}"
 
