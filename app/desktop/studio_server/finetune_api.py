@@ -8,6 +8,7 @@ from kiln_ai.adapters.fine_tune.base_finetune import FineTuneParameter, FineTune
 from kiln_ai.adapters.fine_tune.dataset_formatter import DatasetFormat, DatasetFormatter
 from kiln_ai.adapters.fine_tune.finetune_registry import finetune_registry
 from kiln_ai.adapters.ml_model_list import (
+    KilnModel,
     KilnModelProvider,
     ModelParserID,
     ModelProviderName,
@@ -35,7 +36,7 @@ from kiln_ai.datamodel.dataset_split import (
 from kiln_ai.utils.config import Config
 from kiln_ai.utils.name_generator import generate_memorable_name
 from kiln_server.task_api import task_from_id
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 logger = logging.getLogger(__name__)
 
@@ -103,6 +104,16 @@ class CreateFinetuneRequest(BaseModel):
     custom_system_message: str | None = None
     custom_thinking_instructions: str | None = None
     data_strategy: FinetuneDataStrategy
+
+    @model_validator(mode="after")
+    def validate_data_strategy(self) -> "CreateFinetuneRequest":
+        if self.data_strategy not in infer_data_strategies_for_model(
+            built_in_models, self.base_model_id, self.provider
+        ):
+            raise ValueError(
+                f"The data strategy {self.data_strategy} is not supported for the provider model {self.base_model_id}"
+            )
+        return self
 
 
 class FinetuneWithStatus(BaseModel):
@@ -203,23 +214,12 @@ def connect_fine_tune_api(app: FastAPI):
                         FinetuneProviderModel(
                             name=model.friendly_name,
                             id=provider.provider_finetune_id,
-                            data_strategies_supported=data_strategies_from_model_provider(
-                                provider
-                            ),
                         )
                     )
 
         # Add models from Fireworks
         try:
             fireworks_models = await fetch_fireworks_finetune_models()
-
-            # Add supported data strategies to each model - we would ideally do this by looking
-            # at the parser to infer the strategy, but we don't have that information here
-            for model in fireworks_models:
-                model.data_strategies_supported = data_strategies_from_model_name(
-                    model.name
-                )
-
             provider_models[ModelProviderName.fireworks_ai] = fireworks_models
         except Exception as e:
             logger.error(f"Error fetching Fireworks models: {e}")
@@ -227,6 +227,12 @@ def connect_fine_tune_api(app: FastAPI):
         # Create provider entries
         providers: list[FinetuneProvider] = []
         for provider_name, models in provider_models.items():
+            # attach the compatible data strategies to each model
+            for model in models:
+                model.data_strategies_supported = infer_data_strategies_for_model(
+                    built_in_models, model.id, provider_name
+                )
+
             provider = FinetuneProvider(
                 name=provider_name_from_id(provider_name),
                 id=provider_name,
@@ -300,13 +306,6 @@ def connect_fine_tune_api(app: FastAPI):
         thinking_instructions = thinking_instructions_from_request(
             task, request.data_strategy, request.custom_thinking_instructions
         )
-
-        if (
-            request.data_strategy
-            == FinetuneDataStrategy.final_and_intermediate_r1_compatible
-        ):
-            # TODO: check that the base model supports R1 style thinking
-            pass
 
         _, finetune_model = await finetune_adapter_class.create_and_start(
             dataset=dataset,
@@ -507,6 +506,12 @@ async def fetch_fireworks_finetune_models() -> list[FinetuneProviderModel]:
     return tuneable_models
 
 
+DEFAULT_DATA_STRATEGIES = [
+    FinetuneDataStrategy.final_only,
+    FinetuneDataStrategy.final_and_intermediate,
+]
+
+
 def data_strategies_from_model_provider(
     provider: KilnModelProvider,
 ) -> list[FinetuneDataStrategy]:
@@ -514,25 +519,37 @@ def data_strategies_from_model_provider(
         return [
             FinetuneDataStrategy.final_and_intermediate_r1_compatible,
         ]
-    return [
-        FinetuneDataStrategy.final_only,
-        FinetuneDataStrategy.final_and_intermediate,
-    ]
+    return DEFAULT_DATA_STRATEGIES
 
 
-def data_strategies_from_model_name(
-    name: str,
+def data_strategies_from_finetune_id(
+    provider_finetune_id: str,
 ) -> list[FinetuneDataStrategy]:
     r1_must_include = ["r1", "qwq"]
-    r1_must_not_include = ["distill"]
-    if any(substring in name.lower() for substring in r1_must_include) and not any(
-        substring in name.lower() for substring in r1_must_not_include
-    ):
+    if any(substring in provider_finetune_id.lower() for substring in r1_must_include):
         return [
             FinetuneDataStrategy.final_and_intermediate_r1_compatible,
         ]
+    return DEFAULT_DATA_STRATEGIES
 
-    return [
-        FinetuneDataStrategy.final_only,
-        FinetuneDataStrategy.final_and_intermediate,
-    ]
+
+def infer_data_strategies_for_model(
+    available_models: list[KilnModel],
+    provider_finetune_id: str,
+    provider_name: str,
+) -> list[FinetuneDataStrategy]:
+    # we don't have built-in models for fireworks models, so we infer the data strategy from the model name
+    if provider_name == ModelProviderName.fireworks_ai:
+        return data_strategies_from_finetune_id(provider_finetune_id)
+
+    # where we have built-in models, we can infer the data strategy from the object itself
+    for model in available_models:
+        for provider in model.providers:
+            if (
+                provider.name == provider_name
+                and provider.provider_finetune_id == provider_finetune_id
+            ):
+                return data_strategies_from_model_provider(provider)
+
+    # for everything else, we don't know what the data strategy is, so we use the default
+    return DEFAULT_DATA_STRATEGIES
