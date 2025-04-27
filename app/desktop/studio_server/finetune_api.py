@@ -347,8 +347,6 @@ def connect_fine_tune_api(app: FastAPI):
                 detail=f"Data strategy '{data_strategy}' not found",
             )
 
-        # TODO: handle data_strategy == FinetuneDataStrategy.final_and_intermediate_r1_compatible
-
         data_strategy_typed = FinetuneDataStrategy(data_strategy)
 
         task = task_from_id(project_id, task_id)
