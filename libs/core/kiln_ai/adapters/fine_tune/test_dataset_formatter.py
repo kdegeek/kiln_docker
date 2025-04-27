@@ -786,6 +786,33 @@ def test_build_training_data_with_COT(mock_task):
     assert training_data_output.supports_cot()
 
 
+def test_model_training_data_supports_cot(mock_task):
+    training_data = ModelTrainingData(
+        input="test input",
+        system_message="system message",
+        final_output="test output",
+        thinking="thinking output",
+        thinking_instructions="thinking instructions",
+        thinking_final_answer_prompt=COT_FINAL_ANSWER_PROMPT,
+        thinking_r1_style=False,
+    )
+    assert training_data.supports_cot() == True
+
+
+def test_model_training_data_supports_cot_r1_style(mock_task):
+    training_data = ModelTrainingData(
+        input="test input",
+        system_message="system message",
+        final_output="test output",
+        thinking="thinking output",
+        thinking_instructions="thinking instructions",
+        thinking_r1_style=True,
+    )
+
+    with pytest.raises(ValueError, match="R1 style does not support COT"):
+        training_data.supports_cot()
+
+
 def test_build_training_data_with_COT_r1_style(mock_task):
     # Setup with needed fields for thinking
     mock_task_run = mock_task.runs()[0]
@@ -805,7 +832,6 @@ def test_build_training_data_with_COT_r1_style(mock_task):
     assert training_data_output.input == '{"test": "input 你好"}'
     assert training_data_output.system_message == "system message"
     assert training_data_output.thinking_r1_style == True
-    assert training_data_output.supports_cot()
 
 
 def test_build_training_data_with_thinking(mock_task):
@@ -832,7 +858,6 @@ def test_build_training_data_with_thinking(mock_task):
     assert training_data_output.thinking_final_answer_prompt == COT_FINAL_ANSWER_PROMPT
     assert training_data_output.input == '{"test": "input 你好"}'
     assert training_data_output.system_message == "system message"
-    assert training_data_output.supports_cot()
     assert training_data_output.thinking_r1_style == False
 
 
@@ -860,7 +885,6 @@ def test_build_training_data_with_thinking_r1_style(mock_task):
     assert training_data_output.thinking_final_answer_prompt == None
     assert training_data_output.input == '{"test": "input 你好"}'
     assert training_data_output.system_message == "system message"
-    assert training_data_output.supports_cot()
     assert training_data_output.thinking_r1_style == True
 
 
