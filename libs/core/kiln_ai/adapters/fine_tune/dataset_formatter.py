@@ -8,6 +8,7 @@ from uuid import uuid4
 
 from kiln_ai.adapters.model_adapters.base_adapter import COT_FINAL_ANSWER_PROMPT
 from kiln_ai.datamodel import DatasetSplit, FinetuneDataStrategy, TaskRun
+from kiln_ai.datamodel.datamodel_enums import THINKING_DATA_STRATEGIES
 
 
 class DatasetFormat(str, Enum):
@@ -87,10 +88,7 @@ def build_training_data(
     thinking_final_answer_prompt = None
     parent_task = task_run.parent_task()
 
-    include_cot = (
-        data_strategy == FinetuneDataStrategy.final_and_intermediate
-        or data_strategy == FinetuneDataStrategy.final_and_intermediate_r1_compatible
-    )
+    include_cot = data_strategy in THINKING_DATA_STRATEGIES
 
     if include_cot and task_run.has_thinking_training_data():
         if not parent_task:
@@ -553,11 +551,7 @@ class DatasetFormatter:
 
         generator = FORMAT_GENERATORS[format_type]
 
-        include_cot = (
-            data_strategy == FinetuneDataStrategy.final_and_intermediate
-            or data_strategy
-            == FinetuneDataStrategy.final_and_intermediate_r1_compatible
-        )
+        include_cot = data_strategy in THINKING_DATA_STRATEGIES
 
         # Write to a temp file if no path is provided
         output_path = (

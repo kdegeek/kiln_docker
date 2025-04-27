@@ -5,6 +5,7 @@ from typing_extensions import Self
 
 from kiln_ai.datamodel.basemodel import NAME_FIELD, KilnParentedModel
 from kiln_ai.datamodel.datamodel_enums import (
+    THINKING_DATA_STRATEGIES,
     FinetuneDataStrategy,
     FineTuneStatusType,
     StructuredOutputMode,
@@ -88,10 +89,7 @@ class Finetune(KilnParentedModel):
 
     @model_validator(mode="after")
     def validate_thinking_instructions(self) -> Self:
-        valid_thinking_data_strategies = [
-            FinetuneDataStrategy.final_and_intermediate,
-            FinetuneDataStrategy.final_and_intermediate_r1_compatible,
-        ]
+        valid_thinking_data_strategies = THINKING_DATA_STRATEGIES
         if (
             self.thinking_instructions is not None
             and self.data_strategy not in valid_thinking_data_strategies

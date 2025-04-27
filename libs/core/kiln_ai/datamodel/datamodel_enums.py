@@ -66,3 +66,9 @@ class FinetuneDataStrategy(str, Enum):
 
     # Train using R1-style thinking format, which includes the reasoning in <think> tags in the message
     final_and_intermediate_r1_compatible = "final_and_intermediate_r1_compatible"
+
+
+THINKING_DATA_STRATEGIES: list[FinetuneDataStrategy] = [
+    FinetuneDataStrategy.final_and_intermediate,
+    FinetuneDataStrategy.final_and_intermediate_r1_compatible,
+]

@@ -26,6 +26,7 @@ from kiln_ai.datamodel import (
     FineTuneStatusType,
     Task,
 )
+from kiln_ai.datamodel.datamodel_enums import THINKING_DATA_STRATEGIES
 from kiln_ai.datamodel.dataset_filters import DatasetFilterId
 from kiln_ai.datamodel.dataset_split import (
     AllSplitDefinition,
@@ -427,11 +428,7 @@ def thinking_instructions_from_request(
     data_strategy: FinetuneDataStrategy,
     custom_thinking_instructions: str | None,
 ) -> str | None:
-    thinking_compatible_data_strategies = [
-        FinetuneDataStrategy.final_and_intermediate,
-        FinetuneDataStrategy.final_and_intermediate_r1_compatible,
-    ]
-    if data_strategy not in thinking_compatible_data_strategies:
+    if data_strategy not in THINKING_DATA_STRATEGIES:
         # Not using COT/Thinking style
         return None
 
