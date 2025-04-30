@@ -108,11 +108,6 @@
   }
 
   function build_available_model_select(models: FinetuneProvider[]) {
-    for (const model of models) {
-      for (const provider of model.models) {
-        console.log(model.id, provider.name, provider.id)
-      }
-    }
     available_model_select = []
     available_model_select.push([
       disabled_header,
@@ -527,6 +522,10 @@
   }
 
   $: update_data_strategies_supported(base_model_id, is_download)
+
+  $: config_is_error =
+    data_strategy === "final_and_intermediate_r1_compatible" &&
+    !selecting_thinking_dataset
 </script>
 
 <div class="max-w-[1400px]">
@@ -580,7 +579,7 @@
       </div>
     {:else}
       <FormContainer
-        {submit_visible}
+        submit_visible={submit_visible && !config_is_error}
         submit_label="Start Fine-Tune Job"
         on:submit={create_finetune}
         bind:error={create_finetune_error}
@@ -709,9 +708,15 @@
               select_options={data_strategy_select_options}
               bind:value={data_strategy}
             />
-            {#if (data_strategy === "final_and_intermediate" || data_strategy === "final_and_intermediate_r1_compatible") && !selecting_thinking_dataset}
+            {#if data_strategy === "final_and_intermediate" && !selecting_thinking_dataset}
               <Warning
                 warning_message="You are training a model for inference-time thinking, but are not using a dataset filtered to samples with reasoning or chain-of-thought training data. This is not recommended, as it may lead to poor performance. We suggest creating a new dataset with a thinking filter."
+              />
+            {/if}
+            {#if data_strategy === "final_and_intermediate_r1_compatible" && !selecting_thinking_dataset}
+              <Warning
+                warning_color="error"
+                warning_message="You are training a model of the R1 family for inference-time thinking, but are not using a dataset filtered to samples with reasoning or chain-of-thought training data. This is strongly not recommended, as it may lead to poor performance. We suggest creating a new dataset with a thinking filter."
               />
             {/if}
           </div>
