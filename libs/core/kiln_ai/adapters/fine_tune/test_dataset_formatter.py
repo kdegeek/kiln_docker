@@ -244,28 +244,11 @@ def test_generate_chat_message_toolcall_thinking_r1_style():
         thinking_r1_style=True,
     )
 
-    result = generate_chat_message_toolcall(training_data)
-
-    assert result == {
-        "messages": [
-            {"role": "system", "content": "system message"},
-            {"role": "user", "content": "test input"},
-            {
-                "role": "assistant",
-                "content": '<think>\nthinking output\n</think>\n\n{"key": "value"}',
-                "tool_calls": [
-                    {
-                        "id": "call_1",
-                        "type": "function",
-                        "function": {
-                            "name": "task_response",
-                            "arguments": '{"key": "value"}',
-                        },
-                    }
-                ],
-            },
-        ]
-    }
+    with pytest.raises(
+        ValueError,
+        match="R1 style thinking is not supported for tool call downloads",
+    ):
+        generate_chat_message_toolcall(training_data)
 
 
 def test_generate_chat_message_toolcall_invalid_json():
@@ -702,27 +685,11 @@ def test_generate_huggingface_chat_template_toolcall_thinking_r1_style():
         thinking_r1_style=True,
     )
 
-    result = generate_huggingface_chat_template_toolcall(training_data)
-
-    assert result["conversations"][0] == {"role": "system", "content": "system message"}
-    assert result["conversations"][1] == {"role": "user", "content": "test input"}
-
-    # Check the assistant message properties separately
-    assistant_msg = result["conversations"][2]
-    assert assistant_msg["role"] == "assistant"
-    assert (
-        assistant_msg["content"]
-        == '<think>\nthinking output\n</think>\n\n{"key": "value"}'
-    )
-    assert len(assistant_msg["tool_calls"]) == 1
-
-    # Check the tool call details
-    tool_call = assistant_msg["tool_calls"][0]
-    assert tool_call["type"] == "function"
-    assert tool_call["function"]["name"] == "task_response"
-    assert len(tool_call["function"]["id"]) == 9  # UUID is truncated to 9 chars
-    assert tool_call["function"]["id"].isalnum()  # Check ID is alphanumeric
-    assert tool_call["function"]["arguments"] == {"key": "value"}
+    with pytest.raises(
+        ValueError,
+        match="R1 style thinking is not supported for tool call downloads",
+    ):
+        generate_huggingface_chat_template_toolcall(training_data)
 
 
 def test_generate_huggingface_chat_template_toolcall_invalid_json():

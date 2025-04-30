@@ -244,33 +244,10 @@ def generate_chat_message_toolcall(
         {"role": "user", "content": training_data.input},
     ]
 
-    tool_calls = [
-        {
-            "id": "call_1",
-            "type": "function",
-            "function": {
-                "name": "task_response",
-                # Yes we parse then dump again. This ensures it's valid JSON, and ensures it goes to 1 line
-                "arguments": json.dumps(arguments, ensure_ascii=False),
-            },
-        }
-    ]
-
     if training_data.thinking_r1_style:
-        messages.extend(
-            [
-                {
-                    "role": "assistant",
-                    "content": serialize_r1_style_message(
-                        thinking=training_data.thinking,
-                        final_output=training_data.final_output,
-                    ),
-                    "tool_calls": tool_calls,
-                }
-            ]
+        raise ValueError(
+            "R1 style thinking is not supported for tool call downloads. Please use a different training strategy."
         )
-
-        return {"messages": messages}
     elif training_data.supports_cot():
         messages.extend(
             [
@@ -287,7 +264,17 @@ def generate_chat_message_toolcall(
         {
             "role": "assistant",
             "content": None,
-            "tool_calls": tool_calls,
+            "tool_calls": [
+                {
+                    "id": "call_1",
+                    "type": "function",
+                    "function": {
+                        "name": "task_response",
+                        # Yes we parse then dump again. This ensures it's valid JSON, and ensures it goes to 1 line
+                        "arguments": json.dumps(arguments, ensure_ascii=False),
+                    },
+                }
+            ],
         },
     )
 
@@ -350,32 +337,10 @@ def generate_huggingface_chat_template_toolcall(
         {"role": "user", "content": training_data.input},
     ]
 
-    tool_calls = [
-        {
-            "type": "function",
-            "function": {
-                "name": "task_response",
-                "id": str(uuid4()).replace("-", "")[:9],
-                "arguments": arguments,
-            },
-        }
-    ]
-
     if training_data.thinking_r1_style:
-        conversations.extend(
-            [
-                {
-                    "role": "assistant",
-                    "content": serialize_r1_style_message(
-                        thinking=training_data.thinking,
-                        final_output=training_data.final_output,
-                    ),
-                    "tool_calls": tool_calls,
-                }
-            ]
+        raise ValueError(
+            "R1 style thinking is not supported for tool call downloads. Please use a different training strategy."
         )
-
-        return {"conversations": conversations}
     elif training_data.supports_cot():
         conversations.extend(
             [
@@ -391,7 +356,16 @@ def generate_huggingface_chat_template_toolcall(
     conversations.append(
         {
             "role": "assistant",
-            "tool_calls": tool_calls,
+            "tool_calls": [
+                {
+                    "type": "function",
+                    "function": {
+                        "name": "task_response",
+                        "id": str(uuid4()).replace("-", "")[:9],
+                        "arguments": arguments,
+                    },
+                }
+            ],
         },
     )
 
@@ -425,7 +399,7 @@ def generate_vertex_gemini(
 
     if training_data.thinking_r1_style:
         raise ValueError(
-            "R1 style thinking is not supported for Vertex Gemini. Please use a different data strategy."
+            "R1 style thinking is not supported for Vertex Gemini. Please use a different training strategy."
         )
     elif training_data.supports_cot():
         contents.extend(

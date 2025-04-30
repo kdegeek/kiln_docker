@@ -490,6 +490,7 @@
   let data_strategy_select_options: [FinetuneDataStrategy, string][] = []
 
   function update_data_strategies_supported(
+    model_provider: string,
     base_model_id: string,
     is_download: boolean,
   ) {
@@ -500,6 +501,25 @@
       final_and_intermediate_r1_compatible: is_download
         ? "Reasoning (R1 compatible) - Learn intermediate thinking and final response"
         : "Reasoning - Learn intermediate thinking and final response",
+    }
+
+    console.info({
+      is_download,
+      model_provider,
+      base_model_id,
+    })
+
+    const r1_disabled_for_downloads = [
+      // R1 data strategy currently disabled for toolcall downloads
+      // because unclear how to use in the best way
+      "download_huggingface_chat_template_toolcall",
+      "download_jsonl_toolcall",
+
+      // R1 currently not supported by Vertex models
+      "download_vertex_gemini",
+    ]
+    if (r1_disabled_for_downloads.includes(model_provider)) {
+      return ["final_only", "final_and_intermediate"]
     }
 
     const compatible_data_strategies: FinetuneDataStrategy[] = is_download
@@ -521,7 +541,11 @@
     data_strategy = compatible_data_strategies[0]
   }
 
-  $: update_data_strategies_supported(base_model_id, is_download)
+  $: update_data_strategies_supported(
+    model_provider,
+    base_model_id,
+    is_download,
+  )
 
   $: config_is_error =
     data_strategy === "final_and_intermediate_r1_compatible" &&
