@@ -15,7 +15,6 @@ from kiln_ai.adapters.ml_model_list import (
     ModelName,
     ModelParserID,
     ModelProviderName,
-    StructuredOutputMode,
 )
 from kiln_ai.datamodel import (
     DatasetSplit,
@@ -39,6 +38,7 @@ from app.desktop.studio_server.finetune_api import (
     DatasetSplitType,
     FinetuneProviderModel,
     connect_fine_tune_api,
+    data_strategies_from_finetune_id,
     fetch_fireworks_finetune_models,
     infer_data_strategies_for_model,
     thinking_instructions_from_request,
@@ -1419,3 +1419,75 @@ def test_infer_data_strategies(
         infer_data_strategies_for_model(mock_available_models, model_id, provider)
         == expected_data_strategies
     )
+
+
+@pytest.mark.parametrize(
+    "model_id, expected_data_strategies",
+    [
+        # R1 style models
+        ("qwq-32b", [FinetuneDataStrategy.final_and_intermediate_r1_compatible]),
+        (
+            "deepseek-r1-distill-qwen-32b",
+            [FinetuneDataStrategy.final_and_intermediate_r1_compatible],
+        ),
+        (
+            "deepseek-r1",
+            [FinetuneDataStrategy.final_and_intermediate_r1_compatible],
+        ),
+        (
+            "deepseek-r1-basic",
+            [FinetuneDataStrategy.final_and_intermediate_r1_compatible],
+        ),
+        (
+            "deepseek-r1-distill-llama-70b",
+            [FinetuneDataStrategy.final_and_intermediate_r1_compatible],
+        ),
+        (
+            "deepseek-r1-distill-llama-8b",
+            [FinetuneDataStrategy.final_and_intermediate_r1_compatible],
+        ),
+        (
+            "deepseek-r1-distill-qwen-14b",
+            [FinetuneDataStrategy.final_and_intermediate_r1_compatible],
+        ),
+        (
+            "deepseek-r1-distill-qwen-1p5b",
+            [FinetuneDataStrategy.final_and_intermediate_r1_compatible],
+        ),
+        (
+            "deepseek-r1-distill-qwen-32b",
+            [FinetuneDataStrategy.final_and_intermediate_r1_compatible],
+        ),
+        (
+            "deepseek-r1-distill-qwen-7b",
+            [FinetuneDataStrategy.final_and_intermediate_r1_compatible],
+        ),
+        # non-R1 style models
+        (
+            "deepseek-v3",
+            [
+                FinetuneDataStrategy.final_only,
+                FinetuneDataStrategy.final_and_intermediate,
+            ],
+        ),
+        (
+            "deepseek-v3-0324",
+            [
+                FinetuneDataStrategy.final_only,
+                FinetuneDataStrategy.final_and_intermediate,
+            ],
+        ),
+        # optional R1 style
+        (
+            "qwen3-30b-a3b",
+            [
+                FinetuneDataStrategy.final_only,
+                FinetuneDataStrategy.final_and_intermediate_r1_compatible,
+            ],
+        ),
+    ],
+)
+def test_data_strategies_from_finetune_id(
+    model_id: str, expected_data_strategies: list[FinetuneDataStrategy]
+):
+    assert data_strategies_from_finetune_id(model_id) == expected_data_strategies

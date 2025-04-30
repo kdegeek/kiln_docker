@@ -520,6 +520,12 @@ def data_strategies_from_model_provider(
 def data_strategies_from_finetune_id(
     provider_finetune_id: str,
 ) -> list[FinetuneDataStrategy]:
+    if "qwen3" in provider_finetune_id.lower():
+        return [
+            FinetuneDataStrategy.final_only,
+            FinetuneDataStrategy.final_and_intermediate_r1_compatible,
+        ]
+
     r1_must_include = ["r1", "qwq"]
     if any(substring in provider_finetune_id.lower() for substring in r1_must_include):
         return [
