@@ -137,7 +137,7 @@ def serialize_r1_style_message(thinking: str | None, final_output: str):
             "Thinking data is required when fine-tuning thinking models (R1, QwQ, etc). Please ensure your fine-tuning dataset contains reasoning or chain of thought output for every entry."
         )
 
-    return f"<think>{thinking}</think>{final_output}"
+    return f"<think>\n{thinking}\n</think>\n\n{final_output}"
 
 
 def generate_chat_message_response(
@@ -424,26 +424,9 @@ def generate_vertex_gemini(
     ]
 
     if training_data.thinking_r1_style:
-        contents.extend(
-            [
-                {
-                    "role": "model",
-                    "parts": [
-                        {
-                            "text": serialize_r1_style_message(
-                                thinking=training_data.thinking,
-                                final_output=training_data.final_output,
-                            )
-                        }
-                    ],
-                }
-            ]
+        raise ValueError(
+            "R1 style thinking is not supported for Vertex Gemini. Please use a different data strategy."
         )
-
-        return {
-            "systemInstruction": system_instruction,
-            "contents": contents,
-        }
     elif training_data.supports_cot():
         contents.extend(
             [

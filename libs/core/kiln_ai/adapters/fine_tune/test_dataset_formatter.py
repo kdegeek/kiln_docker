@@ -159,7 +159,7 @@ def test_generate_chat_message_response_thinking_r1_style():
             {"role": "user", "content": "test input"},
             {
                 "role": "assistant",
-                "content": "<think>thinking output</think>test output",
+                "content": "<think>\nthinking output\n</think>\n\ntest output",
             },
         ]
     }
@@ -252,7 +252,7 @@ def test_generate_chat_message_toolcall_thinking_r1_style():
             {"role": "user", "content": "test input"},
             {
                 "role": "assistant",
-                "content": '<think>thinking output</think>{"key": "value"}',
+                "content": '<think>\nthinking output\n</think>\n\n{"key": "value"}',
                 "tool_calls": [
                     {
                         "id": "call_1",
@@ -552,7 +552,7 @@ def test_generate_huggingface_chat_template_thinking_r1_style():
             {"role": "user", "content": "test input"},
             {
                 "role": "assistant",
-                "content": "<think>thinking output</think>test output",
+                "content": "<think>\nthinking output\n</think>\n\ntest output",
             },
         ]
     }
@@ -625,25 +625,10 @@ def test_generate_vertex_template_thinking_r1_style():
         thinking_r1_style=True,
     )
 
-    result = generate_vertex_gemini(training_data)
-
-    assert result == {
-        "systemInstruction": {
-            "role": "system",
-            "parts": [
-                {
-                    "text": "system message",
-                }
-            ],
-        },
-        "contents": [
-            {"role": "user", "parts": [{"text": "test input"}]},
-            {
-                "role": "model",
-                "parts": [{"text": "<think>thinking output</think>test output"}],
-            },
-        ],
-    }
+    with pytest.raises(
+        ValueError, match="R1 style thinking is not supported for Vertex Gemini"
+    ):
+        generate_vertex_gemini(training_data)
 
 
 def test_generate_huggingface_chat_template_toolcall():
@@ -725,7 +710,10 @@ def test_generate_huggingface_chat_template_toolcall_thinking_r1_style():
     # Check the assistant message properties separately
     assistant_msg = result["conversations"][2]
     assert assistant_msg["role"] == "assistant"
-    assert assistant_msg["content"] == '<think>thinking output</think>{"key": "value"}'
+    assert (
+        assistant_msg["content"]
+        == '<think>\nthinking output\n</think>\n\n{"key": "value"}'
+    )
     assert len(assistant_msg["tool_calls"]) == 1
 
     # Check the tool call details
@@ -951,8 +939,8 @@ def test_dataset_formatter_dump_to_file_json_schema_format(mock_dataset, tmp_pat
 @pytest.mark.parametrize(
     "thinking,final_output,expected_output",
     [
-        ("thinking", "final output", "<think>thinking</think>final output"),
-        ("thinking", '{"name":"joe"}', '<think>thinking</think>{"name":"joe"}'),
+        ("thinking", "final output", "<think>\nthinking\n</think>\n\nfinal output"),
+        ("thinking", '{"name":"joe"}', '<think>\nthinking\n</think>\n\n{"name":"joe"}'),
     ],
 )
 def test_serialize_r1_style_message(thinking, final_output, expected_output):
