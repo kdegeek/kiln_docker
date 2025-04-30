@@ -98,7 +98,7 @@ def build_training_data(
         if data_strategy == FinetuneDataStrategy.final_and_intermediate_r1_compatible:
             if not task_run.has_thinking_training_data() or not thinking:
                 raise ValueError(
-                    "Thinking data is required for R1 style. Please save a reasoning or chain of thought output."
+                    "Thinking data is required when fine-tuning thinking models (R1, QwQ, etc). Please ensure your fine-tuning dataset contains reasoning or chain of thought output for every entry."
                 )
             thinking_r1_style = True
         elif (
@@ -133,7 +133,9 @@ def build_training_data(
 
 def serialize_r1_style_message(thinking: str | None, final_output: str):
     if thinking is None or len(thinking.strip()) == 0:
-        raise ValueError("Thinking data is required for R1 style")
+        raise ValueError(
+            "Thinking data is required when fine-tuning thinking models (R1, QwQ, etc). Please ensure your fine-tuning dataset contains reasoning or chain of thought output for every entry."
+        )
 
     return f"<think>{thinking}</think>{final_output}"
 

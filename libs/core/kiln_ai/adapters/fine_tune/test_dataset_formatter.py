@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 import tempfile
 from pathlib import Path
 from unittest.mock import Mock
@@ -970,5 +971,10 @@ def test_serialize_r1_style_message(thinking, final_output, expected_output):
     ],
 )
 def test_serialize_r1_style_message_missing_thinking(thinking, final_output):
-    with pytest.raises(ValueError, match="Thinking data is required for R1 style"):
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "Thinking data is required when fine-tuning thinking models (R1, QwQ, etc). Please ensure your fine-tuning dataset contains reasoning or chain of thought output for every entry."
+        ),
+    ):
         serialize_r1_style_message(thinking=thinking, final_output=final_output)
