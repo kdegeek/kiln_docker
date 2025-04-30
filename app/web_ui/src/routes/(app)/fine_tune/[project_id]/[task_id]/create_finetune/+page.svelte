@@ -108,6 +108,11 @@
   }
 
   function build_available_model_select(models: FinetuneProvider[]) {
+    for (const model of models) {
+      for (const provider of model.models) {
+        console.log(model.id, provider.name, provider.id)
+      }
+    }
     available_model_select = []
     available_model_select.push([
       disabled_header,
@@ -487,41 +492,41 @@
     window.open(base_url + "/api/download_dataset_jsonl?" + query_string)
   }
 
-  const data_strategies_labels: Record<FinetuneDataStrategy, string> = {
-    final_only: "Standard - Learn only from final response",
-    final_and_intermediate:
-      "Reasoning - Learn intermediate thinking and final response",
-    final_and_intermediate_r1_compatible:
-      "Reasoning (R1 compatible) - Learn intermediate thinking and final response",
-  }
+  let data_strategy_select_options: [FinetuneDataStrategy, string][] = []
 
-  function get_data_strategies_supported(
+  function update_data_strategies_supported(
     base_model_id: string,
     is_download: boolean,
-  ): FinetuneDataStrategy[] {
-    if (is_download) {
-      return [
-        "final_and_intermediate",
-        "final_and_intermediate_r1_compatible",
-        "final_only",
-      ]
+  ) {
+    const data_strategies_labels: Record<FinetuneDataStrategy, string> = {
+      final_only: "Standard - Learn only from final response",
+      final_and_intermediate:
+        "Reasoning - Learn intermediate thinking and final response",
+      final_and_intermediate_r1_compatible: is_download
+        ? "Reasoning (R1 compatible) - Learn intermediate thinking and final response"
+        : "Reasoning - Learn intermediate thinking and final response",
     }
-    return (
-      available_models
-        ?.map((model) => model.models)
-        .flat()
-        .find((model) => model.id === base_model_id)
-        ?.data_strategies_supported ?? []
-    )
+
+    const compatible_data_strategies: FinetuneDataStrategy[] = is_download
+      ? [
+          "final_and_intermediate",
+          "final_and_intermediate_r1_compatible",
+          "final_only",
+        ]
+      : available_models
+          ?.map((model) => model.models)
+          .flat()
+          .find((model) => model.id === base_model_id)
+          ?.data_strategies_supported ?? []
+
+    data_strategy_select_options = compatible_data_strategies.map(
+      (strategy) => [strategy, data_strategies_labels[strategy]],
+    ) as [FinetuneDataStrategy, string][]
+
+    data_strategy = compatible_data_strategies[0]
   }
 
-  $: data_strategy_select_options = get_data_strategies_supported(
-    base_model_id,
-    is_download,
-  ).map((strategy) => [strategy, data_strategies_labels[strategy]]) as [
-    FinetuneDataStrategy,
-    string,
-  ][]
+  $: update_data_strategies_supported(base_model_id, is_download)
 </script>
 
 <div class="max-w-[1400px]">
