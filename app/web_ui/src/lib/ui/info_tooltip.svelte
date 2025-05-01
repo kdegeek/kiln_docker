@@ -1,9 +1,12 @@
 <script lang="ts">
   export let tooltip_text: string
+  export let right: boolean = false
 </script>
 
 <button
-  class="tooltip tooltip-left before:whitespace-normal"
+  class="tooltip {right
+    ? 'tooltip-right'
+    : 'tooltip-left'} before:whitespace-normal"
   data-tip={tooltip_text}
 >
   <svg

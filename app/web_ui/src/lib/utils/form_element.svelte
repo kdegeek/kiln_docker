@@ -120,6 +120,7 @@
         type="text"
         placeholder={error_message || placeholder || label}
         {id}
+        data-1p-ignore
         class="input text-base input-bordered w-full font-base {error_message ||
         inline_error
           ? 'input-error'

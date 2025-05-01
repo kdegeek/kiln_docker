@@ -143,6 +143,8 @@ class EvalRunResult(BaseModel):
 class EvalProgress(BaseModel):
     # The total size of the dataset used for the eval
     dataset_size: int
+    # The total size of the golden dataset used for the eval
+    golden_dataset_size: int
 
 
 class EvalResultSummary(BaseModel):
@@ -476,9 +478,11 @@ def connect_evals_api(app: FastAPI):
     ) -> EvalProgress:
         task = task_from_id(project_id, task_id)
         eval = eval_from_id(project_id, task_id, eval_id)
-        expected_dataset_ids = dataset_ids_in_filter(task, eval.eval_set_filter_id)
+        dataset_ids = dataset_ids_in_filter(task, eval.eval_set_filter_id)
+        golden_dataset_ids = dataset_ids_in_filter(task, eval.eval_configs_filter_id)
         return EvalProgress(
-            dataset_size=len(expected_dataset_ids),
+            dataset_size=len(dataset_ids),
+            golden_dataset_size=len(golden_dataset_ids),
         )
 
     # This compares run_configs to each other on a given eval_config. Compare to below which compares eval_configs to each other.

@@ -1529,6 +1529,8 @@ export interface components {
         EvalProgress: {
             /** Dataset Size */
             dataset_size: number;
+            /** Golden Dataset Size */
+            golden_dataset_size: number;
         };
         /** EvalResultSummary */
         EvalResultSummary: {
