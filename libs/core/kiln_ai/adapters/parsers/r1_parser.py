@@ -27,6 +27,14 @@ class R1ThinkingParser(BaseParser):
             original_output.intermediate_outputs is not None
             and "reasoning" in original_output.intermediate_outputs
         ):
+            # sometimes the output and reasoning are wrapped in newlines
+            if isinstance(original_output.output, str):
+                original_output.output = original_output.output.strip()
+
+            original_output.intermediate_outputs["reasoning"] = (
+                original_output.intermediate_outputs["reasoning"].strip()
+            )
+
             return original_output
 
         # This parser only works for strings
