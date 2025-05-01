@@ -540,10 +540,6 @@
     base_model_id,
     is_download,
   )
-
-  $: config_is_error =
-    data_strategy === "final_and_intermediate_r1_compatible" &&
-    !selecting_thinking_dataset
 </script>
 
 <div class="max-w-[1400px]">
@@ -597,7 +593,7 @@
       </div>
     {:else}
       <FormContainer
-        submit_visible={submit_visible && !config_is_error}
+        {submit_visible}
         submit_label="Start Fine-Tune Job"
         on:submit={create_finetune}
         bind:error={create_finetune_error}
@@ -733,8 +729,7 @@
             {/if}
             {#if data_strategy === "final_and_intermediate_r1_compatible" && !selecting_thinking_dataset}
               <Warning
-                warning_color="error"
-                warning_message="You are training a model of the R1 family for inference-time thinking, but are not using a dataset filtered to samples with reasoning or chain-of-thought training data. This is strongly not recommended, as it may lead to poor performance. We suggest creating a new dataset with a thinking filter."
+                warning_message="You are training a 'thinking' model, but did not explicitly select a dataset filtered to samples with reasoning or chain-of-thought training data. If any of your training samples are missing reasoning data, it will error. If your data contains reasoning, you can ignore this warning."
               />
             {/if}
           </div>
