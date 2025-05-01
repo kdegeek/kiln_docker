@@ -140,6 +140,11 @@ class EvalRunResult(BaseModel):
     run_config: TaskRunConfig
 
 
+class EvalProgress(BaseModel):
+    # The total size of the dataset used for the eval
+    dataset_size: int
+
+
 class EvalResultSummary(BaseModel):
     # run_config_id -> output_score_id -> ScoreSummary
     results: Dict[ID_TYPE, Dict[str, ScoreSummary]]
@@ -460,6 +465,20 @@ def connect_evals_api(app: FastAPI):
             eval=eval,
             eval_config=eval_config,
             run_config=run_config,
+        )
+
+    # Overview of the eval progress
+    @app.get("/api/projects/{project_id}/tasks/{task_id}/eval/{eval_id}/progress")
+    async def get_eval_progress(
+        project_id: str,
+        task_id: str,
+        eval_id: str,
+    ) -> EvalProgress:
+        task = task_from_id(project_id, task_id)
+        eval = eval_from_id(project_id, task_id, eval_id)
+        expected_dataset_ids = dataset_ids_in_filter(task, eval.eval_set_filter_id)
+        return EvalProgress(
+            dataset_size=len(expected_dataset_ids),
         )
 
     # This compares run_configs to each other on a given eval_config. Compare to below which compares eval_configs to each other.
