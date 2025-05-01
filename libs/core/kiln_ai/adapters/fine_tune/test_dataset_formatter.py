@@ -146,7 +146,7 @@ def test_generate_chat_message_response_thinking_r1_style():
         system_message="system message",
         final_output="test output",
         thinking="thinking output",
-        thinking_instructions="thinking instructions",
+        thinking_instructions=None,
         thinking_final_answer_prompt=None,
         thinking_r1_style=True,
     )
@@ -239,7 +239,7 @@ def test_generate_chat_message_toolcall_thinking_r1_style():
         system_message="system message",
         final_output='{"key": "value"}',
         thinking="thinking output",
-        thinking_instructions="thinking instructions",
+        thinking_instructions=None,
         thinking_final_answer_prompt=None,
         thinking_r1_style=True,
     )
@@ -419,7 +419,7 @@ def test_dataset_formatter_dump_with_intermediate_data_r1_style(
     formatter = DatasetFormatter(
         mock_dataset,
         "system message 你好",
-        thinking_instructions="thinking instructions",
+        thinking_instructions=None,
     )
 
     result_path = formatter.dump_to_file(
@@ -522,7 +522,7 @@ def test_generate_huggingface_chat_template_thinking_r1_style():
         system_message="system message",
         final_output="test output",
         thinking="thinking output",
-        thinking_instructions="thinking instructions",
+        thinking_instructions=None,
         thinking_final_answer_prompt=None,
         thinking_r1_style=True,
     )
@@ -603,7 +603,7 @@ def test_generate_vertex_template_thinking_r1_style():
         system_message="system message",
         final_output="test output",
         thinking="thinking output",
-        thinking_instructions="thinking instructions",
+        thinking_instructions=None,
         thinking_final_answer_prompt=None,
         thinking_r1_style=True,
     )
@@ -680,7 +680,7 @@ def test_generate_huggingface_chat_template_toolcall_thinking_r1_style():
         system_message="system message",
         final_output='{"key": "value"}',
         thinking="thinking output",
-        thinking_instructions="thinking instructions",
+        thinking_instructions=None,
         thinking_final_answer_prompt=None,
         thinking_r1_style=True,
     )
@@ -779,11 +779,11 @@ def test_build_training_data_with_COT_r1_style(mock_task):
         mock_task_run,
         "system message",
         data_strategy=FinetuneDataStrategy.final_and_intermediate_r1_compatible,
-        thinking_instructions="thinking instructions",
+        thinking_instructions=None,
     )
     assert training_data_output.final_output == '{"test":   "output 你好"}'
     assert training_data_output.thinking == "cot output"
-    assert training_data_output.thinking_instructions == "thinking instructions"
+    assert training_data_output.thinking_instructions == None
     assert training_data_output.thinking_final_answer_prompt == None
     assert training_data_output.input == '{"test": "input 你好"}'
     assert training_data_output.system_message == "system message"
@@ -833,11 +833,11 @@ def test_build_training_data_with_thinking_r1_style(mock_task):
         mock_task_run,
         "system message",
         FinetuneDataStrategy.final_and_intermediate_r1_compatible,
-        thinking_instructions="thinking instructions",
+        thinking_instructions=None,
     )
     assert training_data_output.final_output == '{"test":   "output 你好"}'
     assert training_data_output.thinking == "thinking output"
-    assert training_data_output.thinking_instructions == "thinking instructions"
+    assert training_data_output.thinking_instructions == None
     assert training_data_output.thinking_final_answer_prompt == None
     assert training_data_output.input == '{"test": "input 你好"}'
     assert training_data_output.system_message == "system message"

@@ -432,6 +432,9 @@ def thinking_instructions_from_request(
         # Not using COT/Thinking style
         return None
 
+    if data_strategy == FinetuneDataStrategy.final_and_intermediate_r1_compatible:
+        return None
+
     if custom_thinking_instructions:
         # prefer custom instructions
         return custom_thinking_instructions

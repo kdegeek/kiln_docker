@@ -100,6 +100,10 @@ def build_training_data(
                 raise ValueError(
                     "Thinking data is required when fine-tuning thinking models (R1, QwQ, etc). Please ensure your fine-tuning dataset contains reasoning or chain of thought output for every entry."
                 )
+            if thinking_instructions:
+                raise ValueError(
+                    "Thinking instructions are not supported when fine-tuning thinking models (R1, QwQ, etc). Please remove the thinking instructions."
+                )
             thinking_r1_style = True
         elif (
             data_strategy == FinetuneDataStrategy.final_and_intermediate
