@@ -503,12 +503,6 @@
         : "Reasoning - Learn intermediate thinking and final response",
     }
 
-    console.info({
-      is_download,
-      model_provider,
-      base_model_id,
-    })
-
     const r1_disabled_for_downloads = [
       // R1 data strategy currently disabled for toolcall downloads
       // because unclear how to use in the best way
