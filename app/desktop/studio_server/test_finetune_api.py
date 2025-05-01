@@ -8,7 +8,14 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from kiln_ai.adapters.fine_tune.base_finetune import FineTuneParameter
 from kiln_ai.adapters.fine_tune.dataset_formatter import DatasetFormat
-from kiln_ai.adapters.ml_model_list import KilnModel, KilnModelProvider
+from kiln_ai.adapters.ml_model_list import (
+    KilnModel,
+    KilnModelProvider,
+    ModelFamily,
+    ModelName,
+    ModelParserID,
+    ModelProviderName,
+)
 from kiln_ai.datamodel import (
     DatasetSplit,
     Finetune,
@@ -31,7 +38,9 @@ from app.desktop.studio_server.finetune_api import (
     DatasetSplitType,
     FinetuneProviderModel,
     connect_fine_tune_api,
+    data_strategies_from_finetune_id,
     fetch_fireworks_finetune_models,
+    infer_data_strategies_for_model,
     thinking_instructions_from_request,
 )
 
@@ -108,6 +117,18 @@ def client():
     app = FastAPI()
     connect_fine_tune_api(app)
     return TestClient(app)
+
+
+def test_finetune_provider_model_defaults():
+    model = FinetuneProviderModel(
+        name="Test Provider",
+        id="test_provider",
+    )
+
+    assert model.data_strategies_supported == [
+        FinetuneDataStrategy.final_only,
+        FinetuneDataStrategy.final_and_intermediate,
+    ]
 
 
 def test_get_dataset_splits(client, mock_task_from_id_disk_backed, test_task):
@@ -1260,3 +1281,213 @@ async def test_fetch_fireworks_finetune_models_http_error(
         await fetch_fireworks_finetune_models()
 
     mock_httpx_client.get.assert_called_once()
+
+
+@pytest.fixture
+def mock_available_models():
+    return [
+        KilnModel(
+            family=ModelFamily.gpt,
+            name=ModelName.gpt_4_1,
+            friendly_name="GPT 4.1",
+            providers=[
+                KilnModelProvider(
+                    name=ModelProviderName.openai,
+                    model_id="gpt-4.1",
+                    provider_finetune_id="gpt-4.1-2025-04-14",
+                ),
+                KilnModelProvider(
+                    name=ModelProviderName.openrouter,
+                    model_id="openai/gpt-4.1",
+                ),
+                KilnModelProvider(
+                    name=ModelProviderName.azure_openai,
+                    model_id="gpt-4.1",
+                ),
+            ],
+        ),
+        KilnModel(
+            family=ModelFamily.gpt,
+            name=ModelName.gpt_4_1_mini,
+            friendly_name="GPT 4.1 Mini",
+            providers=[
+                KilnModelProvider(
+                    name=ModelProviderName.openai,
+                    model_id="gpt-4.1-mini",
+                    provider_finetune_id="gpt-4.1-mini-2025-04-14",
+                ),
+                KilnModelProvider(
+                    name=ModelProviderName.openrouter,
+                    model_id="openai/gpt-4.1-mini",
+                ),
+                KilnModelProvider(
+                    name=ModelProviderName.azure_openai,
+                    model_id="gpt-4.1-mini",
+                ),
+            ],
+        ),
+        KilnModel(
+            family=ModelFamily.qwen,
+            name=ModelName.qwq_32b,
+            friendly_name="QwQ 32B",
+            providers=[
+                KilnModelProvider(
+                    name=ModelProviderName.huggingface,
+                    model_id="qwen/qwq-32b",
+                    provider_finetune_id="qwq-32b-xxx",
+                    parser=ModelParserID.r1_thinking,
+                )
+            ],
+        ),
+    ]
+
+
+@pytest.mark.parametrize(
+    "model_id, provider, expected_data_strategies",
+    [
+        # for models where we have built-in models, we can infer the data strategies from the object itself
+        (
+            # does not have a parser, so should be defaults
+            "gpt-4.1-2025-04-14",
+            "openai",
+            [
+                FinetuneDataStrategy.final_only,
+                FinetuneDataStrategy.final_and_intermediate,
+            ],
+        ),
+        (
+            # does not have a parser, so should be defaults
+            "gpt-4.1-mini-2025-04-14",
+            "openai",
+            [
+                FinetuneDataStrategy.final_only,
+                FinetuneDataStrategy.final_and_intermediate,
+            ],
+        ),
+        (
+            # this model is not in any list, so should be defaults
+            "fake-model-id",
+            "fake-provider",
+            [
+                FinetuneDataStrategy.final_only,
+                FinetuneDataStrategy.final_and_intermediate,
+            ],
+        ),
+        # this model has an R1 parser, should be r1 compatible
+        (
+            "qwq-32b-xxx",
+            "huggingface",
+            [
+                FinetuneDataStrategy.final_and_intermediate_r1_compatible,
+            ],
+        ),
+        # for fireworks_ai models, we infer the data strategies from the model name
+        (
+            # does not contain r1 or qwq in the id so it should be defaults
+            "some-model-id",
+            "fireworks_ai",
+            [
+                FinetuneDataStrategy.final_only,
+                FinetuneDataStrategy.final_and_intermediate,
+            ],
+        ),
+        (
+            # contains r1 in the id so it should be r1 compatible
+            "some-model-with-r1-in-id",
+            "fireworks_ai",
+            [
+                FinetuneDataStrategy.final_and_intermediate_r1_compatible,
+            ],
+        ),
+        (
+            # contains qwq in the id so it should be r1 compatible
+            "some-model-with-qwq-in-id",
+            "fireworks_ai",
+            [
+                FinetuneDataStrategy.final_and_intermediate_r1_compatible,
+            ],
+        ),
+    ],
+)
+def test_infer_data_strategies(
+    mock_available_models,
+    model_id: str,
+    provider: str,
+    expected_data_strategies: list[FinetuneDataStrategy],
+):
+    assert (
+        infer_data_strategies_for_model(mock_available_models, model_id, provider)
+        == expected_data_strategies
+    )
+
+
+@pytest.mark.parametrize(
+    "model_id, expected_data_strategies",
+    [
+        # R1 style models
+        ("qwq-32b", [FinetuneDataStrategy.final_and_intermediate_r1_compatible]),
+        (
+            "deepseek-r1-distill-qwen-32b",
+            [FinetuneDataStrategy.final_and_intermediate_r1_compatible],
+        ),
+        (
+            "deepseek-r1",
+            [FinetuneDataStrategy.final_and_intermediate_r1_compatible],
+        ),
+        (
+            "deepseek-r1-basic",
+            [FinetuneDataStrategy.final_and_intermediate_r1_compatible],
+        ),
+        (
+            "deepseek-r1-distill-llama-70b",
+            [FinetuneDataStrategy.final_and_intermediate_r1_compatible],
+        ),
+        (
+            "deepseek-r1-distill-llama-8b",
+            [FinetuneDataStrategy.final_and_intermediate_r1_compatible],
+        ),
+        (
+            "deepseek-r1-distill-qwen-14b",
+            [FinetuneDataStrategy.final_and_intermediate_r1_compatible],
+        ),
+        (
+            "deepseek-r1-distill-qwen-1p5b",
+            [FinetuneDataStrategy.final_and_intermediate_r1_compatible],
+        ),
+        (
+            "deepseek-r1-distill-qwen-32b",
+            [FinetuneDataStrategy.final_and_intermediate_r1_compatible],
+        ),
+        (
+            "deepseek-r1-distill-qwen-7b",
+            [FinetuneDataStrategy.final_and_intermediate_r1_compatible],
+        ),
+        # non-R1 style models
+        (
+            "deepseek-v3",
+            [
+                FinetuneDataStrategy.final_only,
+                FinetuneDataStrategy.final_and_intermediate,
+            ],
+        ),
+        (
+            "deepseek-v3-0324",
+            [
+                FinetuneDataStrategy.final_only,
+                FinetuneDataStrategy.final_and_intermediate,
+            ],
+        ),
+        # optional R1 style
+        (
+            "qwen3-30b-a3b",
+            [
+                FinetuneDataStrategy.final_only,
+                FinetuneDataStrategy.final_and_intermediate_r1_compatible,
+            ],
+        ),
+    ],
+)
+def test_data_strategies_from_finetune_id(
+    model_id: str, expected_data_strategies: list[FinetuneDataStrategy]
+):
+    assert data_strategies_from_finetune_id(model_id) == expected_data_strategies

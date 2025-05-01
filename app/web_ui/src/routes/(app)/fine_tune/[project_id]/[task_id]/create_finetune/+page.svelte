@@ -220,6 +220,8 @@
     get_hyperparameters(model_provider.split("/")[0])
   }
 
+  $: base_model_id = model_provider.split("/").slice(1).join("/")
+
   let hyperparameters: FineTuneParameter[] | null = null
   let hyperparameters_error: KilnError | null = null
   let hyperparameters_loading = true
@@ -380,8 +382,8 @@
             },
             body: {
               dataset_id: dataset_id,
-              provider: model_provider.split("/")[0],
-              base_model_id: model_provider.split("/").slice(1).join("/"),
+              provider: model_provider_id,
+              base_model_id: base_model_id,
               train_split_name: selected_dataset_training_set_name || "",
               name: finetune_name ? finetune_name : undefined,
               description: finetune_description
@@ -484,6 +486,60 @@
 
     window.open(base_url + "/api/download_dataset_jsonl?" + query_string)
   }
+
+  let data_strategy_select_options: [FinetuneDataStrategy, string][] = []
+
+  function update_data_strategies_supported(
+    model_provider: string,
+    base_model_id: string,
+    is_download: boolean,
+  ) {
+    const data_strategies_labels: Record<FinetuneDataStrategy, string> = {
+      final_only: "Standard - Learn only from final response",
+      final_and_intermediate:
+        "Reasoning - Learn intermediate thinking and final response",
+      final_and_intermediate_r1_compatible: is_download
+        ? "Reasoning (R1 compatible) - Learn intermediate thinking and final response"
+        : "Reasoning - Learn intermediate thinking and final response",
+    }
+
+    const r1_disabled_for_downloads = [
+      // R1 data strategy currently disabled for toolcall downloads
+      // because unclear how to use in the best way
+      "download_huggingface_chat_template_toolcall",
+      "download_jsonl_toolcall",
+
+      // R1 currently not supported by Vertex models
+      "download_vertex_gemini",
+    ]
+    if (r1_disabled_for_downloads.includes(model_provider)) {
+      return ["final_only", "final_and_intermediate"]
+    }
+
+    const compatible_data_strategies: FinetuneDataStrategy[] = is_download
+      ? [
+          "final_and_intermediate",
+          "final_and_intermediate_r1_compatible",
+          "final_only",
+        ]
+      : available_models
+          ?.map((model) => model.models)
+          .flat()
+          .find((model) => model.id === base_model_id)
+          ?.data_strategies_supported ?? []
+
+    data_strategy_select_options = compatible_data_strategies.map(
+      (strategy) => [strategy, data_strategies_labels[strategy]],
+    ) as [FinetuneDataStrategy, string][]
+
+    data_strategy = compatible_data_strategies[0]
+  }
+
+  $: update_data_strategies_supported(
+    model_provider,
+    base_model_id,
+    is_download,
+  )
 </script>
 
 <div class="max-w-[1400px]">
@@ -663,18 +719,17 @@
               info_description="If you select 'Reasoning', the model will also be trained on the intermediate thinking such as reasoning or chain of thought. Use this if you want to call the tuned model with a chain-of-thought prompt for additional inference time compute."
               inputType="select"
               id="data_strategy"
-              select_options={[
-                ["final_only", "Standard - Learn only from final response"],
-                [
-                  "final_and_intermediate",
-                  "Reasoning - Learn intermediate thinking and final response",
-                ],
-              ]}
+              select_options={data_strategy_select_options}
               bind:value={data_strategy}
             />
             {#if data_strategy === "final_and_intermediate" && !selecting_thinking_dataset}
               <Warning
                 warning_message="You are training a model for inference-time thinking, but are not using a dataset filtered to samples with reasoning or chain-of-thought training data. This is not recommended, as it may lead to poor performance. We suggest creating a new dataset with a thinking filter."
+              />
+            {/if}
+            {#if data_strategy === "final_and_intermediate_r1_compatible" && !selecting_thinking_dataset}
+              <Warning
+                warning_message="You are training a 'thinking' model, but did not explicitly select a dataset filtered to samples with reasoning or chain-of-thought training data. If any of your training samples are missing reasoning data, it will error. If your data contains reasoning, you can ignore this warning."
               />
             {/if}
           </div>
