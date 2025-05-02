@@ -159,9 +159,9 @@
     "Find the Best Way to Run this Task",
   ]
   const step_tooltips: Record<number, string> = {
-    1: "Each eval needs a set of quality goals to measure (aka 'eval scores'). You can add separate evals for different goals, or multiple goals to the same eval. You can't edit these, but you can create a new eval with the same dataset filters.",
-    2: "Each eval needs two datasets: one for ensuring the eval works, and another to help find the best way of running your task. We'll help you create both with synthetic data!",
-    3: "A 'golden' dataset is a dataset of items that are already rated by humans. Rating a 'golden' dataset lets us determine if the evaluator is working by checking how well it aligns to human preferences. ",
+    1: "Each eval needs a set of quality goals to measure (aka 'eval scores'). You can add separate evals for different goals, or multiple goals to the same eval.",
+    2: "Each eval needs two datasets: one for ensuring the eval works (eval set), and another to help find the best way of running your task (golden set). We'll help you create both with synthetic data!",
+    3: "A 'golden' dataset is a dataset of items that are rated by humans. Rating a 'golden' dataset lets us determine if the evaluator is working by checking how well it aligns to human preferences. ",
     4: "Benchmark different evaluation methods (models, prompts, algorithms). We'll compare to your golden dataset to find the evaluator which best matches human preferences.",
     5: "This tool will help your compare a variety of options for running this task and find the best one. You can compare different models, prompts, or fine-tunes.",
   }
@@ -333,7 +333,8 @@
                               evaluator.eval_configs_filter_id,
                             )}
                           >
-                            Rate Golden Dataset
+                            {golden_dataset_explanation ? "Rate" : "View"} Golden
+                            Dataset
                           </a>
                         {:else}
                           <!-- We always use "tag::" so this shouldn't happen unless it's created by code. -->
