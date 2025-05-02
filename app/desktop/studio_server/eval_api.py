@@ -145,6 +145,10 @@ class EvalProgress(BaseModel):
     dataset_size: int
     # The total size of the golden dataset used for the eval
     golden_dataset_size: int
+    # The number of golden dataset items, by rating progress
+    golden_dataset_not_rated_count: int
+    golden_dataset_partially_rated_count: int
+    golden_dataset_fully_rated_count: int
 
 
 class EvalResultSummary(BaseModel):
@@ -178,6 +182,21 @@ def dataset_ids_in_filter(task: Task, filter_id: DatasetFilterId) -> Set[ID_TYPE
     # Fetch all the dataset items IDs in a filter
     filter = dataset_filter_from_id(filter_id)
     return {run.id for run in task.runs() if filter(run)}
+
+
+def runs_in_filter(task: Task, filter_id: DatasetFilterId) -> list[TaskRun]:
+    # Fetch all the dataset items IDs in a filter
+    filter = dataset_filter_from_id(filter_id)
+    return [run for run in task.runs() if filter(run)]
+
+
+def build_score_key_to_task_requirement_id(task: Task) -> Dict[str, ID_TYPE]:
+    # Create a map of score_key -> Task requirement ID
+    score_key_to_task_requirement_id: Dict[str, ID_TYPE] = {}
+    for task_requirement in task.requirements:
+        score_key = string_to_json_key(task_requirement.name)
+        score_key_to_task_requirement_id[score_key] = task_requirement.id
+    return score_key_to_task_requirement_id
 
 
 def human_score_from_task_run(
@@ -479,10 +498,21 @@ def connect_evals_api(app: FastAPI):
         task = task_from_id(project_id, task_id)
         eval = eval_from_id(project_id, task_id, eval_id)
         dataset_ids = dataset_ids_in_filter(task, eval.eval_set_filter_id)
-        golden_dataset_ids = dataset_ids_in_filter(task, eval.eval_configs_filter_id)
+        golden_dataset_runs = runs_in_filter(task, eval.eval_configs_filter_id)
+
+        # Count how many dataset items have human evals
+        fully_rated_count, partially_rated_count, not_rated_count = count_human_evals(
+            golden_dataset_runs,
+            eval,
+            build_score_key_to_task_requirement_id(task),
+        )
+
         return EvalProgress(
             dataset_size=len(dataset_ids),
-            golden_dataset_size=len(golden_dataset_ids),
+            golden_dataset_size=len(golden_dataset_runs),
+            golden_dataset_not_rated_count=not_rated_count,
+            golden_dataset_partially_rated_count=partially_rated_count,
+            golden_dataset_fully_rated_count=fully_rated_count,
         )
 
     # This compares run_configs to each other on a given eval_config. Compare to below which compares eval_configs to each other.
@@ -599,11 +629,7 @@ def connect_evals_api(app: FastAPI):
         eval = eval_from_id(project_id, task_id, eval_id)
         eval_configs = eval.configs(readonly=True)
 
-        # Create a map of score_key -> Task requirement ID
-        score_key_to_task_requirement_id: Dict[str, ID_TYPE] = {}
-        for task_requirement in task.requirements:
-            score_key = string_to_json_key(task_requirement.name)
-            score_key_to_task_requirement_id[score_key] = task_requirement.id
+        score_key_to_task_requirement_id = build_score_key_to_task_requirement_id(task)
 
         # Build a set of all the dataset items IDs we expect to have scores for
         # Fetch all the dataset items in a filter, and return a map of dataset_id -> TaskRun

@@ -1113,3 +1113,207 @@ def test_delete_eval_not_found(client):
     # Verify the response
     assert response.status_code == 404
     assert response.json()["detail"] == "Eval not found. ID: nonexistent_eval"
+
+
+def test_runs_in_filter():
+    # Create a mock task with runs
+    mock_task = Mock(spec=Task)
+
+    # Create task runs with different tags
+    run1 = Mock(spec=TaskRun, id="run1")
+    run2 = Mock(spec=TaskRun, id="run2")
+    run3 = Mock(spec=TaskRun, id="run3")
+
+    mock_task.runs.return_value = [run1, run2, run3]
+
+    # Mock the dataset filter
+    mock_filter = Mock()
+
+    # Configure the filter to include only run1 and run3
+    mock_filter.side_effect = lambda run: run.id in ["run1", "run3"]
+
+    # Mock the dataset_filter_from_id function
+    with patch(
+        "app.desktop.studio_server.eval_api.dataset_filter_from_id"
+    ) as mock_dataset_filter_from_id:
+        mock_dataset_filter_from_id.return_value = mock_filter
+
+        # Call the function under test
+        from app.desktop.studio_server.eval_api import runs_in_filter
+
+        result = runs_in_filter(mock_task, "tag::some_filter")
+
+        # Verify the results
+        assert len(result) == 2
+        assert result[0].id == "run1"
+        assert result[1].id == "run3"
+
+        # Verify the filter was called for each run
+        assert mock_filter.call_count == 3
+        mock_dataset_filter_from_id.assert_called_once_with("tag::some_filter")
+
+
+def test_build_score_key_to_task_requirement_id():
+    # Create a mock task with requirements
+    mock_task = Mock(spec=Task)
+
+    # Create task requirements with different names
+    req1 = Mock(spec=TaskRequirement)
+    req1.id = "req_id_1"
+    req1.name = "First Requirement"
+
+    req2 = Mock(spec=TaskRequirement)
+    req2.id = "req_id_2"
+    req2.name = "Second Requirement"
+
+    req3 = Mock(spec=TaskRequirement)
+    req3.id = "req_id_3"
+    req3.name = "Third-With-Hyphens"
+
+    mock_task.requirements = [req1, req2, req3]
+
+    # Mock the string_to_json_key function
+    with patch(
+        "app.desktop.studio_server.eval_api.string_to_json_key"
+    ) as mock_string_to_json_key:
+        # Configure the mock to convert spaces to underscores and lowercase
+        mock_string_to_json_key.side_effect = (
+            lambda name: name.lower().replace(" ", "_").replace("-", "_")
+        )
+
+        # Call the function under test
+        from app.desktop.studio_server.eval_api import (
+            build_score_key_to_task_requirement_id,
+        )
+
+        result = build_score_key_to_task_requirement_id(mock_task)
+
+        # Verify the results
+        assert len(result) == 3
+        assert result["first_requirement"] == "req_id_1"
+        assert result["second_requirement"] == "req_id_2"
+        assert result["third_with_hyphens"] == "req_id_3"
+
+        # Verify string_to_json_key was called for each requirement
+        assert mock_string_to_json_key.call_count == 3
+        mock_string_to_json_key.assert_any_call("First Requirement")
+        mock_string_to_json_key.assert_any_call("Second Requirement")
+        mock_string_to_json_key.assert_any_call("Third-With-Hyphens")
+
+
+@pytest.mark.asyncio
+async def test_get_eval_progress(client, mock_task_from_id, mock_task, mock_eval):
+    mock_task_from_id.return_value = mock_task
+
+    # Create runs for testing
+    run1 = TaskRun(
+        input="input1",
+        output=TaskOutput(
+            output="output1",
+            rating=TaskOutputRating(
+                value=4.0,  # Has overall rating
+                requirement_ratings={
+                    "req_id": RequirementRating(value=3.0, type="five_star")
+                },  # Has requirement rating
+            ),
+        ),
+        tags=["golden"],
+        parent=mock_task,
+    )
+
+    run2 = TaskRun(
+        input="input2",
+        output=TaskOutput(
+            output="output2",
+            rating=TaskOutputRating(
+                value=5.0,  # Has overall rating
+                requirement_ratings={},  # Missing requirement rating
+            ),
+        ),
+        tags=["golden"],
+        parent=mock_task,
+    )
+
+    run3 = TaskRun(
+        input="input3",
+        output=TaskOutput(
+            output="output3",
+            rating=None,  # No ratings at all
+        ),
+        tags=["golden"],
+        parent=mock_task,
+    )
+
+    # Mock the necessary functions
+    with (
+        patch("app.desktop.studio_server.eval_api.eval_from_id") as mock_eval_from_id,
+        patch(
+            "app.desktop.studio_server.eval_api.dataset_ids_in_filter"
+        ) as mock_dataset_ids_in_filter,
+        patch(
+            "app.desktop.studio_server.eval_api.runs_in_filter"
+        ) as mock_runs_in_filter,
+        patch(
+            "app.desktop.studio_server.eval_api.build_score_key_to_task_requirement_id"
+        ) as mock_build_score_key,
+        patch(
+            "app.desktop.studio_server.eval_api.count_human_evals"
+        ) as mock_count_human_evals,
+    ):
+        mock_eval_from_id.return_value = mock_eval
+        mock_dataset_ids_in_filter.return_value = {"run1", "run2", "run3", "run4"}
+        mock_runs_in_filter.return_value = [run1, run2, run3]
+        mock_build_score_key.return_value = {"score1": "req_id"}
+        mock_count_human_evals.return_value = (
+            1,
+            1,
+            1,
+        )  # fully_rated, partially_rated, not_rated
+
+        # Call the endpoint
+        response = client.get("/api/projects/project1/tasks/task1/eval/eval1/progress")
+
+        # Verify the response
+        assert response.status_code == 200
+        result = response.json()
+
+        assert result["dataset_size"] == 4
+        assert result["golden_dataset_size"] == 3
+        assert result["golden_dataset_fully_rated_count"] == 1
+        assert result["golden_dataset_partially_rated_count"] == 1
+        assert result["golden_dataset_not_rated_count"] == 1
+
+        # Verify the function calls
+        mock_eval_from_id.assert_called_once_with("project1", "task1", "eval1")
+        mock_dataset_ids_in_filter.assert_called_once_with(
+            mock_task, mock_eval.eval_set_filter_id
+        )
+        mock_runs_in_filter.assert_called_once_with(
+            mock_task, mock_eval.eval_configs_filter_id
+        )
+        mock_build_score_key.assert_called_once_with(mock_task)
+        mock_count_human_evals.assert_called_once_with(
+            [run1, run2, run3], mock_eval, {"score1": "req_id"}
+        )
+
+
+@pytest.mark.asyncio
+async def test_get_eval_progress_not_found(client, mock_task_from_id, mock_task):
+    mock_task_from_id.return_value = mock_task
+
+    # Mock eval_from_id to raise HTTPException
+    with patch("app.desktop.studio_server.eval_api.eval_from_id") as mock_eval_from_id:
+        mock_eval_from_id.side_effect = HTTPException(
+            status_code=404,
+            detail="Eval not found. ID: non_existent",
+        )
+
+        # Call the endpoint with non-existent eval ID
+        response = client.get(
+            "/api/projects/project1/tasks/task1/eval/non_existent/progress"
+        )
+
+        # Verify the response
+        assert response.status_code == 404
+        assert response.json()["detail"] == "Eval not found. ID: non_existent"
+        mock_eval_from_id.assert_called_once_with("project1", "task1", "non_existent")

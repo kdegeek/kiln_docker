@@ -1531,6 +1531,12 @@ export interface components {
             dataset_size: number;
             /** Golden Dataset Size */
             golden_dataset_size: number;
+            /** Golden Dataset Not Rated Count */
+            golden_dataset_not_rated_count: number;
+            /** Golden Dataset Partially Rated Count */
+            golden_dataset_partially_rated_count: number;
+            /** Golden Dataset Fully Rated Count */
+            golden_dataset_fully_rated_count: number;
         };
         /** EvalResultSummary */
         EvalResultSummary: {

@@ -147,6 +147,7 @@
   let required_more_eval_data = false
   let required_more_golden_data = false
   let goals: string[] = []
+  let golden_dataset_explanation = ""
   const step_titles: string[] = [
     "Define Goals",
     "Create Eval Data",
@@ -182,8 +183,26 @@
     if (required_more_eval_data || required_more_golden_data) {
       return
     }
+
     current_step = 3
-    // TODO: exist if step 3
+    let golden_dataset_rating_issues: string[] = []
+    if (progress.golden_dataset_not_rated_count > 0) {
+      golden_dataset_rating_issues.push(
+        `${progress.golden_dataset_not_rated_count} item${progress.golden_dataset_not_rated_count == 1 ? " is" : "s are"} unrated`,
+      )
+    }
+    if (progress.golden_dataset_partially_rated_count > 0) {
+      golden_dataset_rating_issues.push(
+        `${progress.golden_dataset_partially_rated_count} item${progress.golden_dataset_partially_rated_count == 1 ? " is" : "s are"} partially unrated`,
+      )
+    }
+    if (golden_dataset_rating_issues.length > 0) {
+      // Some golden dataset items are not fully rated.
+      golden_dataset_explanation = `In your golden dataset ${golden_dataset_rating_issues.join(" and ")}. Fully rate all items to to get the best results from your eval.`
+      return
+    } else {
+      golden_dataset_explanation = ""
+    }
 
     current_step = 4
     if (!has_default_eval_config) {
@@ -236,7 +255,7 @@
     {:else if evaluator}
       <div class="flex flex-col xl:flex-row gap-8 xl:gap-16 mb-8">
         <div class="grow">
-          <ul class="steps steps-vertical ml-4 w-full">
+          <ul class="steps steps-vertical ml-4 overflow-x-hidden">
             {#each [1, 2, 3, 4, 5] as step}
               <li
                 class="step {current_step >= step ? 'step-primary' : ''}"
@@ -246,7 +265,9 @@
                     ? "✓"
                     : ""}
               >
-                <div class="text-left py-4">
+                <div
+                  class="text-left py-2 min-h-[100px] flex flex-col place-content-center"
+                >
                   <div class="font-medium">
                     {step_titles[step - 1]}
                     {#if step_tooltips[step]}
@@ -262,9 +283,9 @@
                     {:else if step == 2}
                       <div>
                         <button
-                          class="btn mt-2 {current_step == 2
+                          class="btn btn-sm {current_step == 2
                             ? 'btn-primary'
-                            : 'btn-sm'}"
+                            : ''}"
                         >
                           Add Eval Data
                         </button>
@@ -288,12 +309,17 @@
                         {/if}
                       </div>
                     {:else if step == 3}
+                      {#if golden_dataset_explanation}
+                        <div class="mb-1">
+                          {golden_dataset_explanation}
+                        </div>
+                      {/if}
                       <div>
                         {#if link_from_filter_id(evaluator.eval_configs_filter_id)}
                           <a
-                            class="btn mt-2 {current_step == 4
+                            class="btn btn-sm {current_step == 3
                               ? 'btn-primary'
-                              : 'btn-sm'}"
+                              : ''}"
                             href={link_from_filter_id(
                               evaluator.eval_configs_filter_id,
                             )}
@@ -316,9 +342,9 @@
                     {:else if step == 4}
                       <div>
                         <a
-                          class="btn mt-2 {current_step == 4
+                          class="btn btn-sm {current_step == 4
                             ? 'btn-primary'
-                            : 'btn-sm'}"
+                            : ''}"
                           href={`/evals/${project_id}/${task_id}/${eval_id}/eval_configs`}
                         >
                           Compare Eval Methods
@@ -327,9 +353,9 @@
                     {:else if step == 5}
                       <div>
                         <a
-                          class="btn mt-2 {current_step == 5
+                          class="btn btn-sm {current_step == 5
                             ? 'btn-primary'
-                            : 'btn-sm'}"
+                            : ''}"
                           href={`/evals/${project_id}/${task_id}/${eval_id}/compare_run_methods`}
                         >
                           Compare Run Methods
