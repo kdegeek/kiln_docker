@@ -7,8 +7,9 @@
   import { page } from "$app/stores"
   import type { EvalProgress } from "$lib/types"
   import InfoTooltip from "$lib/ui/info_tooltip.svelte"
+  import { eval_config_to_ui_name } from "$lib/utils/formatters"
+  import { model_info, load_model_info, model_name } from "$lib/stores"
 
-  import Warning from "$lib/ui/warning.svelte"
   import EditDialog from "$lib/ui/edit_dialog.svelte"
 
   $: project_id = $page.params.project_id
@@ -29,6 +30,8 @@
   onMount(async () => {
     // Wait for page params to load
     await tick()
+    // can be async
+    load_model_info()
     // Load data in parallel
     await Promise.all([get_eval(), get_eval_progress()])
   })
@@ -156,11 +159,11 @@
     "Find the Best Way to Run this Task",
   ]
   const step_tooltips: Record<number, string> = {
-    1: "Each eval needs a set of quality goals to measure (aka 'eval scores'). You can add separate evals for different goals, or multiple goals to the same eval.",
+    1: "Each eval needs a set of quality goals to measure (aka 'eval scores'). You can add separate evals for different goals, or multiple goals to the same eval. You can't edit these, but you can create a new eval with the same dataset filters.",
     2: "Each eval needs two datasets: one for ensuring the eval works, and another to help find the best way of running your task. We'll help you create both with synthetic data!",
-    3: "Rating your 'golden' dataset lets us determine if the evaluator is working well by checking if it aligns to human preferences.",
+    3: "A 'golden' dataset is a dataset of items that are already rated by humans. Rating a 'golden' dataset lets us determine if the evaluator is working by checking how well it aligns to human preferences. ",
     4: "Benchmark different evaluation methods (models, prompts, algorithms). We'll compare to your golden dataset to find the evaluator which best matches human preferences.",
-    5: "Which model, prompt, or fine-tune is is the highest quality for this task? This tool will help your compare different options and find the best one.",
+    5: "This tool will help your compare a variety of options for running this task and find the best one. You can compare different models, prompts, or fine-tunes.",
   }
   function update_eval_progress(
     progress: EvalProgress | null,
@@ -210,9 +213,10 @@
     }
 
     current_step = 5
-    // TODO: exist if step 5
 
-    current_step = 6
+    // TODO
+    return
+    //current_step = 6
   }
   $: update_eval_progress(eval_progress, evaluator)
 
@@ -266,7 +270,7 @@
                     : ""}
               >
                 <div
-                  class="text-left py-2 min-h-[100px] flex flex-col place-content-center"
+                  class="text-left py-3 min-h-[100px] flex flex-col place-content-center pl-4"
                 >
                   <div class="font-medium">
                     {step_titles[step - 1]}
@@ -282,6 +286,27 @@
                       This eval has {goals.length} goals: {goals.join(", ")}.
                     {:else if step == 2}
                       <div>
+                        <div class="mb-1">
+                          {#if eval_progress && !required_more_eval_data && !required_more_golden_data}
+                            You have {eval_progress?.dataset_size} eval items and
+                            {eval_progress?.golden_dataset_size} golden items.
+                          {:else if eval_progress && eval_progress.dataset_size == 0 && eval_progress.golden_dataset_size == 0}
+                            Create data for this eval.
+                          {:else if eval_progress && (required_more_eval_data || required_more_golden_data)}
+                            You require additional eval data. You only have
+                            {#if required_more_eval_data && required_more_golden_data}
+                              {eval_progress?.dataset_size} eval items and {eval_progress?.golden_dataset_size}
+                              golden items. We suggest at least {MIN_DATASET_SIZE}
+                              items in each set.
+                            {:else if required_more_eval_data}
+                              {eval_progress?.dataset_size} eval items. We suggest
+                              at least {MIN_DATASET_SIZE} items.
+                            {:else if required_more_golden_data}
+                              {eval_progress?.golden_dataset_size} golden items.
+                              We suggest at least {MIN_DATASET_SIZE} items.
+                            {/if}
+                          {/if}
+                        </div>
                         <button
                           class="btn btn-sm {current_step == 2
                             ? 'btn-primary'
@@ -289,31 +314,15 @@
                         >
                           Add Eval Data
                         </button>
-                        {#if eval_progress && eval_progress.dataset_size > 0 && required_more_eval_data}
-                          <div class="mt-4">
-                            <Warning
-                              warning_message={`There are only ${eval_progress.dataset_size} items in your eval dataset. This is generally too small to get a good sense of how well your task run methods perform. We recommend at least ${MIN_DATASET_SIZE} items.`}
-                              warning_color="warning"
-                              tight={true}
-                            />
-                          </div>
-                        {/if}
-                        {#if eval_progress && eval_progress.golden_dataset_size > 0 && required_more_golden_data}
-                          <div class="mt-4">
-                            <Warning
-                              warning_message={`There are only ${eval_progress.golden_dataset_size} items in your golden dataset. This is generally too small to get a good sense of how well your eval method performs. We recommend at least ${MIN_DATASET_SIZE} items.`}
-                              warning_color="warning"
-                              tight={true}
-                            />
-                          </div>
-                        {/if}
                       </div>
                     {:else if step == 3}
-                      {#if golden_dataset_explanation}
-                        <div class="mb-1">
+                      <div class="mb-1">
+                        {#if golden_dataset_explanation}
                           {golden_dataset_explanation}
-                        </div>
-                      {/if}
+                        {:else}
+                          All items in your golden dataset are fully rated.
+                        {/if}
+                      </div>
                       <div>
                         {#if link_from_filter_id(evaluator.eval_configs_filter_id)}
                           <a
@@ -340,6 +349,19 @@
                         {/if}
                       </div>
                     {:else if step == 4}
+                      <div class="mb-1">
+                        {#if eval_progress?.current_eval_method}
+                          You've selected the eval method {eval_config_to_ui_name(
+                            eval_progress.current_eval_method.config_type,
+                          )} using the model {model_name(
+                            eval_progress.current_eval_method.model_name,
+                            $model_info,
+                          )}.
+                        {:else}
+                          Compare automated evals to find one that aligns with
+                          your human preferences.
+                        {/if}
+                      </div>
                       <div>
                         <a
                           class="btn btn-sm {current_step == 4
@@ -351,6 +373,10 @@
                         </a>
                       </div>
                     {:else if step == 5}
+                      <div class="mb-1">
+                        Compare different models, prompts, or fine-tunes to find
+                        the best way to run this task.
+                      </div>
                       <div>
                         <a
                           class="btn btn-sm {current_step == 5

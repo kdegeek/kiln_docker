@@ -1282,6 +1282,7 @@ async def test_get_eval_progress(client, mock_task_from_id, mock_task, mock_eval
         assert result["golden_dataset_fully_rated_count"] == 1
         assert result["golden_dataset_partially_rated_count"] == 1
         assert result["golden_dataset_not_rated_count"] == 1
+        assert result["current_eval_method"] is None
 
         # Verify the function calls
         mock_eval_from_id.assert_called_once_with("project1", "task1", "eval1")

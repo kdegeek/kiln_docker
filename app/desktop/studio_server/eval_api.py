@@ -149,6 +149,8 @@ class EvalProgress(BaseModel):
     golden_dataset_not_rated_count: int
     golden_dataset_partially_rated_count: int
     golden_dataset_fully_rated_count: int
+    # The current selected eval method
+    current_eval_method: EvalConfig | None
 
 
 class EvalResultSummary(BaseModel):
@@ -507,12 +509,22 @@ def connect_evals_api(app: FastAPI):
             build_score_key_to_task_requirement_id(task),
         )
 
+        current_eval_method = next(
+            (
+                eval_config
+                for eval_config in eval.configs()
+                if eval_config.id == eval.current_config_id
+            ),
+            None,
+        )
+
         return EvalProgress(
             dataset_size=len(dataset_ids),
             golden_dataset_size=len(golden_dataset_runs),
             golden_dataset_not_rated_count=not_rated_count,
             golden_dataset_partially_rated_count=partially_rated_count,
             golden_dataset_fully_rated_count=fully_rated_count,
+            current_eval_method=current_eval_method,
         )
 
     # This compares run_configs to each other on a given eval_config. Compare to below which compares eval_configs to each other.
