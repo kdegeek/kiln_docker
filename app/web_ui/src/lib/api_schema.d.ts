@@ -1560,6 +1560,7 @@ export interface components {
             /** Golden Dataset Fully Rated Count */
             golden_dataset_fully_rated_count: number;
             current_eval_method: components["schemas"]["EvalConfig"] | null;
+            current_run_method: components["schemas"]["TaskRunConfig"] | null;
         };
         /** EvalResultSummary */
         EvalResultSummary: {

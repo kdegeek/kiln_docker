@@ -8,7 +8,12 @@
   import type { EvalProgress } from "$lib/types"
   import InfoTooltip from "$lib/ui/info_tooltip.svelte"
   import { eval_config_to_ui_name } from "$lib/utils/formatters"
-  import { model_info, load_model_info, model_name } from "$lib/stores"
+  import {
+    model_info,
+    load_model_info,
+    model_name,
+    prompt_name_from_id,
+  } from "$lib/stores"
 
   import EditDialog from "$lib/ui/edit_dialog.svelte"
 
@@ -355,12 +360,12 @@
                     {:else if step == 4}
                       <div class="mb-1">
                         {#if eval_progress?.current_eval_method}
-                          You've selected the eval method {eval_config_to_ui_name(
+                          You've selected the eval method '{eval_config_to_ui_name(
                             eval_progress.current_eval_method.config_type,
-                          )} using the model {model_name(
+                          )}' using the model '{model_name(
                             eval_progress.current_eval_method.model_name,
                             $model_info,
-                          )}.
+                          )}'.
                         {:else}
                           Compare automated evals to find one that aligns with
                           your human preferences.
@@ -378,8 +383,21 @@
                       </div>
                     {:else if step == 5}
                       <div class="mb-1">
-                        Compare models, prompts and fine-tunes to find the most
-                        effective.
+                        {#if eval_progress?.current_run_method}
+                          You've selected the model '{model_name(
+                            eval_progress.current_run_method
+                              .run_config_properties.model_name,
+                            $model_info,
+                          )}' with the prompt '{eval_progress.current_run_method
+                            .prompt?.name ||
+                            prompt_name_from_id(
+                              eval_progress.current_run_method
+                                .run_config_properties.prompt_id,
+                            )}'.
+                        {:else}
+                          Compare models, prompts and fine-tunes to find the
+                          most effective.
+                        {/if}
                       </div>
                       <div>
                         <a
