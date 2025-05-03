@@ -142,6 +142,7 @@
   }
 
   $: has_default_eval_config = evaluator && evaluator.current_config_id
+  $: has_default_run_config = evaluator && evaluator.current_run_config_id
 
   let edit_dialog: EditDialog | null = null
 
@@ -213,10 +214,12 @@
     }
 
     current_step = 5
+    if (!has_default_run_config) {
+      return
+    }
 
-    // TODO
-    return
-    //current_step = 6
+    // Everything is setup!
+    current_step = 6
   }
   $: update_eval_progress(eval_progress, evaluator)
 

@@ -446,6 +446,41 @@ def connect_evals_api(app: FastAPI):
 
         return eval
 
+    @app.post(
+        "/api/projects/{project_id}/tasks/{task_id}/eval/{eval_id}/set_current_run_config/{run_config_id}"
+    )
+    async def set_default_run_config(
+        project_id: str,
+        task_id: str,
+        eval_id: str,
+        run_config_id: str | None,
+    ) -> Eval:
+        task = task_from_id(project_id, task_id)
+
+        # Confirm the run config exists, unless the user is clearing the default run config
+        if run_config_id == "none":
+            run_config_id = None
+        else:
+            run_config = next(
+                (
+                    run_config
+                    for run_config in task.run_configs()
+                    if run_config.id == run_config_id
+                ),
+                None,
+            )
+            if run_config is None:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Run config not found.",
+                )
+
+        eval = eval_from_id(project_id, task_id, eval_id)
+        eval.current_run_config_id = run_config_id
+        eval.save_to_file()
+
+        return eval
+
     # JS SSE client (EventSource) doesn't work with POST requests, so we use GET, even though post would be better
     @app.get(
         "/api/projects/{project_id}/tasks/{task_id}/eval/{eval_id}/run_eval_config_eval"

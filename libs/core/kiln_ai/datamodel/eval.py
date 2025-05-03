@@ -263,6 +263,10 @@ class Eval(KilnParentedModel, KilnParentModel, parent_of={"configs": EvalConfig}
         default=None,
         description="The id of the current config to use for this eval. This can be changed over time to run the same eval with different configs.",
     )
+    current_run_config_id: ID_TYPE = Field(
+        default=None,
+        description="The id of the a run config (which should be on the parent Task), which was selected as the best run config for this eval.",
+    )
     eval_set_filter_id: DatasetFilterId = Field(
         description="The id of the dataset filter which defines which dataset items are included when running this eval. Should be mutually exclusive with eval_configs_filter_id."
     )
