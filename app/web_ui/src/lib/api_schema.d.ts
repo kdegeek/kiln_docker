@@ -866,6 +866,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/projects/{project_id}/tasks/{task_id}/eval/{eval_id}/set_current_run_config/{run_config_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Set Default Run Config */
+        post: operations["set_default_run_config_api_projects__project_id__tasks__task_id__eval__eval_id__set_current_run_config__run_config_id__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/projects/{project_id}/tasks/{task_id}/eval/{eval_id}/run_eval_config_eval": {
         parameters: {
             query?: never;
@@ -1410,6 +1427,11 @@ export interface components {
              */
             current_config_id?: string | null;
             /**
+             * Current Run Config Id
+             * @description The id of the a run config (which should be on the parent Task), which was selected as the best run config for this eval.
+             */
+            current_run_config_id?: string | null;
+            /**
              * Eval Set Filter Id
              * @description The id of the dataset filter which defines which dataset items are included when running this eval. Should be mutually exclusive with eval_configs_filter_id.
              */
@@ -1529,6 +1551,15 @@ export interface components {
         EvalProgress: {
             /** Dataset Size */
             dataset_size: number;
+            /** Golden Dataset Size */
+            golden_dataset_size: number;
+            /** Golden Dataset Not Rated Count */
+            golden_dataset_not_rated_count: number;
+            /** Golden Dataset Partially Rated Count */
+            golden_dataset_partially_rated_count: number;
+            /** Golden Dataset Fully Rated Count */
+            golden_dataset_fully_rated_count: number;
+            current_eval_method: components["schemas"]["EvalConfig"] | null;
         };
         /** EvalResultSummary */
         EvalResultSummary: {
@@ -4664,6 +4695,40 @@ export interface operations {
                 task_id: string;
                 eval_id: string;
                 eval_config_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Eval"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_default_run_config_api_projects__project_id__tasks__task_id__eval__eval_id__set_current_run_config__run_config_id__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                task_id: string;
+                eval_id: string;
+                run_config_id: string;
             };
             cookie?: never;
         };

@@ -359,6 +359,36 @@
   $: has_default_eval_config = evaluator && evaluator.current_config_id
 
   let edit_dialog: EditDialog | null = null
+
+  async function set_current_run_config(
+    run_config_id: string | null | undefined,
+  ) {
+    if (!run_config_id) {
+      return
+    }
+    try {
+      const { data, error } = await client.POST(
+        "/api/projects/{project_id}/tasks/{task_id}/eval/{eval_id}/set_current_run_config/{run_config_id}",
+        {
+          params: {
+            path: {
+              project_id: $page.params.project_id,
+              task_id: $page.params.task_id,
+              eval_id: $page.params.eval_id,
+              run_config_id: run_config_id,
+            },
+          },
+        },
+      )
+      if (error) {
+        throw error
+      }
+      // Update the evaluator with the latest
+      evaluator = data
+    } catch (error) {
+      eval_error = createKilnError(error)
+    }
+  }
 </script>
 
 <AppPage
@@ -576,6 +606,27 @@
                     {:else if score_summary}
                       <!-- We have results, but not for this run config -->
                       <div class="text-sm text-error">0% complete</div>
+                    {/if}
+                    {#if task_run_config.id == evaluator.current_run_config_id}
+                      <button
+                        class="badge badge-primary mt-2"
+                        on:click={(event) => {
+                          event.stopPropagation()
+                          set_current_run_config("none")
+                        }}
+                      >
+                        Default
+                      </button>
+                    {:else}
+                      <button
+                        class="link text-sm text-gray-500"
+                        on:click={(event) => {
+                          event.stopPropagation()
+                          set_current_run_config(task_run_config.id)
+                        }}
+                      >
+                        Set as default
+                      </button>
                     {/if}
                   </td>
                   {#each evaluator.output_scores as output_score}
