@@ -17,7 +17,7 @@
 </script>
 
 <button
-  class="tooltip custom-z-50 {get_position_class()} before:whitespace-normal"
+  class="tooltip before:z-50 {get_position_class()} before:whitespace-normal"
   data-tip={tooltip_text}
 >
   <svg
@@ -33,9 +33,3 @@
     /></svg
   >
 </button>
-
-<style>
-  .custom-z-50::before {
-    z-index: 50;
-  }
-</style>
