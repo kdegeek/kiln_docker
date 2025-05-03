@@ -1428,7 +1428,7 @@ export interface components {
             current_config_id?: string | null;
             /**
              * Current Run Config Id
-             * @description The id of the a run config (which should be on the parent Task), which was selected as the best run config for this eval.
+             * @description The id of the a run config which was selected as the best run config for this eval. The run config must belong to the parent Task.
              */
             current_run_config_id?: string | null;
             /**
@@ -4728,7 +4728,7 @@ export interface operations {
                 project_id: string;
                 task_id: string;
                 eval_id: string;
-                run_config_id: string;
+                run_config_id: string | null;
             };
             cookie?: never;
         };
