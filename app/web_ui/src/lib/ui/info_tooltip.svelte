@@ -1,12 +1,23 @@
 <script lang="ts">
   export let tooltip_text: string
-  export let right: boolean = false
+  export let position: "left" | "right" | "bottom" | "top" = "left"
+
+  function get_position_class() {
+    switch (position) {
+      case "right":
+        return "tooltip-right"
+      case "bottom":
+        return "tooltip-bottom"
+      case "top":
+        return "tooltip-top"
+      default:
+        return "tooltip-left"
+    }
+  }
 </script>
 
 <button
-  class="tooltip {right
-    ? 'tooltip-right'
-    : 'tooltip-left'} before:whitespace-normal"
+  class="tooltip custom-z-50 {get_position_class()} before:whitespace-normal"
   data-tip={tooltip_text}
 >
   <svg
@@ -22,3 +33,9 @@
     /></svg
   >
 </button>
+
+<style>
+  .custom-z-50::before {
+    z-index: 50;
+  }
+</style>

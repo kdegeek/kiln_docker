@@ -277,7 +277,7 @@
                     {#if step_tooltips[step]}
                       <InfoTooltip
                         tooltip_text={step_tooltips[step]}
-                        right={true}
+                        position={step < 4 ? "bottom" : "top"}
                       />
                     {/if}
                   </div>
@@ -375,8 +375,8 @@
                       </div>
                     {:else if step == 5}
                       <div class="mb-1">
-                        Compare different models, prompts, or fine-tunes to find
-                        the best way to run this task.
+                        Compare models, prompts and fine-tunes to find the most
+                        effective.
                       </div>
                       <div>
                         <a
