@@ -106,6 +106,8 @@
   function get_eval_properties(
     evaluator: Eval,
     eval_progress: EvalProgress | null,
+    modelInfo: any,
+    taskPrompts: any,
   ): UiProperty[] {
     const properties: UiProperty[] = []
 
@@ -157,7 +159,7 @@
         name: "Eval Model",
         value: model_name(
           eval_progress.current_eval_method.model_name,
-          $model_info,
+          modelInfo,
         ),
         tooltip: "The model used by your selected eval method.",
       })
@@ -168,16 +170,18 @@
         name: "Run Model",
         value: model_name(
           eval_progress.current_run_method.run_config_properties.model_name,
-          $model_info,
+          modelInfo,
         ),
         tooltip: "The model used by your selected run method.",
       })
       properties.push({
         name: "Run Prompt",
-        value: prompt_name_from_id(
-          eval_progress.current_run_method.run_config_properties.prompt_id,
-          $current_task_prompts,
-        ),
+        value:
+          eval_progress.current_run_method.prompt?.name ||
+          prompt_name_from_id(
+            eval_progress.current_run_method.run_config_properties.prompt_id,
+            taskPrompts,
+          ),
         tooltip: "The prompt used by your selected run method.",
       })
     }
@@ -273,6 +277,15 @@
     }
     return undefined
   }
+
+  $: properties =
+    evaluator &&
+    get_eval_properties(
+      evaluator,
+      eval_progress,
+      $model_info,
+      $current_task_prompts,
+    )
 </script>
 
 <div class="max-w-[1400px]">
@@ -462,7 +475,7 @@
           <div
             class="grid grid-cols-[auto,1fr] gap-y-2 gap-x-4 text-sm 2xl:text-base"
           >
-            {#each get_eval_properties(evaluator, eval_progress) as property}
+            {#each properties || [] as property}
               <div class="flex items-center">
                 {property.name}
                 {#if property.tooltip}
