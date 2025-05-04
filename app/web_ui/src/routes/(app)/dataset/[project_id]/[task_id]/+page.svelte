@@ -721,7 +721,7 @@
     : "Delete Run"}
   action_buttons={[
     { label: "Cancel", isCancel: true },
-    { label: "Delete", asyncAction: () => delete_runs() },
+    { label: "Delete", asyncAction: () => delete_runs(), isError: true },
   ]}
 >
   <div class="text-sm font-light text-gray-500">This cannot be undone.</div>
@@ -738,6 +738,7 @@
       label: "Add Tags",
       asyncAction: add_selected_tags,
       disabled: add_tags.size == 0 && !current_tag,
+      isPrimary: true,
     },
   ]}
 >
@@ -804,6 +805,7 @@
       label: "Remove Tags",
       asyncAction: () => remove_selected_tags(),
       disabled: remove_tags.size == 0,
+      isError: true,
     },
   ]}
 >
