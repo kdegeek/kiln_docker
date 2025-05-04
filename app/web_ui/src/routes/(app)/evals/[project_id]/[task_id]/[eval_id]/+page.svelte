@@ -292,7 +292,7 @@
 <div class="max-w-[1400px]">
   <AppPage
     title="Eval: {evaluator?.name || ''}"
-    subtitle="Evals help you measure quality"
+    subtitle="Follow these steps to find the best way to evaluate and run your task"
     sub_subtitle="Learn About Evals"
     sub_subtitle_link="https://docs.getkiln.ai/docs/evaluations"
     action_buttons={[
