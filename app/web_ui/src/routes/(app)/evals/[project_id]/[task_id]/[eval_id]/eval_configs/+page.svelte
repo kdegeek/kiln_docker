@@ -55,6 +55,103 @@
   $: error = eval_error || eval_configs_error || score_summary_error
   $: run_eval_url = `${base_url}/api/projects/${$page.params.project_id}/tasks/${$page.params.task_id}/eval/${$page.params.eval_id}/run_eval_config_eval`
 
+  // Update sorting when score_type or score_summary changes
+  $: if (eval_configs && score_summary && evaluator) {
+    sortEvalConfigs()
+  }
+
+  // Sort eval_configs whenever score_type changes
+  $: if (score_type && eval_configs && score_summary && evaluator) {
+    sortEvalConfigs()
+  }
+
+  function sortEvalConfigs() {
+    if (!eval_configs) return
+    if (!evaluator) return
+    const nonNullEvaluator = evaluator
+
+    eval_configs = [...eval_configs].sort((a, b) => {
+      // Always put default (current) config on top
+      if (a.id === nonNullEvaluator.current_config_id) return -1
+      if (b.id === nonNullEvaluator.current_config_id) return 1
+
+      // If no score summary, keep original order
+      if (
+        !score_summary ||
+        !nonNullEvaluator.output_scores ||
+        nonNullEvaluator.output_scores.length === 0
+      ) {
+        return 0
+      }
+
+      // Get the last output score for sorting
+      const lastOutputScore =
+        nonNullEvaluator.output_scores[
+          nonNullEvaluator.output_scores.length - 1
+        ]
+      const scoreNameKey = string_to_json_key(lastOutputScore.name)
+
+      const aScores = score_summary?.results?.["" + a.id]?.[scoreNameKey]
+      const bScores = score_summary?.results?.["" + b.id]?.[scoreNameKey]
+
+      // Handle missing scores (put them at the end)
+      if (!aScores && !bScores) return 0
+      if (!aScores) return 1
+      if (!bScores) return -1
+
+      let aValue, bValue
+
+      // Get the appropriate score based on score_type
+      if (score_type === "mae") {
+        aValue = aScores.mean_absolute_error
+        bValue = bScores.mean_absolute_error
+        // Lower is better for MAE, so sort ascending
+        return (aValue ?? Infinity) - (bValue ?? Infinity)
+      } else if (score_type === "mse") {
+        aValue = aScores.mean_squared_error
+        bValue = bScores.mean_squared_error
+        // Lower is better for MSE, so sort ascending
+        return (aValue ?? Infinity) - (bValue ?? Infinity)
+      } else if (score_type === "norm_mse") {
+        aValue = aScores.mean_normalized_squared_error
+        bValue = bScores.mean_normalized_squared_error
+        // Lower is better for normalized MSE, so sort ascending
+        return (aValue ?? Infinity) - (bValue ?? Infinity)
+      } else if (score_type === "norm_mae") {
+        aValue = aScores.mean_normalized_absolute_error
+        bValue = bScores.mean_normalized_absolute_error
+        // Lower is better for normalized MAE, so sort ascending
+        return (aValue ?? Infinity) - (bValue ?? Infinity)
+      } else if (score_type === "spearman") {
+        aValue = aScores.spearman_correlation
+        bValue = bScores.spearman_correlation
+        // Higher is better for correlation, so sort descending
+        // Handle null/undefined values
+        if (aValue === null || aValue === undefined) return 1
+        if (bValue === null || bValue === undefined) return -1
+        return bValue - aValue
+      } else if (score_type === "pearson") {
+        aValue = aScores.pearson_correlation
+        bValue = bScores.pearson_correlation
+        // Higher is better for correlation, so sort descending
+        // Handle null/undefined values
+        if (aValue === null || aValue === undefined) return 1
+        if (bValue === null || bValue === undefined) return -1
+        return bValue - aValue
+      } else if (score_type === "kendalltau") {
+        aValue = aScores.kendalltau_correlation
+        bValue = bScores.kendalltau_correlation
+        // Higher is better for correlation, so sort descending
+        // Handle null/undefined values
+        if (aValue === null || aValue === undefined) return 1
+        if (bValue === null || bValue === undefined) return -1
+        return bValue - aValue
+      }
+
+      return 0
+    })
+  }
+
   onMount(async () => {
     // Wait for page params to load
     await tick()
@@ -115,12 +212,9 @@
       if (error) {
         throw error
       }
-      // sort with current on top
-      eval_configs = data.sort((a, b) => {
-        if (evaluator && a.id === evaluator.current_config_id) return -1
-        if (evaluator && b.id === evaluator.current_config_id) return 1
-        return 0
-      })
+
+      eval_configs = data
+      // Initial sort will be handled by the reactive statement
     } catch (error) {
       eval_configs_error = createKilnError(error)
     } finally {
