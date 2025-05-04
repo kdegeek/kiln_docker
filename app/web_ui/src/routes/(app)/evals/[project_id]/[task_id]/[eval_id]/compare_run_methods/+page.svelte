@@ -230,6 +230,54 @@
     (config) => config.id === current_eval_config_id,
   )
 
+  // Sort task run configs - default first, then by last output score
+  $: sorted_task_run_configs = task_run_configs
+    ? sortTaskRunConfigs(task_run_configs, evaluator, score_summary)
+    : []
+
+  function sortTaskRunConfigs(
+    configs: TaskRunConfig[] | null,
+    evaluator: Eval | null,
+    score_summary: EvalResultSummary | null,
+  ): TaskRunConfig[] {
+    if (!configs || !configs.length) return []
+
+    return [...configs].sort((a, b) => {
+      // Default run config always comes first
+      if (a.id === evaluator?.current_run_config_id) return -1
+      if (b.id === evaluator?.current_run_config_id) return 1
+
+      // If we have evaluator and score summary, sort by the last output score
+      if (evaluator?.output_scores?.length && score_summary?.results) {
+        const lastScoreKey = string_to_json_key(
+          evaluator.output_scores[evaluator.output_scores.length - 1].name,
+        )
+
+        const scoreA =
+          score_summary.results["" + a.id]?.[lastScoreKey]?.mean_score
+        const scoreB =
+          score_summary.results["" + b.id]?.[lastScoreKey]?.mean_score
+
+        // If both have scores, sort by score (higher first)
+        if (
+          scoreA !== null &&
+          scoreA !== undefined &&
+          scoreB !== null &&
+          scoreB !== undefined
+        ) {
+          return scoreB - scoreA
+        }
+
+        // If only one has a score, it comes first
+        if (scoreA !== null && scoreA !== undefined) return -1
+        if (scoreB !== null && scoreB !== undefined) return 1
+      }
+
+      // Fallback to sort by name
+      return a.name.localeCompare(b.name)
+    })
+  }
+
   function get_eval_config_properties(
     eval_config_id: string | null,
     model_info: ProviderModels | null,
@@ -552,7 +600,7 @@
               </tr>
             </thead>
             <tbody>
-              {#each task_run_configs || [] as task_run_config}
+              {#each sorted_task_run_configs as task_run_config}
                 {@const percent_complete =
                   score_summary?.run_config_percent_complete?.[
                     "" + task_run_config.id
