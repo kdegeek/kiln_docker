@@ -144,6 +144,44 @@
         "This is the dataset that we use to evaluate the quality of the evaluation method. Also called the 'Eval Method Dataset'. It needs to have human ratings.",
       link: link_from_filter_id(evaluator.eval_configs_filter_id),
     })
+
+    if (eval_progress?.current_eval_method) {
+      properties.push({
+        name: "Eval Algorithm",
+        value: eval_config_to_ui_name(
+          eval_progress.current_eval_method.config_type,
+        ),
+        tooltip: "The evaluation algorithm used by your selected eval method.",
+      })
+      properties.push({
+        name: "Eval Model",
+        value: model_name(
+          eval_progress.current_eval_method.model_name,
+          $model_info,
+        ),
+        tooltip: "The model used by your selected eval method.",
+      })
+    }
+
+    if (eval_progress?.current_run_method) {
+      properties.push({
+        name: "Run Model",
+        value: model_name(
+          eval_progress.current_run_method.run_config_properties.model_name,
+          $model_info,
+        ),
+        tooltip: "The model used by your selected run method.",
+      })
+      properties.push({
+        name: "Run Prompt",
+        value: prompt_name_from_id(
+          eval_progress.current_run_method.run_config_properties.prompt_id,
+          $current_task_prompts,
+        ),
+        tooltip: "The prompt used by your selected run method.",
+      })
+    }
+
     return properties
   }
 
