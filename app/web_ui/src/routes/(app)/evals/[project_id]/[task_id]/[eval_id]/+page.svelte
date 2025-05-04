@@ -15,6 +15,7 @@
     prompt_name_from_id,
     current_task_prompts,
   } from "$lib/stores"
+  import type { ProviderModels, PromptResponse } from "$lib/types"
 
   import EditDialog from "$lib/ui/edit_dialog.svelte"
 
@@ -106,8 +107,8 @@
   function get_eval_properties(
     evaluator: Eval,
     eval_progress: EvalProgress | null,
-    modelInfo: any,
-    taskPrompts: any,
+    modelInfo: ProviderModels | null,
+    taskPrompts: PromptResponse | null,
   ): UiProperty[] {
     const properties: UiProperty[] = []
 
