@@ -13,6 +13,7 @@
     load_model_info,
     model_name,
     prompt_name_from_id,
+    current_task_prompts,
   } from "$lib/stores"
 
   import EditDialog from "$lib/ui/edit_dialog.svelte"
@@ -393,6 +394,7 @@
                             prompt_name_from_id(
                               eval_progress.current_run_method
                                 .run_config_properties.prompt_id,
+                              $current_task_prompts,
                             )}'.
                         {:else}
                           Compare models, prompts and fine-tunes to find the

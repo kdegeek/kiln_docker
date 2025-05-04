@@ -19,6 +19,7 @@
     model_name,
     provider_name_from_id,
     prompt_name_from_id,
+    current_task_prompts,
     load_available_prompts,
     load_available_models,
   } from "$lib/stores"
@@ -585,6 +586,7 @@
                       {task_run_config.prompt?.name ||
                         prompt_name_from_id(
                           task_run_config?.run_config_properties?.prompt_id,
+                          $current_task_prompts,
                         )}
                     </div>
                     {#if task_run_config?.prompt?.generator_id && task_run_config?.run_config_properties?.prompt_id?.startsWith("task_run_config::")}
@@ -592,6 +594,7 @@
                       <div class="text-sm text-gray-500">
                         Prompt Source: {prompt_name_from_id(
                           task_run_config?.prompt?.generator_id,
+                          $current_task_prompts,
                         )}
                       </div>
                     {/if}
