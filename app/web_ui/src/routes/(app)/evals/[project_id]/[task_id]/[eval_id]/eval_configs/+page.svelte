@@ -228,8 +228,11 @@
   async function set_current_eval_config(
     eval_config_id: string | null | undefined,
   ) {
-    if (!eval_config_id) {
+    if (eval_config_id === undefined) {
       return
+    }
+    if (eval_config_id === null) {
+      eval_config_id = "None"
     }
     try {
       const { data, error } = await client.POST(
@@ -461,7 +464,14 @@
                       <div class="text-sm text-error">0% complete</div>
                     {/if}
                     {#if eval_config.id == evaluator.current_config_id}
-                      <div class="badge badge-primary mt-2">Default</div>
+                      <button
+                        class="badge badge-primary mt-2"
+                        on:click={() => {
+                          set_current_eval_config(null)
+                        }}
+                      >
+                        Default
+                      </button>
                     {:else}
                       <button
                         class="link text-sm text-gray-500"

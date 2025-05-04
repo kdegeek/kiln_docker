@@ -440,9 +440,27 @@ def connect_evals_api(app: FastAPI):
         project_id: str,
         task_id: str,
         eval_id: str,
-        eval_config_id: str,
+        eval_config_id: str | None,
     ) -> Eval:
         eval = eval_from_id(project_id, task_id, eval_id)
+
+        if eval_config_id == "None":
+            eval_config_id = None
+        else:
+            eval_config = next(
+                (
+                    eval_config
+                    for eval_config in eval.configs()
+                    if eval_config.id == eval_config_id
+                ),
+                None,
+            )
+            if eval_config is None:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Eval config not found.",
+                )
+
         eval.current_config_id = eval_config_id
         eval.save_to_file()
 

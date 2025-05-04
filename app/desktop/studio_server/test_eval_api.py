@@ -1371,3 +1371,85 @@ async def test_set_default_run_config_not_found(
     # Verify the response
     assert response.status_code == 400
     assert response.json()["detail"] == "Run config not found."
+
+
+@pytest.mark.asyncio
+async def test_set_default_run_config_none(
+    client, mock_task_from_id, mock_task, mock_eval
+):
+    """Test clearing the current run config for an evaluation by setting it to 'none'."""
+    mock_task_from_id.return_value = mock_task
+
+    # First set a non-null value to verify it can be cleared
+    mock_eval.current_run_config_id = "some_existing_id"
+    mock_eval.save_to_file()
+
+    # Verify the current_run_config_id is set
+    assert mock_task.evals()[0].current_run_config_id == "some_existing_id"
+
+    # Clear the current run config by setting it to "none"
+    with patch("app.desktop.studio_server.eval_api.eval_from_id") as mock_eval_from_id:
+        mock_eval_from_id.return_value = mock_eval
+        response = client.post(
+            "/api/projects/project1/tasks/task1/eval/eval1/set_current_run_config/none"
+        )
+        assert response.status_code == 200
+        updated_eval = response.json()
+
+    # Verify the current_run_config_id was cleared (set to None)
+    assert updated_eval["current_run_config_id"] is None
+    assert updated_eval["id"] == "eval1"
+
+    # Verify the change persists by fetching the eval again
+    eval_from_disk = mock_task.evals()[0]
+    assert eval_from_disk.current_run_config_id is None
+
+
+@pytest.mark.asyncio
+async def test_set_current_eval_config_none(
+    client, mock_task_from_id, mock_task, mock_eval
+):
+    """Test clearing the current eval config for an evaluation by setting it to 'None'."""
+    mock_task_from_id.return_value = mock_task
+
+    # First set a non-null value to verify it can be cleared
+    mock_eval.current_config_id = "some_existing_config_id"
+    mock_eval.save_to_file()
+
+    # Verify the current_config_id is set
+    assert mock_task.evals()[0].current_config_id == "some_existing_config_id"
+
+    # Clear the current eval config by setting it to "None"
+    with patch("app.desktop.studio_server.eval_api.eval_from_id") as mock_eval_from_id:
+        mock_eval_from_id.return_value = mock_eval
+        response = client.post(
+            "/api/projects/project1/tasks/task1/eval/eval1/set_current_eval_config/None"
+        )
+        assert response.status_code == 200
+        updated_eval = response.json()
+
+    # Verify the current_config_id was cleared (set to None)
+    assert updated_eval["current_config_id"] is None
+    assert updated_eval["id"] == "eval1"
+
+    # Verify the change persists by fetching the eval again
+    eval_from_disk = mock_task.evals()[0]
+    assert eval_from_disk.current_config_id is None
+
+
+@pytest.mark.asyncio
+async def test_set_current_eval_config_not_found(
+    client, mock_task_from_id, mock_task, mock_eval
+):
+    """Test 400 error when setting a non-existent eval config as default."""
+    mock_task_from_id.return_value = mock_task
+
+    with patch("app.desktop.studio_server.eval_api.eval_from_id") as mock_eval_from_id:
+        mock_eval_from_id.return_value = mock_eval
+        response = client.post(
+            "/api/projects/project1/tasks/task1/eval/eval1/set_current_eval_config/non_existent_eval_config"
+        )
+
+    # Verify the response
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Eval config not found."
