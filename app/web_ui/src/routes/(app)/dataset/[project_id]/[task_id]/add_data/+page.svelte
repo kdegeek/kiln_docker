@@ -139,7 +139,7 @@
   {#if completed}
     <Completed
       title="Data Added"
-      subtitle="Your data has been added to the dataset."
+      subtitle="Your data has been added."
       link={completed_link || dataset_link}
       button_text={completed_button_text || "View Dataset"}
     />
@@ -249,4 +249,5 @@
 <UploadDatasetDialog
   bind:this={upload_dataset_dialog}
   onImportCompleted={handleImportCompleted}
+  tag_splits={splits}
 />

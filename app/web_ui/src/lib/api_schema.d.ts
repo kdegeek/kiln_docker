@@ -1056,9 +1056,7 @@ export interface components {
              */
             file: string;
             /** Splits */
-            splits?: {
-                [key: string]: number;
-            } | null;
+            splits?: string | null;
         };
         /** Body_edit_tags_api_projects__project_id__tasks__task_id__runs_edit_tags_post */
         Body_edit_tags_api_projects__project_id__tasks__task_id__runs_edit_tags_post: {

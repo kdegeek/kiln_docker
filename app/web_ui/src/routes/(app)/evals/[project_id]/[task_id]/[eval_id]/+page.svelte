@@ -16,6 +16,7 @@
     current_task_prompts,
   } from "$lib/stores"
   import type { ProviderModels, PromptResponse } from "$lib/types"
+  import { goto } from "$app/navigation"
 
   import EditDialog from "$lib/ui/edit_dialog.svelte"
 
@@ -219,6 +220,7 @@
     progress: EvalProgress | null,
     evaluator: Eval | null,
   ) {
+    update_golden_dataset_explanation(progress)
     current_step = 1
     if (!progress || !evaluator) {
       return
@@ -238,23 +240,8 @@
     }
 
     current_step = 3
-    let golden_dataset_rating_issues: string[] = []
-    if (progress.golden_dataset_not_rated_count > 0) {
-      golden_dataset_rating_issues.push(
-        `${progress.golden_dataset_not_rated_count} item${progress.golden_dataset_not_rated_count == 1 ? " is" : "s are"} unrated`,
-      )
-    }
-    if (progress.golden_dataset_partially_rated_count > 0) {
-      golden_dataset_rating_issues.push(
-        `${progress.golden_dataset_partially_rated_count} item${progress.golden_dataset_partially_rated_count == 1 ? " is" : "s are"} partially unrated`,
-      )
-    }
-    if (golden_dataset_rating_issues.length > 0) {
-      // Some golden dataset items are not fully rated.
-      golden_dataset_explanation = `In your golden dataset ${golden_dataset_rating_issues.join(" and ")}. Fully rate all items to to get the best results from your eval.`
+    if (golden_dataset_explanation) {
       return
-    } else {
-      golden_dataset_explanation = ""
     }
 
     current_step = 4
@@ -272,9 +259,45 @@
   }
   $: update_eval_progress(eval_progress, evaluator)
 
-  function link_from_filter_id(filter_id: string): string | undefined {
+  function update_golden_dataset_explanation(progress: EvalProgress | null) {
+    if (!progress) {
+      return
+    }
+    if (progress.golden_dataset_size == 0) {
+      golden_dataset_explanation =
+        "Your golden dataset is empty. Add data to your golden dataset to get started."
+      return
+    }
+    let golden_dataset_rating_issues: string[] = []
+    if (progress.golden_dataset_not_rated_count > 0) {
+      golden_dataset_rating_issues.push(
+        `${progress.golden_dataset_not_rated_count} item${progress.golden_dataset_not_rated_count == 1 ? " is" : "s are"} unrated`,
+      )
+    }
+    if (progress.golden_dataset_partially_rated_count > 0) {
+      golden_dataset_rating_issues.push(
+        `${progress.golden_dataset_partially_rated_count} item${progress.golden_dataset_partially_rated_count == 1 ? " is" : "s are"} partially unrated`,
+      )
+    }
+    if (golden_dataset_rating_issues.length > 0) {
+      // Some golden dataset items are not fully rated.
+      golden_dataset_explanation = `In your golden dataset ${golden_dataset_rating_issues.join(" and ")}. Fully rate all items to to get the best results from your eval.`
+    } else {
+      golden_dataset_explanation = ""
+    }
+  }
+
+  function tag_from_filter_id(filter_id: string): string | undefined {
     if (filter_id.startsWith("tag::")) {
-      return `/dataset/${project_id}/${task_id}?tags=${filter_id.replace("tag::", "")}`
+      return filter_id.replace("tag::", "")
+    }
+    return undefined
+  }
+
+  function link_from_filter_id(filter_id: string): string | undefined {
+    const tag = tag_from_filter_id(filter_id)
+    if (tag) {
+      return `/dataset/${project_id}/${task_id}?tags=${tag}`
     }
     return undefined
   }
@@ -287,6 +310,23 @@
       $model_info,
       $current_task_prompts,
     )
+
+  function add_eval_data() {
+    if (!evaluator) {
+      alert("Unable to add eval data. Please try again later.")
+      return
+    }
+    const eval_tag = tag_from_filter_id(evaluator?.eval_set_filter_id)
+    const golden_tag = tag_from_filter_id(evaluator?.eval_configs_filter_id)
+    if (!eval_tag || !golden_tag) {
+      alert(
+        "No eval or golden dataset tag found. If you're using a custom filter, please setup the dataset manually.",
+      )
+      return
+    }
+    const url = `/dataset/${project_id}/${task_id}/add_data?reason=eval&splits=${eval_tag}:0.8,${golden_tag}:0.2&eval_link=${window.location.pathname}`
+    goto(url)
+  }
 </script>
 
 <div class="max-w-[1400px]">
@@ -339,6 +379,7 @@
                       <InfoTooltip
                         tooltip_text={step_tooltips[step]}
                         position={step < 4 ? "bottom" : "top"}
+                        no_pad={true}
                       />
                     {/if}
                   </div>
@@ -372,6 +413,7 @@
                           class="btn btn-sm {current_step == 2
                             ? 'btn-primary'
                             : ''}"
+                          on:click={add_eval_data}
                         >
                           Add Eval Data
                         </button>

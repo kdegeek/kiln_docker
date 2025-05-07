@@ -25,7 +25,6 @@
       <a href={link} class="btn btn-primary btn-wide">
         {button_text}
       </a>
-      {link}
     </div>
   </div>
 </div>
