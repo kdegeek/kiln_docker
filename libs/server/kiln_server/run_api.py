@@ -279,6 +279,7 @@ def connect_run_api(app: FastAPI):
         project_id: str,
         task_id: str,
         file: UploadFile = File(...),
+        splits: Dict[str, float] | None = None,
     ) -> BulkUploadResponse:
         task = task_from_id(project_id, task_id)
 
@@ -300,6 +301,7 @@ def connect_run_api(app: FastAPI):
                     dataset_type=DatasetImportFormat.CSV,
                     dataset_path=file_path,
                     dataset_name=file_name,
+                    tag_splits=splits,
                 ),
             )
             imported_count = importer.create_runs_from_file()

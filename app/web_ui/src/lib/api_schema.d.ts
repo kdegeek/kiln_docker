@@ -1055,6 +1055,10 @@ export interface components {
              * Format: binary
              */
             file: string;
+            /** Splits */
+            splits?: {
+                [key: string]: number;
+            } | null;
         };
         /** Body_edit_tags_api_projects__project_id__tasks__task_id__runs_edit_tags_post */
         Body_edit_tags_api_projects__project_id__tasks__task_id__runs_edit_tags_post: {
@@ -4695,7 +4699,7 @@ export interface operations {
                 project_id: string;
                 task_id: string;
                 eval_id: string;
-                eval_config_id: string;
+                eval_config_id: string | null;
             };
             cookie?: never;
         };
