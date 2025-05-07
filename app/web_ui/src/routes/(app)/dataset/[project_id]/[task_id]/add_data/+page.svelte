@@ -1,10 +1,10 @@
 <script lang="ts">
-  import AppPage from "../../app_page.svelte"
+  import AppPage from "../../../../app_page.svelte"
   import { page } from "$app/stores"
   import Dialog from "$lib/ui/dialog.svelte"
-  import { ui_state } from "$lib/stores"
-  import UploadDatasetDialog from "../[project_id]/[task_id]/upload_dataset_dialog.svelte"
+  import UploadDatasetDialog from "../../../[project_id]/[task_id]/upload_dataset_dialog.svelte"
   import Completed from "$lib/ui/completed.svelte"
+  import { goto } from "$app/navigation"
 
   const validReasons = ["generic", "eval", "fine_tune"] as const
   type Reason = (typeof validReasons)[number]
@@ -12,7 +12,7 @@
   let manual_dialog: Dialog | null = null
   let upload_dataset_dialog: UploadDatasetDialog | null = null
 
-  $: dataset_link = `/dataset/${$ui_state.current_project_id}/${$ui_state.current_task_id}`
+  $: dataset_link = `/dataset/${$page.params.project_id}/${$page.params.task_id}`
   $: reason = validReasons.includes(
     $page.url.searchParams.get("reason") as Reason,
   )
@@ -21,7 +21,7 @@
 
   $: title =
     reason === "generic"
-      ? "Add Data"
+      ? "Add Samples to your Dataset"
       : reason === "eval"
         ? "Setup Data for your Eval"
         : "Setup Data for Fine-tuning"
@@ -78,6 +78,17 @@
       recommended: false,
       highlight_title: null,
     },
+    ...(reason === "generic" && splitsArray.length === 0
+      ? [
+          {
+            id: "run_task",
+            name: "Manually Run Task",
+            description: `Run your task. Each run will be saved to your ${reason_name}.`,
+            recommended: false,
+            highlight_title: null,
+          },
+        ]
+      : []),
     ...(splitsArray.length > 0
       ? [
           {
@@ -98,6 +109,10 @@
     }
     if (id === "csv") {
       upload_dataset_dialog?.show()
+      return
+    }
+    if (id === "run_task") {
+      goto("/run")
       return
     }
   }
