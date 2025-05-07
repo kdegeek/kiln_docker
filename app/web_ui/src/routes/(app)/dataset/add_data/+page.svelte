@@ -3,11 +3,14 @@
   import { page } from "$app/stores"
   import Dialog from "$lib/ui/dialog.svelte"
   import { ui_state } from "$lib/stores"
+  import UploadDatasetDialog from "../[project_id]/[task_id]/upload_dataset_dialog.svelte"
+  import Completed from "$lib/ui/completed.svelte"
 
   const validReasons = ["generic", "eval", "fine_tune"] as const
   type Reason = (typeof validReasons)[number]
 
   let manual_dialog: Dialog | null = null
+  let upload_dataset_dialog: UploadDatasetDialog | null = null
 
   $: dataset_link = `/dataset/${$ui_state.current_project_id}/${$ui_state.current_task_id}`
   $: reason = validReasons.includes(
@@ -93,55 +96,85 @@
       manual_dialog?.show()
       return
     }
+    if (id === "csv") {
+      upload_dataset_dialog?.show()
+      return
+    }
+  }
+
+  let completed = false
+  let completed_link: string | null = null
+  let completed_button_text: string | null = null
+
+  function handleImportCompleted() {
+    completed = true
+    let eval_link = $page.url.searchParams.get("eval_link")
+    let finetune_link = $page.url.searchParams.get("finetune_link")
+    if (eval_link) {
+      completed_link = eval_link
+      completed_button_text = "Return to Eval"
+    } else if (finetune_link) {
+      completed_link = finetune_link
+      completed_button_text = "Return to Fine-Tune"
+    }
   }
 </script>
 
-<AppPage {title} subtitle="Create data or add existing data">
-  {#if splitsArray.length > 0}
-    <div class="font-light">
-      Data will be assigned to the following dataset tags:
-      {#each splitsArray as split}
-        <span class="mx-2">
-          <span class="badge badge-outline mx-2">
+<AppPage {title}>
+  {#if completed}
+    <Completed
+      title="Data Added"
+      subtitle="Your data has been added to the dataset."
+      link={completed_link || dataset_link}
+      button_text={completed_button_text || "View Dataset"}
+    />
+  {:else}
+    {#if splitsArray.length > 0}
+      <div class="font-light">
+        Data will be assigned to the following dataset tags:
+        {#each splitsArray as split}
+          <span class="badge badge-outline mx-1">
             {split.name}: {Math.round(split.value * 100)}%
           </span>
-        </span>
+        {/each}
+      </div>
+    {/if}
+    <div class="flex flex-col gap-6 pt-8 max-w-[500px]">
+      <div class="text-xl font-bold pb-4 text-center">Select Data Source</div>
+      {#each data_source_descriptions as data_source_description}
+        <button
+          class="cursor-pointer text-left"
+          on:click={() => {
+            select_data_source(data_source_description.id)
+          }}
+        >
+          <div
+            class="card card-bordered border-base-300 bg-base-200 shadow-md w-full p-6 indicator"
+          >
+            {#if data_source_description.recommended}
+              <div class="indicator-item indicator-center badge badge-primary">
+                Recommended
+              </div>
+            {:else if data_source_description.highlight_title}
+              <div
+                class="indicator-item indicator-center badge badge-secondary"
+              >
+                {data_source_description.highlight_title}
+              </div>
+            {/if}
+            <div class="flex flex-col">
+              <div class="font-medium">
+                {data_source_description.name}
+              </div>
+              <div class="font-light pt-2">
+                {data_source_description.description}
+              </div>
+            </div>
+          </div>
+        </button>
       {/each}
     </div>
   {/if}
-  <div class="flex flex-col gap-6 pt-8 max-w-[500px]">
-    <div class="text-xl font-bold pb-4 text-center">Select Data Source</div>
-    {#each data_source_descriptions as data_source_description}
-      <button
-        class="cursor-pointer text-left"
-        on:click={() => {
-          select_data_source(data_source_description.id)
-        }}
-      >
-        <div
-          class="card card-bordered border-base-300 bg-base-200 shadow-md w-full p-6 indicator"
-        >
-          {#if data_source_description.recommended}
-            <div class="indicator-item indicator-center badge badge-primary">
-              Recommended
-            </div>
-          {:else if data_source_description.highlight_title}
-            <div class="indicator-item indicator-center badge badge-secondary">
-              {data_source_description.highlight_title}
-            </div>
-          {/if}
-          <div class="flex flex-col">
-            <div class="font-medium">
-              {data_source_description.name}
-            </div>
-            <div class="font-light pt-2">
-              {data_source_description.description}
-            </div>
-          </div>
-        </div>
-      </button>
-    {/each}
-  </div>
 </AppPage>
 
 <Dialog
@@ -197,3 +230,8 @@
     </ol>
   </div>
 </Dialog>
+
+<UploadDatasetDialog
+  bind:this={upload_dataset_dialog}
+  onImportCompleted={handleImportCompleted}
+/>
