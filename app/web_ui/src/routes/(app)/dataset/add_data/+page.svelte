@@ -75,13 +75,17 @@
       recommended: false,
       highlight_title: null,
     },
-    {
-      id: "manual",
-      name: "Manually Tag Existing Data",
-      description: `Manually tag existing data to be used for your ${reason_name}.`,
-      recommended: false,
-      highlight_title: null,
-    },
+    ...(splitsArray.length > 0
+      ? [
+          {
+            id: "manual",
+            name: "Manually Tag Existing Data",
+            description: `Tag data which is already in your dataset to be used for your ${reason_name}.`,
+            recommended: false,
+            highlight_title: null,
+          },
+        ]
+      : []),
   ]
 
   function select_data_source(id: string) {
@@ -175,19 +179,19 @@
       </div>
     {/if}
 
-    <ol class="list-decimal list-inside flex flex-col gap-2">
+    <ol class="list-decimal list-inside flex flex-col gap-2 text-sm">
       <li class="ml-4">
         Open the <a href={dataset_link} class="link" target="_blank"
           >dataset page</a
-        > (in a new tab so you can follow these instructions).
+        > in a new tab so you can follow these instructions.
       </li>
       <li class="ml-4">
-        Select the data you want to use for one of the tags above, using the
-        "Select" button. You can select many examples at once using the shift
+        Using the "Select" button, select the data you want to use for one of
+        the tags above. You can select many examples at once using the shift
         key.
       </li>
       <li class="ml-4">
-        Click the "Tag" button, select "Add Tag", and add the desired tag.
+        Click the "Tag" button, select "Add Tag", then add the desired tag.
       </li>
       <li class="ml-4">Repeat steps 2-3 for each tag.</li>
     </ol>
