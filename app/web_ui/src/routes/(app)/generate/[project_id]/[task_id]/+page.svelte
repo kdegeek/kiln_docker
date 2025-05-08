@@ -17,10 +17,14 @@
   import FormElement from "$lib/utils/form_element.svelte"
   import Warning from "$lib/ui/warning.svelte"
   import Dialog from "$lib/ui/dialog.svelte"
+  import Splits from "$lib/ui/splits.svelte"
 
   let session_id = Math.floor(Math.random() * 1000000000000).toString()
 
   let human_guidance = ""
+  let splits: Record<string, number> = {}
+  let splits_subtitle: string | undefined = undefined
+  let split_object: Splits | null = null
 
   let task: Task | null = null
   let task_error: KilnError | null = null
@@ -287,6 +291,9 @@
         : sample.input
       const save_sample_guidance =
         human_guidance.length > 0 ? human_guidance : undefined
+      // Get a random split tag, if splits are defined
+      const split_tag = split_object?.get_random_split_tag()
+      const tags = split_tag ? [split_tag] : []
       const {
         error: post_error,
         data,
@@ -312,6 +319,7 @@
             prompt_method,
             topic_path: topic_path || [],
             human_guidance: save_sample_guidance,
+            tags,
           },
         },
       )
@@ -335,9 +343,11 @@
   }
 </script>
 
+<Splits bind:splits bind:subtitle={splits_subtitle} bind:this={split_object} />
 <div class="max-w-[1400px]">
   <AppPage
     title="Synthetic Data Generation"
+    subtitle={splits_subtitle}
     sub_subtitle_link="https://docs.getkiln.ai/docs/synthetic-data-generation"
     sub_subtitle="Read the Docs"
     {action_buttons}

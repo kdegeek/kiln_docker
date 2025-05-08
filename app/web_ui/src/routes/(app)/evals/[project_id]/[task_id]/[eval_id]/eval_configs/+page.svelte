@@ -513,14 +513,13 @@
                 {#each evaluator.output_scores as output_score}
                   <th class="text-center">
                     {output_score.name}
-                    <span class="ml-[-5px]">
-                      <InfoTooltip
-                        tooltip_text={info_tooltip_text(
-                          output_score.type,
-                          score_type,
-                        )}
-                      />
-                    </span>
+                    <InfoTooltip
+                      tooltip_text={info_tooltip_text(
+                        output_score.type,
+                        score_type,
+                      )}
+                      no_pad={true}
+                    />
                   </th>
                 {/each}
               </tr>
@@ -534,28 +533,28 @@
                 <tr>
                   <td>
                     <div class="font-medium">
-                      {eval_config.name}
-                    </div>
-                    <div class="text-sm text-gray-500">
-                      {eval_config_to_ui_name(eval_config.config_type)}
-                    </div>
-                    <div class="text-sm text-gray-500">
                       {model_name(eval_config?.model_name, $model_info)}
                     </div>
                     <div class="text-sm text-gray-500">
-                      {provider_name_from_id(eval_config?.model_provider)}
+                      Method: {eval_config_to_ui_name(eval_config.config_type)}
+                    </div>
+                    <div class="text-sm text-gray-500">
+                      Provider: {provider_name_from_id(
+                        eval_config?.model_provider,
+                      )}
+                    </div>
+                    <div class="text-sm text-gray-500">
+                      Name: {eval_config.name}
                     </div>
                     {#if percent_complete}
-                      <div
-                        class="text-sm {percent_complete < 1.0
-                          ? 'text-error'
-                          : 'text-gray-500'}"
-                      >
-                        {(percent_complete * 100.0).toFixed(1)}% complete
-                      </div>
+                      {#if percent_complete < 1.0}
+                        <div class="text-sm text-error">
+                          Progress: {(percent_complete * 100.0).toFixed(1)}%
+                        </div>
+                      {/if}
                     {:else if score_summary}
                       <!-- We have results, but not for this run config -->
-                      <div class="text-sm text-error">0% complete</div>
+                      <div class="text-sm text-error">Progress: 0%</div>
                     {/if}
                     {#if eval_config.id == evaluator.current_config_id}
                       <button
@@ -623,6 +622,7 @@
                           {:else}
                             N/A <InfoTooltip
                               tooltip_text="There wasn't enough data, or variation in the data, to calculate a Spearman correlation. Add more data to your eval method dataset, focusing on values which are missing (for example, if all current items pass, add some which fail)."
+                              no_pad={true}
                             />
                           {/if}
                         {:else if score_type === "pearson"}
@@ -631,6 +631,7 @@
                           {:else}
                             N/A <InfoTooltip
                               tooltip_text="There wasn't enough data, or variation in the data, to calculate a Pearson correlation. Add more data to your eval method dataset, focusing on values which are missing (for example, if all current items pass, add some which fail)."
+                              no_pad={true}
                             />
                           {/if}
                         {:else if score_type === "kendalltau"}
@@ -639,6 +640,7 @@
                           {:else}
                             N/A <InfoTooltip
                               tooltip_text="There wasn't enough data, or variation in the data, to calculate a Kendall's Tau correlation. Add more data to your eval method dataset, focusing on values which are missing (for example, if all current items pass, add some which fail)."
+                              no_pad={true}
                             />
                           {/if}
                         {/if}
@@ -646,6 +648,7 @@
                         None
                         <InfoTooltip
                           tooltip_text="No scores were found for this eval method. Click 'Run Eval' to generate scores."
+                          no_pad={true}
                         />
                       {/if}
                     </td>

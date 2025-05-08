@@ -32,6 +32,7 @@
   import { eval_config_to_ui_name } from "$lib/utils/formatters"
   import OutputTypeTablePreview from "../output_type_table_preview.svelte"
   import EditDialog from "$lib/ui/edit_dialog.svelte"
+  import InfoTooltip from "$lib/ui/info_tooltip.svelte"
 
   $: project_id = $page.params.project_id
   $: task_id = $page.params.task_id
@@ -604,7 +605,12 @@
                 {@const percent_complete =
                   score_summary?.run_config_percent_complete?.[
                     "" + task_run_config.id
-                  ]}
+                  ]}{@const prompt_name =
+                  task_run_config.prompt?.name ||
+                  prompt_name_from_id(
+                    task_run_config?.run_config_properties?.prompt_id,
+                    $current_task_prompts,
+                  )}
                 <tr
                   class="hover cursor-pointer"
                   on:click={() => {
@@ -615,48 +621,49 @@
                 >
                   <td>
                     <div class="font-medium">
-                      {task_run_config.name}
-                    </div>
-                    <div class="text-sm text-gray-500">
                       {model_name(
                         task_run_config?.run_config_properties?.model_name,
                         $model_info,
                       )}
                     </div>
+
                     <div class="text-sm text-gray-500">
-                      {provider_name_from_id(
+                      Prompt:
+                      {#if task_run_config?.prompt?.generator_id && task_run_config?.run_config_properties?.prompt_id?.startsWith("task_run_config::")}
+                        <!-- Special description for prompts frozen to the task run config. The name alone isn't that helpful, so we say where it comes from (eg "Basic (Zero Shot")) -->
+                        {prompt_name_from_id(
+                          task_run_config?.prompt?.generator_id,
+                          $current_task_prompts,
+                        )}
+                        <InfoTooltip
+                          tooltip_text={'The exact prompt was saved under the name "' +
+                            prompt_name +
+                            '". See the Prompt tab for details.'}
+                          position="right"
+                          no_pad={true}
+                        />
+                      {:else}
+                        {prompt_name}
+                      {/if}
+                    </div>
+                    <div class="text-sm text-gray-500">
+                      Provider: {provider_name_from_id(
                         task_run_config?.run_config_properties
                           ?.model_provider_name,
                       )}
                     </div>
                     <div class="text-sm text-gray-500">
-                      Prompt Name:
-                      {task_run_config.prompt?.name ||
-                        prompt_name_from_id(
-                          task_run_config?.run_config_properties?.prompt_id,
-                          $current_task_prompts,
-                        )}
+                      Run Method Name: {task_run_config.name}
                     </div>
-                    {#if task_run_config?.prompt?.generator_id && task_run_config?.run_config_properties?.prompt_id?.startsWith("task_run_config::")}
-                      <!-- Special description for prompts frozen to the task run config. The name alone isn't that helpful, so we say where it comes from (eg "Basic (Zero Shot")) -->
-                      <div class="text-sm text-gray-500">
-                        Prompt Source: {prompt_name_from_id(
-                          task_run_config?.prompt?.generator_id,
-                          $current_task_prompts,
-                        )}
-                      </div>
-                    {/if}
                     {#if percent_complete}
-                      <div
-                        class="text-sm {percent_complete < 1.0
-                          ? 'text-error'
-                          : 'text-gray-500'}"
-                      >
-                        {(percent_complete * 100.0).toFixed(1)}% complete
-                      </div>
+                      {#if percent_complete < 1.0}
+                        <div class="text-sm 'text-error'">
+                          Progress: {(percent_complete * 100.0).toFixed(1)}%
+                        </div>
+                      {/if}
                     {:else if score_summary}
                       <!-- We have results, but not for this run config -->
-                      <div class="text-sm text-error">0% complete</div>
+                      <div class="text-sm text-error">Progress: 0%</div>
                     {/if}
                     {#if task_run_config.id == evaluator.current_run_config_id}
                       <button

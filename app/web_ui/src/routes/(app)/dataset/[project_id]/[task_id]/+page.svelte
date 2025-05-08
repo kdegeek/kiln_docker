@@ -12,7 +12,6 @@
   import { replaceState } from "$app/navigation"
   import TagDropdown from "../../../run/tag_dropdown.svelte"
   import Dialog from "$lib/ui/dialog.svelte"
-  import UploadDatasetDialog from "./upload_dataset_dialog.svelte"
 
   let runs: RunSummary[] | null = null
   let filtered_runs: RunSummary[] | null = null
@@ -477,17 +476,6 @@
       await get_runs()
     }
   }
-
-  let upload_dataset_dialog: UploadDatasetDialog | null = null
-
-  function showUploadDialog() {
-    upload_dataset_dialog?.show()
-  }
-
-  async function handleImportCompleted() {
-    upload_dataset_dialog?.close()
-    await get_runs()
-  }
 </script>
 
 <AppPage
@@ -497,8 +485,8 @@
   no_y_padding
   action_buttons={[
     {
-      label: "Upload File",
-      handler: () => showUploadDialog(),
+      label: "Add Data",
+      href: `/dataset/${project_id}/${task_id}/add_data`,
     },
   ]}
 >
@@ -861,8 +849,3 @@
     {/if}
   </div>
 </Dialog>
-
-<UploadDatasetDialog
-  bind:this={upload_dataset_dialog}
-  onImportCompleted={handleImportCompleted}
-/>
