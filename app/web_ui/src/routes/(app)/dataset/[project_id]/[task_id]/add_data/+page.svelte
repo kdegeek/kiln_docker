@@ -5,12 +5,19 @@
   import UploadDatasetDialog from "../../../[project_id]/[task_id]/upload_dataset_dialog.svelte"
   import Completed from "$lib/ui/completed.svelte"
   import { goto } from "$app/navigation"
+  import Splits from "$lib/ui/splits.svelte"
 
   const validReasons = ["generic", "eval", "fine_tune"] as const
   type Reason = (typeof validReasons)[number]
 
   let manual_dialog: Dialog | null = null
   let upload_dataset_dialog: UploadDatasetDialog | null = null
+  let splits: Record<string, number> = {}
+  let splits_subtitle: string | undefined = undefined
+  $: splitsArray = Object.entries(splits).map(([name, value]) => ({
+    name,
+    value,
+  }))
 
   $: dataset_link = `/dataset/${$page.params.project_id}/${$page.params.task_id}`
   $: reason = validReasons.includes(
@@ -27,41 +34,6 @@
         : "Setup Data for Fine-tuning"
   $: reason_name =
     reason === "generic" ? "dataset" : reason === "eval" ? "eval" : "fine tune"
-
-  $: splits = (() => {
-    const splitsParam = $page.url.searchParams.get("splits")
-    if (!splitsParam) return {}
-
-    try {
-      const splitMap: Record<string, number> = {}
-      const pairs = splitsParam.split(",")
-
-      for (const pair of pairs) {
-        const [name, value] = pair.split(":").map((s) => s.trim())
-        const numValue = parseFloat(value)
-        if (isNaN(numValue) || numValue < 0 || numValue > 1) {
-          throw new Error("Invalid split value")
-        }
-        splitMap[name] = numValue
-      }
-
-      // Validate that splits sum to 1
-      const total = Object.values(splitMap).reduce((sum, val) => sum + val, 0)
-      if (Math.abs(total - 1) > 0.001) {
-        throw new Error("Split values must sum to 1")
-      }
-
-      return splitMap
-    } catch (e) {
-      console.warn("Invalid splits parameter, using default", e)
-      return {}
-    }
-  })()
-
-  $: splitsArray = Object.entries(splits).map(([name, value]) => ({
-    name,
-    value,
-  }))
 
   $: data_source_descriptions = [
     {
@@ -105,15 +77,14 @@
   function select_data_source(id: string) {
     if (id === "manual") {
       manual_dialog?.show()
-      return
-    }
-    if (id === "csv") {
+    } else if (id === "csv") {
       upload_dataset_dialog?.show()
-      return
-    }
-    if (id === "run_task") {
+    } else if (id === "run_task") {
       goto("/run")
-      return
+    } else if (id === "synthetic") {
+      goto(
+        `/generate/${$page.params.project_id}/${$page.params.task_id}?splits=${$page.url.searchParams.get("splits")}`,
+      )
     }
   }
 
@@ -135,7 +106,8 @@
   }
 </script>
 
-<AppPage {title}>
+<AppPage {title} sub_subtitle={splits_subtitle}>
+  <Splits bind:splits bind:subtitle={splits_subtitle} />
   {#if completed}
     <Completed
       title="Data Added"
@@ -144,17 +116,7 @@
       button_text={completed_button_text || "View Dataset"}
     />
   {:else}
-    {#if splitsArray.length > 0}
-      <div class="font-light">
-        Data will be assigned to the following dataset tags:
-        {#each splitsArray as split}
-          <span class="badge badge-outline mx-1">
-            {split.name}: {Math.round(split.value * 100)}%
-          </span>
-        {/each}
-      </div>
-    {/if}
-    <div class="flex flex-col gap-6 pt-8 max-w-[500px]">
+    <div class="flex flex-col gap-6 pt-4 max-w-[500px]">
       <div class="text-xl font-bold pb-4 text-center">Select Data Source</div>
       {#each data_source_descriptions as data_source_description}
         <button
@@ -201,7 +163,7 @@
       isCancel: true,
     },
     {
-      label: "Open Dataset in New Tab",
+      label: "Open Dataset",
       isPrimary: true,
       action: () => {
         window.open(dataset_link, "_blank")
@@ -211,21 +173,18 @@
   ]}
 >
   <div class="font-light flex flex-col gap-4">
+    {#if splitsArray.length > 0}
+      {@const tag_list = splitsArray
+        .map((split) => `${Math.round(split.value * 100)}% ${split.name}`)
+        .join(", ")}
+      <div class="rounded-box bg-base-200 p-4 text-sm font-normal mt-4">
+        Be sure to assign the following tags in the requested proportions:
+        {tag_list}
+      </div>
+    {/if}
     <p>
       Follow these steps to manually tag existing data to be used for your {reason_name}.
     </p>
-    {#if splitsArray.length > 0}
-      <div role="alert" class="rounded-box bg-base-200 p-4">
-        Be sure to assign the following tags in the requested proportions:
-        {#each splitsArray as split}
-          <span class="mx-2">
-            <span class="badge badge-outline mx-2">
-              {split.name}: {Math.round(split.value * 100)}%
-            </span>
-          </span>
-        {/each}
-      </div>
-    {/if}
 
     <ol class="list-decimal list-inside flex flex-col gap-2 text-sm">
       <li class="ml-4">
