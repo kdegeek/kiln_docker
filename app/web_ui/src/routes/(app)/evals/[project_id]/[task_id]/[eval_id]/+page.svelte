@@ -185,10 +185,24 @@
             taskPrompts,
           ),
         tooltip: "The prompt used by your selected run method.",
+        link: prompt_link(
+          eval_progress.current_run_method.run_config_properties.prompt_id,
+        ),
       })
     }
 
     return properties
+  }
+
+  function prompt_link(prompt_id: string): string | undefined {
+    if (!project_id || !task_id || !prompt_id) {
+      return undefined
+    }
+    if (!prompt_id.includes("::")) {
+      // Currently the /saved/ endpoint only supports ID style prompts.
+      return undefined
+    }
+    return `/prompts/${project_id}/${task_id}/saved/${prompt_id}`
   }
 
   $: has_default_eval_config = evaluator && evaluator.current_config_id
