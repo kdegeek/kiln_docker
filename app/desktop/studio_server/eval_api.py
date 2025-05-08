@@ -182,16 +182,20 @@ class UpdateEvalRequest(BaseModel):
     description: str | None = None
 
 
-def dataset_ids_in_filter(task: Task, filter_id: DatasetFilterId) -> Set[ID_TYPE]:
+def dataset_ids_in_filter(
+    task: Task, filter_id: DatasetFilterId, readonly: bool
+) -> Set[ID_TYPE]:
     # Fetch all the dataset items IDs in a filter
     filter = dataset_filter_from_id(filter_id)
-    return {run.id for run in task.runs() if filter(run)}
+    return {run.id for run in task.runs(readonly=readonly) if filter(run)}
 
 
-def runs_in_filter(task: Task, filter_id: DatasetFilterId) -> list[TaskRun]:
+def runs_in_filter(
+    task: Task, filter_id: DatasetFilterId, readonly: bool
+) -> list[TaskRun]:
     # Fetch all the dataset items IDs in a filter
     filter = dataset_filter_from_id(filter_id)
-    return [run for run in task.runs() if filter(run)]
+    return [run for run in task.runs(readonly=readonly) if filter(run)]
 
 
 def build_score_key_to_task_requirement_id(task: Task) -> Dict[str, ID_TYPE]:
@@ -554,8 +558,12 @@ def connect_evals_api(app: FastAPI):
     ) -> EvalProgress:
         task = task_from_id(project_id, task_id)
         eval = eval_from_id(project_id, task_id, eval_id)
-        dataset_ids = dataset_ids_in_filter(task, eval.eval_set_filter_id)
-        golden_dataset_runs = runs_in_filter(task, eval.eval_configs_filter_id)
+        dataset_ids = dataset_ids_in_filter(
+            task, eval.eval_set_filter_id, readonly=True
+        )
+        golden_dataset_runs = runs_in_filter(
+            task, eval.eval_configs_filter_id, readonly=True
+        )
 
         # Count how many dataset items have human evals
         fully_rated_count, partially_rated_count, not_rated_count = count_human_evals(
@@ -608,7 +616,9 @@ def connect_evals_api(app: FastAPI):
         task_runs_configs = task.run_configs()
 
         # Build a set of all the dataset items IDs we expect to have scores for
-        expected_dataset_ids = dataset_ids_in_filter(task, eval.eval_set_filter_id)
+        expected_dataset_ids = dataset_ids_in_filter(
+            task, eval.eval_set_filter_id, readonly=True
+        )
         if len(expected_dataset_ids) == 0:
             raise HTTPException(
                 status_code=400,

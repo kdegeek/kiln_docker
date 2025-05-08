@@ -638,7 +638,9 @@ async def test_get_eval_config_score_summary(
             "project1", "task1", "eval1", "eval_config1"
         )
         mock_eval_config_for_score_summary.runs.assert_called_once_with(readonly=True)
-        mock_dataset_ids_in_filter.assert_called_once_with(mock_task, "tag::eval_set")
+        mock_dataset_ids_in_filter.assert_called_once_with(
+            mock_task, "tag::eval_set", readonly=True
+        )
 
 
 @pytest.mark.asyncio
@@ -1141,7 +1143,7 @@ def test_runs_in_filter():
         # Call the function under test
         from app.desktop.studio_server.eval_api import runs_in_filter
 
-        result = runs_in_filter(mock_task, "tag::some_filter")
+        result = runs_in_filter(mock_task, "tag::some_filter", readonly=True)
 
         # Verify the results
         assert len(result) == 2
@@ -1288,10 +1290,10 @@ async def test_get_eval_progress(client, mock_task_from_id, mock_task, mock_eval
         # Verify the function calls
         mock_eval_from_id.assert_called_once_with("project1", "task1", "eval1")
         mock_dataset_ids_in_filter.assert_called_once_with(
-            mock_task, mock_eval.eval_set_filter_id
+            mock_task, mock_eval.eval_set_filter_id, readonly=True
         )
         mock_runs_in_filter.assert_called_once_with(
-            mock_task, mock_eval.eval_configs_filter_id
+            mock_task, mock_eval.eval_configs_filter_id, readonly=True
         )
         mock_build_score_key.assert_called_once_with(mock_task)
         mock_count_human_evals.assert_called_once_with(
