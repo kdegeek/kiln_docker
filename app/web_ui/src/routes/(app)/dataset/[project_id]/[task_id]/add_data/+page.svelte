@@ -30,8 +30,8 @@
     reason === "generic"
       ? "Add Samples to your Dataset"
       : reason === "eval"
-        ? "Setup Data for your Eval"
-        : "Setup Data for Fine-tuning"
+        ? "Add Data for your Eval"
+        : "Add Data for Fine-tuning"
   $: reason_name =
     reason === "generic" ? "dataset" : reason === "eval" ? "eval" : "fine tune"
 
@@ -39,14 +39,14 @@
     {
       id: "synthetic",
       name: "Synthetic Data",
-      description: `Generate synthetic data for your ${reason_name} using our interactive tool.`,
+      description: `Generate synthetic data using our interactive tool.`,
       recommended: true,
       highlight_title: null,
     },
     {
       id: "csv",
       name: "Upload CSV",
-      description: `Upload a CSV file to add data to your ${reason_name}.`,
+      description: `Add data by uploading a CSV file.`,
       recommended: false,
       highlight_title: null,
     },
@@ -55,7 +55,7 @@
           {
             id: "run_task",
             name: "Manually Run Task",
-            description: `Run your task. Each run will be saved to your ${reason_name}.`,
+            description: `Each run will be saved to your ${reason_name}.`,
             recommended: false,
             highlight_title: null,
           },
@@ -66,7 +66,7 @@
           {
             id: "manual",
             name: "Manually Tag Existing Data",
-            description: `Tag data which is already in your dataset to be used for your ${reason_name}.`,
+            description: `Tag existing data for use in your ${reason_name}.`,
             recommended: false,
             highlight_title: null,
           },
@@ -117,7 +117,6 @@
     />
   {:else}
     <div class="flex flex-col gap-6 pt-4 max-w-[500px]">
-      <div class="text-xl font-bold pb-4 text-center">Select Data Source</div>
       {#each data_source_descriptions as data_source_description}
         <button
           class="cursor-pointer text-left"
@@ -143,7 +142,7 @@
               <div class="font-medium">
                 {data_source_description.name}
               </div>
-              <div class="font-light pt-2">
+              <div class="font-light pt-1">
                 {data_source_description.description}
               </div>
             </div>

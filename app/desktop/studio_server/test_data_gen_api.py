@@ -222,7 +222,7 @@ def test_save_sample_success_with_mock_invoke(
     # Act
 
     response = client.post(
-        "/api/projects/proj-ID/tasks/task-ID/save_sample",
+        "/api/projects/proj-ID/tasks/task-ID/save_sample?session_id=1234",
         json=input_data.model_dump(),
     )
 
@@ -250,6 +250,8 @@ def test_save_sample_success_with_mock_invoke(
     assert saved_run.output == mock_task_run.output
     assert saved_run.output.source.type == DataSourceType.synthetic
     assert "test_tag" in saved_run.tags
+    assert "synthetic" in saved_run.tags
+    assert "synthetic_session_1234" in saved_run.tags
 
     assert saved_run.output.source.properties == mock_task_run.input_source.properties
 
