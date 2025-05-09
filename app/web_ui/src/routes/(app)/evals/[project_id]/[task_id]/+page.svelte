@@ -24,13 +24,17 @@
   let evals_loading = true
 
   $: is_empty = !evals || evals.length == 0
-  $: sorted_evals = (evals?.sort((a, b) => {
-    // First sort by favorite status
-    const favDiff = Number(b.favourite) - Number(a.favourite)
-    if (favDiff !== 0) return favDiff
-    // If favorite status is the same, sort by ID
-    return (a.id || "").localeCompare(b.id || "")
-  }) || []) as Eval[]
+  $: sorted_evals = (
+    evals
+      ? [...evals].sort((a, b) => {
+          // First sort by favorite status
+          const favDiff = Number(b.favourite) - Number(a.favourite)
+          if (favDiff !== 0) return favDiff
+          // If favorite status is the same, sort by ID
+          return (a.id || "").localeCompare(b.id || "")
+        })
+      : []
+  ) as Eval[]
 
   onMount(async () => {
     // Wait for params to load
