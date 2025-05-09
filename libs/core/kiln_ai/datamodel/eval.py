@@ -276,6 +276,10 @@ class Eval(KilnParentedModel, KilnParentModel, parent_of={"configs": EvalConfig}
     output_scores: List[EvalOutputScore] = Field(
         description="The scores this evaluator should produce."
     )
+    favourite: bool = Field(
+        default=False,
+        description="Whether this eval is a favourite of the user. Rendered as a star icon in the UI.",
+    )
 
     # Workaround to return typed parent without importing Task
     def parent_task(self) -> Union["Task", None]:

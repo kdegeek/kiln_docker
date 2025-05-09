@@ -747,6 +747,23 @@ export interface paths {
         patch: operations["update_eval_api_projects__project_id__tasks__task_id__eval__eval_id__patch"];
         trace?: never;
     };
+    "/api/projects/{project_id}/tasks/{task_id}/eval/{eval_id}/fav": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Eval Favourite */
+        patch: operations["update_eval_favourite_api_projects__project_id__tasks__task_id__eval__eval_id__fav_patch"];
+        trace?: never;
+    };
     "/api/projects/{project_id}/tasks/{task_id}/evals": {
         parameters: {
             query?: never;
@@ -1281,6 +1298,11 @@ export interface components {
              * @description Optional human guidance for generation
              */
             human_guidance?: string | null;
+            /**
+             * Tags
+             * @description Tags to add to the sample
+             */
+            tags?: string[] | null;
         };
         /**
          * DataSource
@@ -1448,6 +1470,12 @@ export interface components {
              * @description The scores this evaluator should produce.
              */
             output_scores: components["schemas"]["EvalOutputScore"][];
+            /**
+             * Favourite
+             * @description Whether this eval is a favourite of the user. Rendered as a star icon in the UI.
+             * @default false
+             */
+            favourite: boolean;
             /** Model Type */
             readonly model_type: string;
         };
@@ -4459,6 +4487,41 @@ export interface operations {
                 "application/json": components["schemas"]["UpdateEvalRequest"];
             };
         };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Eval"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_eval_favourite_api_projects__project_id__tasks__task_id__eval__eval_id__fav_patch: {
+        parameters: {
+            query: {
+                fav: boolean;
+            };
+            header?: never;
+            path: {
+                project_id: string;
+                task_id: string;
+                eval_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {

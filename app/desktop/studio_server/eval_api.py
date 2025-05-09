@@ -302,6 +302,15 @@ def connect_evals_api(app: FastAPI):
         eval.save_to_file()
         return eval
 
+    @app.patch("/api/projects/{project_id}/tasks/{task_id}/eval/{eval_id}/fav")
+    async def update_eval_favourite(
+        project_id: str, task_id: str, eval_id: str, fav: bool
+    ) -> Eval:
+        eval = eval_from_id(project_id, task_id, eval_id)
+        eval.favourite = fav
+        eval.save_to_file()
+        return eval
+
     @app.delete("/api/projects/{project_id}/tasks/{task_id}/eval/{eval_id}")
     async def delete_eval(project_id: str, task_id: str, eval_id: str) -> None:
         eval = eval_from_id(project_id, task_id, eval_id)

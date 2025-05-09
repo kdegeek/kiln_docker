@@ -24,6 +24,13 @@
   let evals_loading = true
 
   $: is_empty = !evals || evals.length == 0
+  $: sorted_evals = (evals?.sort((a, b) => {
+    // First sort by favorite status
+    const favDiff = Number(b.favourite) - Number(a.favourite)
+    if (favDiff !== 0) return favDiff
+    // If favorite status is the same, sort by ID
+    return (a.id || "").localeCompare(b.id || "")
+  }) || []) as Eval[]
 
   onMount(async () => {
     // Wait for params to load
@@ -91,6 +98,28 @@
 
   $: loading = evals_loading || run_configs_loading
   $: error = evals_error || run_configs_error
+
+  async function toggle_eval_favourite(evaluator: Eval) {
+    if (!evaluator.id) {
+      throw new Error("Eval ID is required")
+    }
+    evaluator.favourite = !evaluator.favourite
+    const { data, error } = await client.PATCH(
+      "/api/projects/{project_id}/tasks/{task_id}/eval/{eval_id}/fav",
+      {
+        params: {
+          path: { project_id, task_id, eval_id: evaluator.id },
+          query: { fav: evaluator.favourite },
+        },
+      },
+    )
+    if (error) {
+      throw error
+    }
+    evaluator.favourite = data.favourite
+    // Trigger reactivity
+    evals = evals
+  }
 </script>
 
 <AppPage
@@ -130,13 +159,14 @@
       <table class="table">
         <thead>
           <tr>
+            <th></th>
             <th>Eval Name</th>
             <th>Description</th>
             <th>Selected Run Method</th>
           </tr>
         </thead>
         <tbody>
-          {#each evals as evaluator}
+          {#each sorted_evals as evaluator}
             {@const run_config = run_configs?.find(
               (run_config) => run_config.id === evaluator.current_run_config_id,
             )}
@@ -159,20 +189,31 @@
                 goto(`/evals/${project_id}/${task_id}/${evaluator.id}`)
               }}
             >
+              <td class="pr-0">
+                <button
+                  class="mask mask-star-2 h-5 w-5 p-2 {evaluator.favourite
+                    ? 'bg-secondary'
+                    : 'bg-gray-300'}"
+                  on:click={(event) => {
+                    event.stopPropagation()
+                    toggle_eval_favourite(evaluator)
+                  }}
+                ></button>
+              </td>
               <td> {evaluator.name} </td>
               <td> {evaluator.description} </td>
               <td>
                 {#if run_config}
-                  <div class="grid grid-cols-[auto_1fr] gap-2 gap-x-4">
+                  <div class="grid grid-cols-[auto_1fr] gap-y-1 gap-x-4">
                     <div>Model:</div>
-                    <div>
+                    <div class="text-gray-500">
                       {model_name(
                         run_config.run_config_properties.model_name,
                         $model_info,
                       )}
                     </div>
                     <div>Prompt:</div>
-                    <div>
+                    <div class="text-gray-500">
                       {#if prompt_href}
                         <a href={prompt_href} class="link">{prompt_name}</a>
                       {:else}
@@ -181,7 +222,7 @@
                     </div>
                   </div>
                 {:else}
-                  None
+                  <div class="text-gray-500">N/A</div>
                 {/if}
               </td>
             </tr>
