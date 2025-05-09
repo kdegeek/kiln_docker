@@ -204,7 +204,9 @@
               <td> {evaluator.description} </td>
               <td>
                 {#if run_config}
-                  <div class="grid grid-cols-[auto_1fr] gap-y-1 gap-x-4">
+                  <div
+                    class="grid grid-cols-[auto_1fr] gap-y-1 gap-x-4 lg:min-w-[260px]"
+                  >
                     <div>Model:</div>
                     <div class="text-gray-500">
                       {model_name(
