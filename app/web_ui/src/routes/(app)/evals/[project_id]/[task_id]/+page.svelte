@@ -96,29 +96,35 @@
     }
   }
 
+  let toggle_eval_favourite_error: KilnError | null = null
+
   $: loading = evals_loading || run_configs_loading
-  $: error = evals_error || run_configs_error
+  $: error = evals_error || run_configs_error || toggle_eval_favourite_error
 
   async function toggle_eval_favourite(evaluator: Eval) {
-    if (!evaluator.id) {
-      throw new Error("Eval ID is required")
-    }
-    evaluator.favourite = !evaluator.favourite
-    const { data, error } = await client.PATCH(
-      "/api/projects/{project_id}/tasks/{task_id}/eval/{eval_id}/fav",
-      {
-        params: {
-          path: { project_id, task_id, eval_id: evaluator.id },
+    try {
+      if (!evaluator.id) {
+        throw new Error("Eval ID is required")
+      }
+      const new_fav_state = !evaluator.favourite
+      const { data, error } = await client.PATCH(
+        "/api/projects/{project_id}/tasks/{task_id}/eval/{eval_id}/fav",
+        {
+          params: {
+            path: { project_id, task_id, eval_id: evaluator.id },
+          },
+          body: { favourite: new_fav_state },
         },
-        body: { favourite: evaluator.favourite },
-      },
-    )
-    if (error) {
-      throw error
+      )
+      if (error) {
+        throw error
+      }
+      evaluator.favourite = data.favourite
+      // Trigger reactivity
+      evals = evals
+    } catch (error) {
+      toggle_eval_favourite_error = createKilnError(error)
     }
-    evaluator.favourite = data.favourite
-    // Trigger reactivity
-    evals = evals
   }
 </script>
 
@@ -149,7 +155,7 @@
     <div
       class="w-full min-h-[50vh] flex flex-col justify-center items-center gap-2"
     >
-      <div class="font-medium">Error Loading Evaluators</div>
+      <div class="font-medium">Error</div>
       <div class="text-error text-sm">
         {error.getMessage() || "An unknown error occurred"}
       </div>
