@@ -1447,7 +1447,7 @@ async def test_set_default_run_config_none(
     with patch("app.desktop.studio_server.eval_api.eval_from_id") as mock_eval_from_id:
         mock_eval_from_id.return_value = mock_eval
         response = client.post(
-            "/api/projects/project1/tasks/task1/eval/eval1/set_current_run_config/none"
+            "/api/projects/project1/tasks/task1/eval/eval1/set_current_run_config/None"
         )
         assert response.status_code == 200
         updated_eval = response.json()

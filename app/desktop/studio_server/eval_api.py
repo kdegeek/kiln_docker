@@ -495,7 +495,7 @@ def connect_evals_api(app: FastAPI):
         task = task_from_id(project_id, task_id)
 
         # Confirm the run config exists, unless the user is clearing the default run config
-        if run_config_id == "none":
+        if run_config_id == "None":
             run_config_id = None
         else:
             run_config = next(
