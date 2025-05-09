@@ -109,8 +109,8 @@
       {
         params: {
           path: { project_id, task_id, eval_id: evaluator.id },
-          query: { fav: evaluator.favourite },
         },
+        body: { favourite: evaluator.favourite },
       },
     )
     if (error) {

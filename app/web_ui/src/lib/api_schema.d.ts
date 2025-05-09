@@ -2693,6 +2693,11 @@ export interface components {
             /** Description */
             description?: string | null;
         };
+        /** UpdateFavouriteRequest */
+        UpdateFavouriteRequest: {
+            /** Favourite */
+            favourite: boolean;
+        };
         /**
          * UpdateFinetuneRequest
          * @description Request to update a finetune
@@ -4510,9 +4515,7 @@ export interface operations {
     };
     update_eval_favourite_api_projects__project_id__tasks__task_id__eval__eval_id__fav_patch: {
         parameters: {
-            query: {
-                fav: boolean;
-            };
+            query?: never;
             header?: never;
             path: {
                 project_id: string;
@@ -4521,7 +4524,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateFavouriteRequest"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {

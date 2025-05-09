@@ -140,6 +140,10 @@ class EvalRunResult(BaseModel):
     run_config: TaskRunConfig
 
 
+class UpdateFavouriteRequest(BaseModel):
+    favourite: bool
+
+
 class EvalProgress(BaseModel):
     # The total size of the dataset used for the eval
     dataset_size: int
@@ -304,10 +308,10 @@ def connect_evals_api(app: FastAPI):
 
     @app.patch("/api/projects/{project_id}/tasks/{task_id}/eval/{eval_id}/fav")
     async def update_eval_favourite(
-        project_id: str, task_id: str, eval_id: str, fav: bool
+        project_id: str, task_id: str, eval_id: str, request: UpdateFavouriteRequest
     ) -> Eval:
         eval = eval_from_id(project_id, task_id, eval_id)
-        eval.favourite = fav
+        eval.favourite = request.favourite
         eval.save_to_file()
         return eval
 
