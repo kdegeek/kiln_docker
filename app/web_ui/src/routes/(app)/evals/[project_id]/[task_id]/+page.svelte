@@ -191,9 +191,9 @@
             >
               <td class="pr-0">
                 <button
-                  class="mask mask-star-2 h-5 w-5 p-2 {evaluator.favourite
-                    ? 'bg-secondary'
-                    : 'bg-gray-300'}"
+                  class="mask mask-star-2 h-5 w-5 pt-1 {evaluator.favourite
+                    ? 'bg-amber-300 hover:bg-amber-400'
+                    : 'bg-gray-300 hover:bg-gray-400'}"
                   on:click={(event) => {
                     event.stopPropagation()
                     toggle_eval_favourite(evaluator)
