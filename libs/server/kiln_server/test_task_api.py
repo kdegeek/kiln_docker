@@ -401,12 +401,24 @@ def test_get_rating_options_with_evals(client, project_and_task):
 
     eval_mock.output_scores = [score1, score2]
 
+    # Create secong mock eval with duplicate output scores
+    eval_mock_2 = MagicMock()
+    eval_mock_2.eval_configs_filter_id = "tag::golden_set"
+
+    # Create score mocks with proper name attributes
+    score3 = MagicMock()
+    score3.name = "Score 1"
+    score3.instruction = "Score 1 instruction"
+    score3.type = "five_star"
+
+    eval_mock_2.output_scores = [score3]
+
     with (
         patch("kiln_server.task_api.project_from_id") as mock_project_from_id,
         patch("kiln_ai.datamodel.Task.evals") as mock_evals,
     ):
         mock_project_from_id.return_value = project
-        mock_evals.return_value = [eval_mock]
+        mock_evals.return_value = [eval_mock, eval_mock_2]
 
         response = client.get(
             f"/api/projects/{project.id}/tasks/{task.id}/rating_options"
@@ -418,6 +430,7 @@ def test_get_rating_options_with_evals(client, project_and_task):
     option = res["options"][0]
     assert option["requirement"]["name"] == "Score 1"
     assert option["show_for_all"] is False
+    # Note: we're checking it's not added twice with the dupe
     assert option["show_for_tags"] == ["golden_set"]
 
 

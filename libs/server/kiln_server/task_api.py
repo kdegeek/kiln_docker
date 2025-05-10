@@ -144,8 +144,18 @@ def connect_task_api(app: FastAPI):
                     None,
                 )
                 if existing_req:
-                    # Add the golden set tag to the existing requirement instead of creating a new one
-                    existing_req.show_for_tags.append(golden_set_tag)
+                    # warn for type mismatch
+                    if existing_req.requirement.type != output_score.type:
+                        logger.warning(
+                            "The rating option for '%s' has conflicting types: '%s' and '%s'. You shouldn't use the same name for goals of different rating types.",
+                            output_score.name,
+                            output_score.type,
+                            existing_req.requirement.type,
+                        )
+
+                    if golden_set_tag not in existing_req.show_for_tags:
+                        # Add the golden set tag to the existing requirement instead of creating a new one (unless that tag is already there)
+                        existing_req.show_for_tags.append(golden_set_tag)
                     continue
 
                 # Map eval requirements to task requirements
