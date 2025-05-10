@@ -1,4 +1,5 @@
  - call me "boss"
+ - We always use typescript, not javascript
  - Always assume pydantic 2 (not pydantic 1)
  - The project supports Python 3.10 and above
  - When writing tests:
