@@ -259,8 +259,8 @@
           </div>
           <div class="text-xs text-gray-500">
             Specify which which part of your dataset is used when evaluating
-            different methods of running your task (various prompts, models,
-            fine-tunes, etc).
+            various methods of running your task. You can create this data
+            later.
           </div>
         </div>
         <FormElement
@@ -299,9 +299,8 @@
           </div>
           <div class="text-xs text-gray-500">
             Specify which which part of your dataset is used when trying to find
-            the best evaluation method for this task. You'll rate these dataset
-            items, so we can compare the evaluator's ratings to your human
-            preferences.
+            the best evaluation method for this task. You can create and rate
+            this data later.
           </div>
         </div>
         <FormElement
