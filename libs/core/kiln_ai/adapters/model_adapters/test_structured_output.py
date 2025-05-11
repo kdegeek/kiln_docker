@@ -12,6 +12,7 @@ from kiln_ai.adapters.ml_model_list import (
 from kiln_ai.adapters.model_adapters.base_adapter import (
     BaseAdapter,
     RunOutput,
+    Usage,
 )
 from kiln_ai.adapters.ollama_tools import ollama_online
 from kiln_ai.adapters.test_prompt_adaptors import get_all_models_and_providers
@@ -54,8 +55,8 @@ class MockAdapter(BaseAdapter):
         )
         self.response = response
 
-    async def _run(self, input: str) -> RunOutput:
-        return RunOutput(output=self.response, intermediate_outputs=None)
+    async def _run(self, input: str) -> tuple[RunOutput, Usage | None]:
+        return RunOutput(output=self.response, intermediate_outputs=None), None
 
     def adapter_name(self) -> str:
         return "mock_adapter"
