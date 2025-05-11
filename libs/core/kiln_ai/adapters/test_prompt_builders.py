@@ -3,7 +3,7 @@ import logging
 
 import pytest
 
-from kiln_ai.adapters.model_adapters.base_adapter import BaseAdapter
+from kiln_ai.adapters.model_adapters.base_adapter import BaseAdapter, RunOutput
 from kiln_ai.adapters.model_adapters.test_structured_output import (
     build_structured_output_test_task,
 )
@@ -33,6 +33,7 @@ from kiln_ai.datamodel import (
     TaskOutput,
     TaskOutputRating,
     TaskRun,
+    Usage,
 )
 from kiln_ai.datamodel.task import RunConfigProperties, TaskRunConfig
 
@@ -59,8 +60,8 @@ def test_simple_prompt_builder(tmp_path):
 
 
 class MockAdapter(BaseAdapter):
-    def _run(self, input: str) -> str:
-        return "mock response"
+    async def _run(self, input: str) -> tuple[RunOutput, Usage | None]:
+        return RunOutput(output="mock response", intermediate_outputs=None), None
 
     def adapter_name(self) -> str:
         return "mock_adapter"

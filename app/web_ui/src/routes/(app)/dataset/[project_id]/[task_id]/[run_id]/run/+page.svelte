@@ -62,6 +62,8 @@
         "Model Provider": run?.output?.source?.properties?.model_provider,
         Prompt:
           prompt_id && prompt_name_from_id(prompt_id, $current_task_prompts),
+        Cost: run?.usage?.cost ? `$${run?.usage?.cost.toFixed(6)}` : undefined,
+        Tokens: run?.usage?.total_tokens ? run?.usage?.total_tokens : undefined,
         "Created By": run?.input_source?.properties?.created_by,
         "Created At": formatDate(run?.created_at),
         Topic: topic_path,

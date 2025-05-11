@@ -1,7 +1,9 @@
+import logging
 from typing import Any, Dict
 
 import litellm
 from litellm.types.utils import ChoiceLogprobs, Choices, ModelResponse
+from litellm.types.utils import Usage as LiteLlmUsage
 
 import kiln_ai.datamodel as datamodel
 from kiln_ai.adapters.ml_model_list import (
@@ -14,11 +16,14 @@ from kiln_ai.adapters.model_adapters.base_adapter import (
     AdapterConfig,
     BaseAdapter,
     RunOutput,
+    Usage,
 )
 from kiln_ai.adapters.model_adapters.litellm_config import LiteLlmConfig
 from kiln_ai.datamodel import PromptGenerators, PromptId
 from kiln_ai.datamodel.task import RunConfig
 from kiln_ai.utils.exhaustive_error import raise_exhaustive_enum_error
+
+logger = logging.getLogger(__name__)
 
 
 class LiteLlmAdapter(BaseAdapter):
@@ -47,7 +52,7 @@ class LiteLlmAdapter(BaseAdapter):
             config=base_adapter_config,
         )
 
-    async def _run(self, input: Dict | str) -> RunOutput:
+    async def _run(self, input: Dict | str) -> tuple[RunOutput, Usage | None]:
         provider = self.model_provider()
         if not provider.model_id:
             raise ValueError("Model ID is required for OpenAI compatible models")
@@ -167,7 +172,7 @@ class LiteLlmAdapter(BaseAdapter):
             output=response_content,
             intermediate_outputs=intermediate_outputs,
             output_logprobs=logprobs,
-        )
+        ), self.usage_from_response(response)
 
     def adapter_name(self) -> str:
         return "kiln_openai_compatible_adapter"
@@ -392,3 +397,29 @@ class LiteLlmAdapter(BaseAdapter):
             completion_kwargs["top_logprobs"] = top_logprobs
 
         return completion_kwargs
+
+    def usage_from_response(self, response: ModelResponse) -> Usage | None:
+        litellm_usage = response.get("usage", None)
+        cost = response._hidden_params.get("response_cost", None)
+        if not litellm_usage and not cost:
+            return None
+
+        usage = Usage()
+
+        if litellm_usage and isinstance(litellm_usage, LiteLlmUsage):
+            usage.input_tokens = litellm_usage.get("prompt_tokens", None)
+            usage.output_tokens = litellm_usage.get("completion_tokens", None)
+            usage.total_tokens = litellm_usage.get("total_tokens", None)
+        else:
+            logger.warning(
+                f"Unexpected usage format from litellm: {litellm_usage}. Expected Usage object, got {type(litellm_usage)}"
+            )
+
+        if isinstance(cost, float):
+            usage.cost = cost
+        else:
+            logger.warning(
+                f"Unexpected cost format from litellm: {cost}. Expected float, got {type(cost)}"
+            )
+
+        return usage

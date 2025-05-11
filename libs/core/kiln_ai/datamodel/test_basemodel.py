@@ -483,7 +483,7 @@ class MockAdapter(BaseAdapter):
     """Implementation of BaseAdapter for testing"""
 
     async def _run(self, input):
-        return RunOutput(output="test output", intermediate_outputs=None)
+        return RunOutput(output="test output", intermediate_outputs=None), None
 
     def adapter_name(self) -> str:
         return "test"

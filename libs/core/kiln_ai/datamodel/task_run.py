@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Dict, List, Union
 
 import jsonschema
 import jsonschema.exceptions
-from pydantic import Field, ValidationInfo, model_validator
+from pydantic import BaseModel, Field, ValidationInfo, model_validator
 from typing_extensions import Self
 
 from kiln_ai.datamodel.basemodel import KilnParentedModel
@@ -13,6 +13,29 @@ from kiln_ai.datamodel.task_output import DataSource, TaskOutput
 
 if TYPE_CHECKING:
     from kiln_ai.datamodel.task import Task
+
+
+class Usage(BaseModel):
+    input_tokens: int | None = Field(
+        default=None,
+        description="The number of input tokens used in the task run.",
+        ge=0,
+    )
+    output_tokens: int | None = Field(
+        default=None,
+        description="The number of output tokens used in the task run.",
+        ge=0,
+    )
+    total_tokens: int | None = Field(
+        default=None,
+        description="The total number of tokens used in the task run.",
+        ge=0,
+    )
+    cost: float | None = Field(
+        default=None,
+        description="The cost of the task run in US dollars, saved at runtime (prices can change over time).",
+        ge=0,
+    )
 
 
 class TaskRun(KilnParentedModel):
@@ -46,6 +69,10 @@ class TaskRun(KilnParentedModel):
     tags: List[str] = Field(
         default=[],
         description="Tags for the task run. Tags are used to categorize task runs for filtering and reporting.",
+    )
+    usage: Usage | None = Field(
+        default=None,
+        description="Usage information for the task run. This includes the number of input tokens, output tokens, and total tokens used.",
     )
 
     def has_thinking_training_data(self) -> bool:
