@@ -31,3 +31,6 @@ export type EvalRunResult = components["schemas"]["EvalRunResult"]
 export type EvalConfigCompareSummary =
   components["schemas"]["EvalConfigCompareSummary"]
 export type EvalRun = components["schemas"]["EvalRun"]
+export type EvalProgress = components["schemas"]["EvalProgress"]
+export type RatingOption = components["schemas"]["RatingOption"]
+export type RatingOptionResponse = components["schemas"]["RatingOptionResponse"]

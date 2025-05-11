@@ -349,7 +349,7 @@
     {/if}
 
     <div class="text-sm font-medium text-left pt-6 flex flex-col gap-1">
-      <div class="text-xl font-bold" id="requirements_part">
+      <div class="text-xl font-bold">
         Part {show_requirements ? "3" : "2"}: Input Schema
       </div>
       <div class="text-xs text-gray-500">
@@ -388,7 +388,7 @@
     </div>
 
     <div class="text-sm font-medium text-left pt-6 flex flex-col gap-1">
-      <div class="text-xl font-bold" id="requirements_part">
+      <div class="text-xl font-bold">
         Part {show_requirements ? "4" : "3"}: Output Schema
       </div>
       <div class="text-xs text-gray-500">
