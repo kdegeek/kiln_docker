@@ -1885,14 +1885,8 @@ export interface components {
             name: string;
             /** Id */
             id: string;
-            /**
-             * Data Strategies Supported
-             * @default [
-             *       "final_only",
-             *       "final_and_intermediate"
-             *     ]
-             */
-            data_strategies_supported: components["schemas"]["FinetuneDataStrategy"][];
+            /** Data Strategies Supported */
+            data_strategies_supported?: components["schemas"]["FinetuneDataStrategy"][];
         };
         /**
          * FinetuneWithStatus
@@ -2491,7 +2485,7 @@ export interface components {
             value?: number | null;
             /**
              * Requirement Ratings
-             * @description The ratings of the requirements of the task.
+             * @description The ratings of the requirements of the task. The ID can be either a task_requirement_id or a named rating for an eval_output_score name (in format 'named::<name>').
              * @default {}
              */
             requirement_ratings: {
@@ -2536,7 +2530,7 @@ export interface components {
             value?: number | null;
             /**
              * Requirement Ratings
-             * @description The ratings of the requirements of the task.
+             * @description The ratings of the requirements of the task. The ID can be either a task_requirement_id or a named rating for an eval_output_score name (in format 'named::<name>').
              * @default {}
              */
             requirement_ratings: {
@@ -2629,6 +2623,8 @@ export interface components {
              * @default []
              */
             tags: string[];
+            /** @description Usage information for the task run. This includes the number of input tokens, output tokens, and total tokens used. */
+            usage?: components["schemas"]["Usage"] | null;
         };
         /**
          * TaskRun
@@ -2683,6 +2679,8 @@ export interface components {
              * @default []
              */
             tags: string[];
+            /** @description Usage information for the task run. This includes the number of input tokens, output tokens, and total tokens used. */
+            usage?: components["schemas"]["Usage"] | null;
             /** Model Type */
             readonly model_type: string;
         };
@@ -2749,6 +2747,29 @@ export interface components {
             name: string;
             /** Description */
             description?: string | null;
+        };
+        /** Usage */
+        Usage: {
+            /**
+             * Input Tokens
+             * @description The number of input tokens used in the task run.
+             */
+            input_tokens?: number | null;
+            /**
+             * Output Tokens
+             * @description The number of output tokens used in the task run.
+             */
+            output_tokens?: number | null;
+            /**
+             * Total Tokens
+             * @description The total number of tokens used in the task run.
+             */
+            total_tokens?: number | null;
+            /**
+             * Cost
+             * @description The cost of the task run in US dollars, saved at runtime (prices can change over time).
+             */
+            cost?: number | null;
         };
         /** ValidationError */
         ValidationError: {

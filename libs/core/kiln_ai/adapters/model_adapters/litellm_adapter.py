@@ -3,6 +3,7 @@ from typing import Any, Dict
 
 import litellm
 from litellm.types.utils import ChoiceLogprobs, Choices, ModelResponse
+from litellm.types.utils import Usage as LiteLlmUsage
 
 import kiln_ai.datamodel as datamodel
 from kiln_ai.adapters.ml_model_list import (
@@ -405,7 +406,7 @@ class LiteLlmAdapter(BaseAdapter):
 
         usage = Usage()
 
-        if isinstance(litellm_usage, litellm.types.utils.Usage):
+        if litellm_usage and isinstance(litellm_usage, LiteLlmUsage):
             usage.input_tokens = litellm_usage.get("prompt_tokens", None)
             usage.output_tokens = litellm_usage.get("completion_tokens", None)
             usage.total_tokens = litellm_usage.get("total_tokens", None)
