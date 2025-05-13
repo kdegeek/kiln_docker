@@ -7,6 +7,7 @@
   import { KilnError, createKilnError } from "$lib/utils/error_handlers"
   import { client, base_url } from "$lib/api_client"
   import Warning from "$lib/ui/warning.svelte"
+  import { available_tuning_models } from "$lib/stores/fine_tune_store"
 
   type Provider = {
     name: string
@@ -341,6 +342,9 @@
       }
 
       status[provider.id].connected = false
+
+      // Clear the available models list
+      available_tuning_models.set(null)
     } catch (e) {
       console.error("disconnect_provider error", e)
       alert("Failed to disconnect provider. Unknown error.")
@@ -497,6 +501,9 @@
       api_key_message = null
       status[provider_id].connected = true
       api_key_provider = null
+
+      // Clear the available models list
+      available_tuning_models.set(null)
     } catch (e) {
       console.error("submit_api_key error", e)
       api_key_message = "Failed to connect to provider (Exception: " + e + ")"

@@ -75,16 +75,21 @@ class TaskRun(KilnParentedModel):
         description="Usage information for the task run. This includes the number of input tokens, output tokens, and total tokens used.",
     )
 
+    def thinking_training_data(self) -> str | None:
+        """
+        Get the thinking training data from the task run.
+        """
+        if self.intermediate_outputs is None:
+            return None
+        return self.intermediate_outputs.get(
+            "reasoning"
+        ) or self.intermediate_outputs.get("chain_of_thought")
+
     def has_thinking_training_data(self) -> bool:
         """
         Does this run have thinking data that we can use to train a thinking model?
         """
-        if self.intermediate_outputs is None:
-            return False
-        return (
-            "chain_of_thought" in self.intermediate_outputs
-            or "reasoning" in self.intermediate_outputs
-        )
+        return self.thinking_training_data() is not None
 
     # Workaround to return typed parent without importing Task
     def parent_task(self) -> Union["Task", None]:

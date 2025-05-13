@@ -11,6 +11,7 @@ import type {
 } from "./types"
 import { client } from "./api_client"
 import { createKilnError } from "$lib/utils/error_handlers"
+import type { Writable } from "svelte/store"
 
 export type AllProjects = {
   projects: Project[]
@@ -38,6 +39,10 @@ export const projects = writable<AllProjects | null>(null)
 export const current_project = writable<Project | null>(null)
 export const current_task = writable<Task | null>(null)
 export const current_task_prompts = writable<PromptResponse | null>(null)
+
+// UI Stores we want persisted across page loads
+export const fine_tune_target_model: Writable<string | null> =
+  localStorageStore("fine_tune_target_model", null)
 
 // Rating options for the current task
 export const current_task_rating_options =

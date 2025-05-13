@@ -6,6 +6,7 @@
   import Completed from "$lib/ui/completed.svelte"
   import { goto } from "$app/navigation"
   import Splits from "$lib/ui/splits.svelte"
+  import OptionList from "$lib/ui/option_list.svelte"
 
   const validReasons = ["generic", "eval", "fine_tune"] as const
   type Reason = (typeof validReasons)[number]
@@ -41,14 +42,11 @@
       name: "Synthetic Data",
       description: `Generate synthetic data using our interactive tool.`,
       recommended: true,
-      highlight_title: null,
     },
     {
       id: "csv",
       name: "Upload CSV",
       description: `Add data by uploading a CSV file.`,
-      recommended: false,
-      highlight_title: null,
     },
     ...(reason === "generic" && splitsArray.length === 0
       ? [
@@ -56,8 +54,6 @@
             id: "run_task",
             name: "Manually Run Task",
             description: `Each run will be saved to your ${reason_name}.`,
-            recommended: false,
-            highlight_title: null,
           },
         ]
       : []),
@@ -67,8 +63,6 @@
             id: "manual",
             name: "Manually Tag Existing Data",
             description: `Tag existing data for use in your ${reason_name}.`,
-            recommended: false,
-            highlight_title: null,
           },
         ]
       : []),
@@ -116,40 +110,10 @@
       button_text={completed_button_text || "View Dataset"}
     />
   {:else}
-    <div class="flex flex-col gap-6 pt-4 max-w-[500px]">
-      {#each data_source_descriptions as data_source_description}
-        <button
-          class="cursor-pointer text-left"
-          on:click={() => {
-            select_data_source(data_source_description.id)
-          }}
-        >
-          <div
-            class="card card-bordered border-base-300 bg-base-200 shadow-md w-full p-6 indicator"
-          >
-            {#if data_source_description.recommended}
-              <div class="indicator-item indicator-center badge badge-primary">
-                Recommended
-              </div>
-            {:else if data_source_description.highlight_title}
-              <div
-                class="indicator-item indicator-center badge badge-secondary"
-              >
-                {data_source_description.highlight_title}
-              </div>
-            {/if}
-            <div class="flex flex-col">
-              <div class="font-medium">
-                {data_source_description.name}
-              </div>
-              <div class="font-light pt-1">
-                {data_source_description.description}
-              </div>
-            </div>
-          </div>
-        </button>
-      {/each}
-    </div>
+    <OptionList
+      options={data_source_descriptions}
+      select_option={select_data_source}
+    />
   {/if}
 </AppPage>
 
