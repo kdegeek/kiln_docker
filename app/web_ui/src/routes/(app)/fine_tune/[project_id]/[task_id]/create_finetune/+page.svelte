@@ -11,6 +11,12 @@
   import Completed from "$lib/ui/completed.svelte"
   import PromptTypeSelector from "../../../../run/prompt_type_selector.svelte"
   import { fine_tune_target_model as model_provider } from "$lib/stores"
+  import {
+    available_tuning_models,
+    available_models_error,
+    available_models_loading,
+    get_available_models,
+  } from "$lib/stores/fine_tune_store"
 
   import type {
     FinetuneProvider,
@@ -39,10 +45,7 @@
     ? $model_provider?.split("/").slice(1).join("/")
     : null
 
-  let available_models: FinetuneProvider[] | null = null
   let available_model_select: [string, string][] = []
-  let available_models_error: KilnError | null = null
-  let available_models_loading = true
 
   let selected_dataset: DatasetSplit | null = null
   $: selecting_thinking_dataset =
@@ -69,37 +72,12 @@
     get_available_models()
   })
 
-  async function get_available_models() {
-    try {
-      available_models_loading = true
-      if (!project_id || !task_id) {
-        throw new Error("Project or task ID not set.")
-      }
-      const { data: available_models_response, error: get_error } =
-        await client.GET("/api/finetune_providers", {})
-      if (get_error) {
-        throw get_error
-      }
-      if (!available_models_response) {
-        throw new Error("Invalid response from server")
-      }
-      available_models = available_models_response
-      build_available_model_select(available_models)
-    } catch (e) {
-      if (e instanceof Error && e.message.includes("Load failed")) {
-        available_models_error = new KilnError(
-          "Could not load available models for fine-tuning.",
-          null,
-        )
-      } else {
-        available_models_error = createKilnError(e)
-      }
-    } finally {
-      available_models_loading = false
-    }
-  }
+  $: build_available_model_select($available_tuning_models)
 
-  function build_available_model_select(models: FinetuneProvider[]) {
+  function build_available_model_select(models: FinetuneProvider[] | null) {
+    if (!models) {
+      return
+    }
     available_model_select = []
     available_model_select.push([
       disabled_header,
@@ -417,7 +395,7 @@
     $model_provider,
     base_model_id,
     is_download,
-    available_models,
+    $available_tuning_models,
   )
 </script>
 
@@ -426,7 +404,7 @@
     title="Create a New Fine Tune"
     subtitle="Fine-tuned models learn on your dataset."
   >
-    {#if available_models_loading}
+    {#if $available_models_loading}
       <div class="w-full min-h-[50vh] flex justify-center items-center">
         <div class="loading loading-spinner loading-lg"></div>
       </div>
@@ -437,7 +415,7 @@
         link={`/fine_tune/${project_id}/${task_id}/fine_tune/${created_finetune?.id}`}
         button_text="View Fine Tune Job"
       />
-    {:else if available_models_error}
+    {:else if $available_models_error}
       <div
         class="w-full min-h-[50vh] flex flex-col justify-center items-center gap-2"
       >
@@ -445,7 +423,7 @@
           Error Loading Available Models and Datasets
         </div>
         <div class="text-error text-sm">
-          {available_models_error?.getMessage() || "An unknown error occurred"}
+          {$available_models_error?.getMessage() || "An unknown error occurred"}
         </div>
       </div>
     {:else}
