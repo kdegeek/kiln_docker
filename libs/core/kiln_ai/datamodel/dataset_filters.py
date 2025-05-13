@@ -66,8 +66,8 @@ class MultiDatasetFilter:
     The filters are specified in a query string format after 'multi_filter::'
     Example: multi_filter::high_rating&thinking_model&tag::tag_name
 
-    Ampersands in filter IDs can be escaped with a backslash: \&
-    Example: multi_filter::high_rating&tag::tag\&name
+    Ampersands in filter IDs can be escaped with a backslash: \\& (single backslash, if viewing in code and not docs you will see double backslashes)
+    Example: multi_filter::high_rating&tag::tag\\&name
     """
 
     PREFIX: ClassVar[str] = "multi_filter::"
