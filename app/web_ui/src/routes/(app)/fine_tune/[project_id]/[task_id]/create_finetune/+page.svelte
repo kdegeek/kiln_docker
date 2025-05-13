@@ -10,6 +10,7 @@
   import Warning from "$lib/ui/warning.svelte"
   import Completed from "$lib/ui/completed.svelte"
   import PromptTypeSelector from "../../../../run/prompt_type_selector.svelte"
+  import { fine_tune_target_model as model_provider } from "$lib/stores"
 
   import type {
     FinetuneProvider,
@@ -22,7 +23,6 @@
   let finetune_description = ""
   let finetune_name = ""
   const disabled_header = "disabled_header"
-  let model_provider = disabled_header
   let data_strategy: FinetuneDataStrategy = "final_only"
   let finetune_custom_system_prompt = ""
   let finetune_custom_thinking_instructions =
@@ -31,6 +31,13 @@
 
   $: project_id = $page.params.project_id
   $: task_id = $page.params.task_id
+
+  $: provider_id = $model_provider?.includes("/")
+    ? $model_provider?.split("/")[0]
+    : null
+  $: base_model_id = $model_provider?.includes("/")
+    ? $model_provider?.split("/").slice(1).join("/")
+    : null
 
   let available_models: FinetuneProvider[] | null = null
   let available_model_select: [string, string][] = []
@@ -52,10 +59,11 @@
       ? "all"
       : null
 
-  $: step_3_visible = model_provider !== disabled_header && !!selected_dataset
-  $: is_download = model_provider.startsWith("download_")
+  $: step_3_visible =
+    $model_provider && $model_provider !== disabled_header && !!selected_dataset
+  $: is_download = !!$model_provider?.startsWith("download_")
   $: step_4_download_visible = step_3_visible && is_download
-  $: submit_visible = step_3_visible && !is_download
+  $: submit_visible = !!(step_3_visible && !is_download)
 
   onMount(async () => {
     get_available_models()
@@ -132,6 +140,12 @@
       "download_vertex_gemini",
       "Download: Google Vertex-AI Gemini format (JSONL)",
     ])
+
+    // Check if the model provider is in the available model select
+    // If not, reset to disabled header. The list can change over time.
+    if (!available_model_select.find((m) => m[0] === $model_provider)) {
+      $model_provider = disabled_header
+    }
   }
 
   const download_model_select_options: Record<string, string> = {
@@ -144,18 +158,16 @@
     download_vertex_gemini: "vertex_gemini",
   }
 
-  $: model_provider_id = model_provider.split("/")[0]
-  $: if (model_provider !== disabled_header) {
-    get_hyperparameters(model_provider.split("/")[0])
-  }
-
-  $: base_model_id = model_provider.split("/").slice(1).join("/")
+  $: get_hyperparameters(provider_id)
 
   let hyperparameters: FineTuneParameter[] | null = null
   let hyperparameters_error: KilnError | null = null
   let hyperparameters_loading = true
   let hyperparameter_values: Record<string, string> = {}
-  async function get_hyperparameters(provider_id: string) {
+  async function get_hyperparameters(provider_id: string | null) {
+    if (!provider_id || provider_id === disabled_header) {
+      return
+    }
     try {
       hyperparameters_loading = true
       hyperparameters = null
@@ -222,6 +234,9 @@
     try {
       create_finetune_loading = true
       created_finetune = null
+      if (!provider_id || !base_model_id) {
+        throw new Error("Invalid model or provider")
+      }
 
       // Filter out empty strings from hyperparameter_values, and parse/validate types
       const hyperparameter_values = build_parsed_hyperparameters()
@@ -238,7 +253,7 @@
             },
             body: {
               dataset_id: selected_dataset?.id || "",
-              provider: model_provider_id,
+              provider: provider_id,
               base_model_id: base_model_id,
               train_split_name: selected_dataset_training_set_name || "",
               name: finetune_name ? finetune_name : undefined,
@@ -329,7 +344,9 @@
       task_id: task_id,
       split_name: split_name,
       data_strategy: data_strategy,
-      format_type: download_model_select_options[model_provider],
+      format_type: $model_provider
+        ? download_model_select_options[$model_provider]
+        : undefined,
       system_message_generator: get_system_prompt_method_param(),
       custom_system_message: get_custom_system_prompt_param(),
       custom_thinking_instructions: get_custom_thinking_instructions_param(),
@@ -347,10 +364,13 @@
   let data_strategy_select_options: [FinetuneDataStrategy, string][] = []
 
   function update_data_strategies_supported(
-    model_provider: string,
-    base_model_id: string,
+    model_provider: string | null,
+    base_model_id: string | null,
     is_download: boolean,
   ) {
+    if (!model_provider || !base_model_id) {
+      return
+    }
     const data_strategies_labels: Record<FinetuneDataStrategy, string> = {
       final_only: "Disabled - (Recommended)",
       final_and_intermediate:
@@ -393,7 +413,7 @@
   }
 
   $: update_data_strategies_supported(
-    model_provider,
+    $model_provider,
     base_model_id,
     is_download,
   )
@@ -442,9 +462,9 @@
           inputType="select"
           id="provider"
           select_options={available_model_select}
-          bind:value={model_provider}
+          bind:value={$model_provider}
         />
-        {#if model_provider !== disabled_header}
+        {#if $model_provider && $model_provider !== disabled_header}
           <div class="text-xl font-bold">Step 2: Training Dataset</div>
           <SelectFinetuneDataset {project_id} {task_id} bind:selected_dataset />
         {/if}
