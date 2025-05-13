@@ -6,7 +6,6 @@
   import { client, base_url } from "$lib/api_client"
   import { KilnError, createKilnError } from "$lib/utils/error_handlers"
   import { onMount } from "svelte"
-  import { formatDate } from "$lib/utils/formatters"
   import type { FinetuneDataStrategy } from "$lib/types"
   import Warning from "$lib/ui/warning.svelte"
   import Completed from "$lib/ui/completed.svelte"
@@ -60,7 +59,6 @@
 
   onMount(async () => {
     get_available_models()
-    get_datasets()
   })
 
   async function get_available_models() {
@@ -144,61 +142,6 @@
     download_huggingface_chat_template_toolcall:
       "huggingface_chat_template_toolcall_jsonl",
     download_vertex_gemini: "vertex_gemini",
-  }
-
-  let datasets: DatasetSplit[] | null = null
-  let datasets_error: KilnError | null = null
-  let datasets_loading = true
-  let dataset_select: [string, string][] = []
-  async function get_datasets() {
-    try {
-      datasets_loading = true
-      datasets = null
-      if (!project_id || !task_id) {
-        throw new Error("Project or task ID not set.")
-      }
-      const { data: datasets_response, error: get_error } = await client.GET(
-        "/api/projects/{project_id}/tasks/{task_id}/dataset_splits",
-        {
-          params: {
-            path: {
-              project_id,
-              task_id,
-            },
-          },
-        },
-      )
-      if (get_error) {
-        throw get_error
-      }
-      if (!datasets_response) {
-        throw new Error("Invalid response from server")
-      }
-      datasets = datasets_response
-      build_available_dataset_select(datasets)
-    } catch (e) {
-      if (e instanceof Error && e.message.includes("Load failed")) {
-        datasets_error = new KilnError(
-          "Could not load datasets for fine-tuning.",
-          null,
-        )
-      } else {
-        datasets_error = createKilnError(e)
-      }
-    } finally {
-      datasets_loading = false
-    }
-  }
-  function build_available_dataset_select(datasets: DatasetSplit[]) {
-    dataset_select = []
-    dataset_select.push([disabled_header, "Select a dataset to fine-tune with"])
-    for (const dataset of datasets) {
-      dataset_select.push([
-        "" + dataset.id,
-        `${dataset.name} — Created ${formatDate(dataset.created_at)}`,
-      ])
-    }
-    dataset_select.push(["new", "New Dataset"])
   }
 
   $: model_provider_id = model_provider.split("/")[0]
@@ -461,7 +404,7 @@
     title="Create a New Fine Tune"
     subtitle="Fine-tuned models learn on your dataset."
   >
-    {#if available_models_loading || datasets_loading}
+    {#if available_models_loading}
       <div class="w-full min-h-[50vh] flex justify-center items-center">
         <div class="loading loading-spinner loading-lg"></div>
       </div>
@@ -472,7 +415,7 @@
         link={`/fine_tune/${project_id}/${task_id}/fine_tune/${created_finetune?.id}`}
         button_text="View Fine Tune Job"
       />
-    {:else if available_models_error || datasets_error}
+    {:else if available_models_error}
       <div
         class="w-full min-h-[50vh] flex flex-col justify-center items-center gap-2"
       >
@@ -480,9 +423,7 @@
           Error Loading Available Models and Datasets
         </div>
         <div class="text-error text-sm">
-          {available_models_error?.getMessage() ||
-            datasets_error?.getMessage() ||
-            "An unknown error occurred"}
+          {available_models_error?.getMessage() || "An unknown error occurred"}
         </div>
       </div>
     {:else}
@@ -506,41 +447,6 @@
         {#if model_provider !== disabled_header}
           <div class="text-xl font-bold">Step 2: Training Dataset</div>
           <SelectFinetuneDataset {project_id} {task_id} bind:selected_dataset />
-
-          {#if selected_dataset}
-            <div class="collapse collapse-arrow bg-base-200">
-              <input type="checkbox" class="peer" />
-              <div class="collapse-title font-medium flex items-center">
-                Training Dataset Details
-              </div>
-              <div class="collapse-content flex flex-col gap-4">
-                <div class="text-sm">
-                  The selected dataset has {selected_dataset.splits?.length}
-                  {selected_dataset.splits?.length === 1 ? "split" : "splits"}:
-                  <ul class="list-disc list-inside pt-2">
-                    {#each Object.entries(selected_dataset.split_contents) as [split_name, split_contents]}
-                      <li>
-                        {split_name.charAt(0).toUpperCase() +
-                          split_name.slice(1)}:{" "}
-                        {split_contents.length} examples
-                        <span class="text-xs text-gray-500 pl-2">
-                          {#if is_download}
-                            <!-- Nothing -->
-                          {:else if split_name === "val"}
-                            May be used for validation during fine-tuning
-                          {:else if split_name === "test"}
-                            Will not be used, reserved for later evaluation
-                          {:else if split_name === selected_dataset_training_set_name}
-                            Will be used for training
-                          {/if}
-                        </span>
-                      </li>
-                    {/each}
-                  </ul>
-                </div>
-              </div>
-            </div>
-          {/if}
         {/if}
 
         {#if step_3_visible}

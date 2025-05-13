@@ -211,6 +211,37 @@
           >Change Dataset</button
         >
       </div>
+
+      <div class="collapse collapse-arrow bg-base-200 mt-4">
+        <input type="checkbox" class="peer" />
+        <div class="collapse-title font-medium flex items-center">
+          Training Dataset Details
+        </div>
+        <div class="collapse-content flex flex-col gap-4">
+          <div class="text-sm">
+            The selected dataset has {selected_dataset.splits?.length}
+            {selected_dataset.splits?.length === 1 ? "split" : "splits"}:
+            <ul class="list-disc list-inside pt-2">
+              {#each Object.entries(selected_dataset.split_contents) as [split_name, split_contents]}
+                <li>
+                  {split_name.charAt(0).toUpperCase() +
+                    split_name.slice(1)}:{" "}
+                  {split_contents.length} examples
+                  <span class="text-xs text-gray-500 pl-2">
+                    {#if split_name === "val"}
+                      May be used for validation during fine-tuning
+                    {:else if split_name === "test"}
+                      Will not be used, reserved for later evaluation
+                    {:else if split_name === "train" || split_name === "all"}
+                      Will be used for training
+                    {/if}
+                  </span>
+                </li>
+              {/each}
+            </ul>
+          </div>
+        </div>
+      </div>
     {:else}
       <OptionList options={top_options} select_option={select_top_option} />
     {/if}
