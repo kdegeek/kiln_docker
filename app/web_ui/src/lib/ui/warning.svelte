@@ -31,13 +31,17 @@
 {#if warning_message}
   <div class="text-sm text-gray-500 flex flex-row items-center mt-2">
     <svg
-      class="{large_icon ? 'w-8 h-8' : 'w-5 h-5'} flex-none {color === 'error'
+      class="{large_icon
+        ? 'w-8 h-8'
+        : 'w-5 h-5'} flex-none transition-[width,height,transform] duration-500 ease-in-out {color ===
+      'error'
         ? 'text-error'
         : color === 'warning'
           ? 'text-warning'
           : color === 'success'
             ? 'text-success'
-            : ''} {warning_icon === 'info' ? 'rotate-180' : ''} "
+            : ''} {warning_icon === 'info' ? 'rotate-180' : 'rotate-0'}"
+      style="transform-origin: center; will-change: transform, width, height, rotate;"
       fill="currentColor"
       width="800px"
       height="800px"

@@ -211,6 +211,16 @@
   } else {
     new_dataset_filter_count = undefined
   }
+
+  function status_message(count: number) {
+    if (count === 0) {
+      return "Zero samples match your filters. Your dataset must include at least 1 sample. Please try a different filter or add more data."
+    } else if (count < 50) {
+      return `The dataset will only have ${count} samples. We suggest at least 50 samples for fine-tuning.`
+    } else {
+      return `The dataset will have ${count} samples.`
+    }
+  }
 </script>
 
 {#if loading}
@@ -344,26 +354,16 @@
           </div>
 
           {#if new_dataset_filter_count !== undefined}
-            {#if new_dataset_filter_count == 0}
-              <Warning
-                warning_message="Zero samples match your filters. Your dataset must include at least 1 sample. Please try a different filter or add more data."
-                large_icon={true}
-              />
-            {:else if new_dataset_filter_count < 50}
-              <Warning
-                warning_message="The dataset will only have {new_dataset_filter_count} samples. We suggest at least 50 samples for fine-tuning."
-                warning_color={new_dataset_filter_count < 25
-                  ? "error"
-                  : "warning"}
-                large_icon={true}
-              />
-            {:else}
-              <Warning
-                warning_message="The dataset will have {new_dataset_filter_count} samples"
-                warning_icon="info"
-                warning_color="success"
-              />
-            {/if}
+            <Warning
+              warning_message={status_message(new_dataset_filter_count)}
+              warning_icon={new_dataset_filter_count === 0 ? "exclaim" : "info"}
+              warning_color={new_dataset_filter_count < 25
+                ? "error"
+                : new_dataset_filter_count < 50
+                  ? "warning"
+                  : "success"}
+              large_icon={new_dataset_filter_count < 50}
+            />
           {/if}
         </div>
       </FormContainer>
