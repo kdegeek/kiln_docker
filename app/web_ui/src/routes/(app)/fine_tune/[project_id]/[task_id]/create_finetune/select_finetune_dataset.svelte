@@ -139,9 +139,15 @@
       create_dataset_split_loading = true
       create_dataset_split_error = null
 
-      let dataset_filter_id = "custom_tag"
-      if (dataset_filter_id === "custom_tag") {
-        dataset_filter_id = "tag::" + dataset_tag
+      let dataset_filter_id = "tag::" + dataset_tag
+      if (filter_to_reasoning_data || filter_to_highly_rated_data) {
+        dataset_filter_id = "multi_filter::tag::" + dataset_tag
+        if (filter_to_reasoning_data) {
+          dataset_filter_id += "&thinking_model"
+        }
+        if (filter_to_highly_rated_data) {
+          dataset_filter_id += "&high_rating"
+        }
       }
 
       const { data: create_dataset_split_response, error: post_error } =
