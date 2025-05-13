@@ -18,16 +18,12 @@
     Finetune,
     FineTuneParameter,
   } from "$lib/types"
+  import SelectFinetuneDataset from "./select_finetune_dataset.svelte"
 
   let finetune_description = ""
   let finetune_name = ""
   const disabled_header = "disabled_header"
   let model_provider = disabled_header
-  let dataset_id = disabled_header
-  let new_dataset_split = disabled_header
-  let new_dataset_filter = disabled_header
-  let custom_dataset_tag = ""
-  let automatic_validation = disabled_header
   let data_strategy: FinetuneDataStrategy = "final_only"
   let finetune_custom_system_prompt = ""
   let finetune_custom_thinking_instructions =
@@ -42,7 +38,7 @@
   let available_models_error: KilnError | null = null
   let available_models_loading = true
 
-  $: selected_dataset = datasets?.find((d) => d.id === dataset_id)
+  let selected_dataset: DatasetSplit | null = null
   $: selecting_thinking_dataset =
     selected_dataset?.filter === "thinking_model" ||
     selected_dataset?.filter === "thinking_model_high_rated"
@@ -56,18 +52,8 @@
     : selected_dataset?.split_contents["all"]
       ? "all"
       : null
-  // Only openai and together support automatic validation
-  $: show_automatic_validation_option =
-    selected_dataset &&
-    selected_dataset_has_val &&
-    (model_provider_id === "openai" ||
-      model_provider_id === "together_ai" ||
-      model_provider_id === "vertex")
-  $: step_3_visible =
-    model_provider !== disabled_header &&
-    !!selected_dataset &&
-    (!show_automatic_validation_option ||
-      automatic_validation !== disabled_header)
+
+  $: step_3_visible = model_provider !== disabled_header && !!selected_dataset
   $: is_download = model_provider.startsWith("download_")
   $: step_4_download_visible = step_3_visible && is_download
   $: submit_visible = step_3_visible && !is_download
@@ -271,79 +257,6 @@
     string: "String",
   }
 
-  $: handle_dataset_select(dataset_id)
-
-  function handle_dataset_select(dataset_id_new: string) {
-    if (dataset_id_new === "new") {
-      dataset_id = disabled_header
-      const modal = document.getElementById("create_dataset_modal")
-      if (modal) {
-        // @ts-expect-error daisyui functions not typed
-        modal.showModal()
-      }
-    }
-  }
-
-  let create_dataset_split_error: KilnError | null = null
-  let create_dataset_split_loading = false
-  async function create_dataset() {
-    try {
-      create_dataset_split_loading = true
-      create_dataset_split_error = null
-
-      let dataset_filter_id = new_dataset_filter
-      if (dataset_filter_id === "custom_tag") {
-        dataset_filter_id = "tag::" + custom_dataset_tag
-      }
-
-      const { data: create_dataset_split_response, error: post_error } =
-        await client.POST(
-          "/api/projects/{project_id}/tasks/{task_id}/dataset_splits",
-          {
-            params: {
-              path: {
-                project_id,
-                task_id,
-              },
-            },
-            body: {
-              // @ts-expect-error types are validated by the server
-              dataset_split_type: new_dataset_split,
-              filter_id: dataset_filter_id,
-            },
-          },
-        )
-      if (post_error) {
-        throw post_error
-      }
-      if (!create_dataset_split_response || !create_dataset_split_response.id) {
-        throw new Error("Invalid response from server")
-      }
-      if (!datasets) {
-        datasets = []
-      }
-      datasets.push(create_dataset_split_response)
-      build_available_dataset_select(datasets)
-      dataset_id = create_dataset_split_response.id
-      const modal = document.getElementById("create_dataset_modal")
-      if (modal) {
-        // @ts-expect-error daisyui functions not typed
-        modal.close()
-      }
-    } catch (e) {
-      if (e instanceof Error && e.message.includes("Load failed")) {
-        create_dataset_split_error = new KilnError(
-          "Could not create a dataset split for fine-tuning.",
-          null,
-        )
-      } else {
-        create_dataset_split_error = createKilnError(e)
-      }
-    } finally {
-      create_dataset_split_loading = false
-    }
-  }
-
   function get_system_prompt_method_param(): string | undefined {
     return system_prompt_method === "custom" ? undefined : system_prompt_method
   }
@@ -381,7 +294,7 @@
               },
             },
             body: {
-              dataset_id: dataset_id,
+              dataset_id: selected_dataset?.id || "",
               provider: model_provider_id,
               base_model_id: base_model_id,
               train_split_name: selected_dataset_training_set_name || "",
@@ -395,8 +308,9 @@
                 get_custom_thinking_instructions_param(),
               parameters: hyperparameter_values,
               data_strategy: data_strategy,
-              validation_split_name:
-                automatic_validation === "yes" ? "val" : undefined,
+              validation_split_name: selected_dataset_has_val
+                ? "val"
+                : undefined,
             },
           },
         )
@@ -467,7 +381,7 @@
 
   async function download_dataset_jsonl(split_name: string) {
     const params = {
-      dataset_id: dataset_id,
+      dataset_id: selected_dataset?.id || "",
       project_id: project_id,
       task_id: task_id,
       split_name: split_name,
@@ -495,12 +409,12 @@
     is_download: boolean,
   ) {
     const data_strategies_labels: Record<FinetuneDataStrategy, string> = {
-      final_only: "Standard - Learn only from final response",
+      final_only: "Disabled - (Recommended)",
       final_and_intermediate:
-        "Reasoning - Learn intermediate thinking and final response",
+        "Thinking - Learn both thinking and final response",
       final_and_intermediate_r1_compatible: is_download
-        ? "Reasoning (R1 compatible) - Learn intermediate thinking and final response"
-        : "Reasoning - Learn intermediate thinking and final response",
+        ? "Thinking (R1 compatible) - Learn both thinking and final response"
+        : "Thinking - Learn both thinking and final response",
     }
 
     const r1_disabled_for_downloads = [
@@ -518,9 +432,9 @@
 
     const compatible_data_strategies: FinetuneDataStrategy[] = is_download
       ? [
+          "final_only",
           "final_and_intermediate",
           "final_and_intermediate_r1_compatible",
-          "final_only",
         ]
       : available_models
           ?.map((model) => model.models)
@@ -582,7 +496,7 @@
         <div class="text-xl font-bold">Step 1: Select Model</div>
         <FormElement
           label="Model & Provider"
-          description="Select which model to fine-tune, and which provider to use. Optionally, download a JSONL file to fine-tune using any infrastructure."
+          description="Select which model to fine-tune. Alternatively, download a JSONL file to fine-tune using any infrastructure."
           info_description="Fine-tuning requires a lot of compute. Generally we suggest you use a hosted cloud option, but if you have enough compute and expertise you can fine-tune on your own using tools like Unsloth, Axolotl, and others."
           inputType="select"
           id="provider"
@@ -590,73 +504,42 @@
           bind:value={model_provider}
         />
         {#if model_provider !== disabled_header}
-          <div class="text-xl font-bold">Step 2: Select a Dataset</div>
-          <FormElement
-            label="Dataset"
-            description="Select a dataset to fine-tune with."
-            info_description="These datasets are subsets of the current task's data. We freeze a copy when you create a fine-tune so that you can create multiple fine-tunes from the same dataset for consistent evaluation."
-            inputType="select"
-            id="dataset"
-            select_options={dataset_select}
-            bind:value={dataset_id}
-          />
+          <div class="text-xl font-bold">Step 2: Training Dataset</div>
+          <SelectFinetuneDataset {project_id} {task_id} bind:selected_dataset />
+
           {#if selected_dataset}
-            <div class="text-sm">
-              The selected dataset has {selected_dataset.splits?.length}
-              {selected_dataset.splits?.length === 1 ? "split" : "splits"}:
-              <ul class="list-disc list-inside pt-2">
-                {#each Object.entries(selected_dataset.split_contents) as [split_name, split_contents]}
-                  <li>
-                    {split_name.charAt(0).toUpperCase() +
-                      split_name.slice(1)}:{" "}
-                    {split_contents.length} examples
-                    <span class="text-xs text-gray-500 pl-2">
-                      {#if is_download}
-                        <!-- Nothing -->
-                      {:else if split_name === "val" && automatic_validation === disabled_header && show_automatic_validation_option}
-                        May be used for validation during fine-tuning
-                      {:else if split_name === "val" && automatic_validation === "yes"}
-                        Will be used for validation during fine-tuning
-                      {:else if split_name === "val"}
-                        Will not be used, reserved for later evaluation
-                      {:else if split_name === "test"}
-                        Will not be used, reserved for later evaluation
-                      {:else if split_name === selected_dataset_training_set_name}
-                        Will be used for training
-                      {/if}
-                    </span>
-                  </li>
-                {/each}
-              </ul>
-            </div>
-            {#if selected_dataset_training_set_name && selected_dataset.split_contents[selected_dataset_training_set_name]?.length < 100}
-              <div class="text-sm">
-                <span class="badge badge-error mr-2"
-                  >Warning: Small Dataset</span
-                >
-                Your selected dataset has less than 100 examples for training. We
-                strongly recommend creating a larger dataset before fine-tuning.
-                Try our
-                <a href={`/generate/${project_id}/${task_id}`} class="link">
-                  generation tool
-                </a>
-                to expand your dataset.
+            <div class="collapse collapse-arrow bg-base-200">
+              <input type="checkbox" class="peer" />
+              <div class="collapse-title font-medium flex items-center">
+                Training Dataset Details
               </div>
-            {/if}
-          {/if}
-          {#if show_automatic_validation_option}
-            <FormElement
-              label="Automatic Validation"
-              description="The selected dataset has a validation set. Should we use this for validation during fine-tuning? Select 'Yes' if your task is completely deterministic (classification), and 'No' if the task is not deterministic (e.g. generation)."
-              inputType="select"
-              id="automatic_validation"
-              select_options={[
-                [disabled_header, "Select if your task is deterministic"],
-                ["yes", "Yes - My task is deterministic (classification)"],
-                ["no", "No - My task is not deterministic (generation)"],
-              ]}
-              bind:value={automatic_validation}
-            />
+              <div class="collapse-content flex flex-col gap-4">
+                <div class="text-sm">
+                  The selected dataset has {selected_dataset.splits?.length}
+                  {selected_dataset.splits?.length === 1 ? "split" : "splits"}:
+                  <ul class="list-disc list-inside pt-2">
+                    {#each Object.entries(selected_dataset.split_contents) as [split_name, split_contents]}
+                      <li>
+                        {split_name.charAt(0).toUpperCase() +
+                          split_name.slice(1)}:{" "}
+                        {split_contents.length} examples
+                        <span class="text-xs text-gray-500 pl-2">
+                          {#if is_download}
+                            <!-- Nothing -->
+                          {:else if split_name === "val"}
+                            May be used for validation during fine-tuning
+                          {:else if split_name === "test"}
+                            Will not be used, reserved for later evaluation
+                          {:else if split_name === selected_dataset_training_set_name}
+                            Will be used for training
+                          {/if}
+                        </span>
+                      </li>
+                    {/each}
+                  </ul>
+                </div>
+              </div>
+            </div>
           {/if}
         {/if}
 
@@ -694,9 +577,9 @@
           {/if}
           <div>
             <FormElement
-              label="Model Type / Training Strategy"
-              description="Should the model be trained on only the final response, or also include intermediate thinking?"
-              info_description="If you select 'Reasoning', the model will also be trained on the intermediate thinking such as reasoning or chain of thought. Use this if you want to call the tuned model with a chain-of-thought prompt for additional inference time compute."
+              label="Reasoning"
+              description="Should the model be trained on reasoning/thinking content?"
+              info_description="If you select 'Thinking', the model training will include thinking such as reasoning or chain of thought. Use this if you want to call the tuned model with a chain-of-thought prompt for additional inference time compute."
               inputType="select"
               id="data_strategy"
               select_options={data_strategy_select_options}
@@ -801,81 +684,3 @@
     {/if}
   </AppPage>
 </div>
-
-<dialog id="create_dataset_modal" class="modal">
-  <div class="modal-box">
-    <form method="dialog">
-      <button
-        class="btn btn-sm text-xl btn-circle btn-ghost absolute right-2 top-2 focus:outline-none"
-        >✕</button
-      >
-    </form>
-    <h3 class="text-lg font-bold mb-2">Create a New Dataset Split</h3>
-    <div class="font-light text-sm mb-6">
-      A dataset split is a collection of examples from the current task. We
-      freeze a copy when you create a fine-tune so that you can create multiple
-      fine-tunes from the exactly same dataset.
-    </div>
-    <div class="flex flex-row gap-6 justify-center flex-col">
-      <FormContainer
-        submit_label="Create Dataset"
-        on:submit={create_dataset}
-        bind:error={create_dataset_split_error}
-        bind:submitting={create_dataset_split_loading}
-      >
-        <FormElement
-          label="Dataset Filter"
-          description="Select a filter for your dataset. Typically you want to filter out examples that are not rated 4+ stars."
-          info_description="A 'High Rating' filter will include only examples that are rated 4+ stars. The 'All' filter will include all examples. Thinking filters will also check the sample has reasoning or chain-of-thought data for training thinking models."
-          inputType="select"
-          optional={false}
-          id="dataset_filter"
-          select_options={[
-            [disabled_header, "Select a dataset filter"],
-            ["high_rating", "High Rating (4+ stars)"],
-            ["all", "All (no filter)"],
-            [
-              "thinking_model",
-              "Thinking (items with reasoning/chain-of-thought)",
-            ],
-            [
-              "thinking_model_high_rated",
-              "Thinking + High Rated (4+ stars and thinking)",
-            ],
-            ["custom_tag", "Custom Dataset Tag (eg 'training_set_v2')"],
-          ]}
-          bind:value={new_dataset_filter}
-        />
-        {#if new_dataset_filter === "custom_tag"}
-          <FormElement
-            label="Custom Dataset Tag Filter"
-            description="The dataset split will only include examples with this tag."
-            inputType="input"
-            id="custom_dataset_tag"
-            bind:value={custom_dataset_tag}
-          />
-        {/if}
-
-        <FormElement
-          label="Dataset Splits"
-          description="Select a splitting strategy for your dataset."
-          info_description="You can split your dataset into training and evaluation sets, or use the entire dataset for training. If in doubt, select 'Train/Test' and we will split 80/20."
-          inputType="select"
-          optional={false}
-          id="dataset_split"
-          select_options={[
-            [disabled_header, "Select a split strategy"],
-            ["train_test", "Train/Test -- 80/20"],
-            ["train_test_val", "Train/Test/Val -- 60/20/20"],
-            ["train_test_val_80", "Train/Test/Val -- 80/10/10"],
-            ["all", "Entire Dataset -- 100"],
-          ]}
-          bind:value={new_dataset_split}
-        />
-      </FormContainer>
-    </div>
-  </div>
-  <form method="dialog" class="modal-backdrop">
-    <button>close</button>
-  </form>
-</dialog>

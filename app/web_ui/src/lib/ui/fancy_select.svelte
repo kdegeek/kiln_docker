@@ -3,6 +3,7 @@
 
   export let options: OptionGroup[] = []
   export let selected: unknown
+  export let empty_label: string = "Select an option"
 
   // Add this variable to track scrollability
   let isMenuScrollable = false
@@ -171,7 +172,7 @@
         const selectedOption = flatOptions.find(
           (item) => item.value === selected,
         )
-        return selectedOption ? selectedOption.label : ""
+        return selectedOption ? selectedOption.label : empty_label
       })()}
     </span>
 

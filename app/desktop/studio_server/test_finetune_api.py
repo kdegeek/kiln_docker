@@ -22,6 +22,8 @@ from kiln_ai.datamodel import (
     FinetuneDataStrategy,
     Project,
     Task,
+    TaskOutput,
+    TaskRun,
 )
 from kiln_ai.datamodel.dataset_filters import DatasetFilterId
 from kiln_ai.datamodel.dataset_split import (
@@ -29,6 +31,7 @@ from kiln_ai.datamodel.dataset_split import (
     Train60Test20Val20SplitDefinition,
     Train80Test10Val10SplitDefinition,
     Train80Test20SplitDefinition,
+    Train80Val20SplitDefinition,
 )
 from pydantic import BaseModel
 
@@ -99,6 +102,48 @@ def test_task(tmp_path):
     for split in splits:
         split.parent = task
         split.save_to_file()
+
+    # Add some runs with tags
+    runs = [
+        TaskRun(
+            id="run1",
+            name="Run 1",
+            parent=task,
+            tags=["fine_tune_1", "other_tag"],
+            input="Test input 1",
+            input_source={"type": "human", "properties": {"created_by": "user1"}},
+            output=TaskOutput(
+                output="Test output 1",
+                source={"type": "human", "properties": {"created_by": "user1"}},
+            ),
+        ),
+        TaskRun(
+            id="run2",
+            name="Run 2",
+            parent=task,
+            tags=["fine_tune_1", "fine_tune_2"],
+            input="Test input 2",
+            input_source={"type": "human", "properties": {"created_by": "user2"}},
+            output=TaskOutput(
+                output="Test output 2",
+                source={"type": "human", "properties": {"created_by": "user2"}},
+            ),
+        ),
+        TaskRun(
+            id="run3",
+            name="Run 3",
+            parent=task,
+            tags=["other_tag"],
+            input="Test input 3",
+            input_source={"type": "human", "properties": {"created_by": "user3"}},
+            output=TaskOutput(
+                output="Test output 3",
+                source={"type": "human", "properties": {"created_by": "user3"}},
+            ),
+        ),
+    ]
+    for run in runs:
+        run.save_to_file()
 
     return task
 
@@ -362,6 +407,7 @@ def test_api_split_types_mapping():
         == Train80Test10Val10SplitDefinition
     )
     assert api_split_types[DatasetSplitType.ALL] == AllSplitDefinition
+    assert api_split_types[DatasetSplitType.TRAIN_VAL] == Train80Val20SplitDefinition
     for split_type in DatasetSplitType:
         assert split_type in api_split_types
 
@@ -1491,3 +1537,85 @@ def test_data_strategies_from_finetune_id(
     model_id: str, expected_data_strategies: list[FinetuneDataStrategy]
 ):
     assert data_strategies_from_finetune_id(model_id) == expected_data_strategies
+
+
+def test_finetune_dataset_info(client, mock_task_from_id_disk_backed, test_task):
+    """Test the finetune_dataset_info endpoint returns correct data"""
+    response = client.get("/api/projects/project1/tasks/task1/finetune_dataset_info")
+
+    assert response.status_code == 200
+    data = response.json()
+
+    # Verify datasets
+    assert len(data["existing_datasets"]) == 2
+    dataset_ids = {ds["id"] for ds in data["existing_datasets"]}
+    assert dataset_ids == {"split1", "split2"}
+
+    # Verify finetunes
+    assert len(data["existing_finetunes"]) == 2
+    finetune_ids = {ft["id"] for ft in data["existing_finetunes"]}
+    assert finetune_ids == {"ft1", "ft2"}
+
+    # Verify fine_tune tags
+    assert len(data["funetune_tags"]) == 2
+    tag_counts = {tag["tag"]: tag["count"] for tag in data["funetune_tags"]}
+    assert tag_counts == {
+        "fine_tune_1": 2,  # Appears in run1 and run2
+        "fine_tune_2": 1,  # Appears only in run2
+    }
+
+    # Verify task_from_id was called correctly
+    mock_task_from_id_disk_backed.assert_called_once_with("project1", "task1")
+
+
+def test_finetune_dataset_info_no_tags(
+    client, mock_task_from_id_disk_backed, test_task
+):
+    """Test finetune_dataset_info when there are no fine_tune tags"""
+    # Remove all runs from the task
+    for run in test_task.runs():
+        run.delete()
+
+    response = client.get("/api/projects/project1/tasks/task1/finetune_dataset_info")
+
+    assert response.status_code == 200
+    data = response.json()
+
+    # Verify datasets and finetunes still exist
+    assert len(data["existing_datasets"]) == 2
+    assert len(data["existing_finetunes"]) == 2
+
+    # Verify no fine_tune tags
+    assert len(data["funetune_tags"]) == 0
+
+
+def test_finetune_dataset_info_no_datasets_or_finetunes(
+    client, mock_task_from_id_disk_backed, tmp_path
+):
+    """Test finetune_dataset_info when there are no datasets or finetunes"""
+    # Create a task with no datasets or finetunes
+    project_path = tmp_path / "project.kiln"
+    project = Project(name="Test Project", path=str(project_path))
+    project.save_to_file()
+
+    task = Task(
+        name="Test Task",
+        instruction="This is a test instruction",
+        description="This is a test task",
+        parent=project,
+    )
+    task.save_to_file()
+
+    mock_task_from_id_disk_backed.return_value = task
+
+    response = client.get("/api/projects/project1/tasks/task1/finetune_dataset_info")
+
+    assert response.status_code == 200
+    data = response.json()
+
+    # Verify empty lists
+    assert len(data["existing_datasets"]) == 0
+    assert len(data["existing_finetunes"]) == 0
+    assert len(data["funetune_tags"]) == 0
+
+    mock_task_from_id_disk_backed.assert_called_once_with("project1", "task1")

@@ -697,6 +697,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/projects/{project_id}/tasks/{task_id}/finetune_dataset_info": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Finetune Dataset Info */
+        get: operations["finetune_dataset_info_api_projects__project_id__tasks__task_id__finetune_dataset_info_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/download_dataset_jsonl": {
         parameters: {
             query?: never;
@@ -1434,7 +1451,7 @@ export interface components {
          * @description Dataset split types used in the API. Any split type can be created in code.
          * @enum {string}
          */
-        DatasetSplitType: "train_test" | "train_test_val" | "train_test_val_80" | "all";
+        DatasetSplitType: "train_val" | "train_test" | "train_test_val" | "train_test_val_80" | "all";
         /** Eval */
         Eval: {
             /**
@@ -1862,6 +1879,28 @@ export interface components {
          * @enum {string}
          */
         FinetuneDataStrategy: "final_only" | "final_and_intermediate" | "final_and_intermediate_r1_compatible";
+        /**
+         * FinetuneDatasetInfo
+         * @description Finetune dataset info
+         */
+        FinetuneDatasetInfo: {
+            /** Existing Datasets */
+            existing_datasets: components["schemas"]["DatasetSplit"][];
+            /** Existing Finetunes */
+            existing_finetunes: components["schemas"]["Finetune"][];
+            /** Funetune Tags */
+            funetune_tags: components["schemas"]["FinetuneDatasetTagInfo"][];
+        };
+        /**
+         * FinetuneDatasetTagInfo
+         * @description Finetune dataset tag info
+         */
+        FinetuneDatasetTagInfo: {
+            /** Tag */
+            tag: string;
+            /** Count */
+            count: number;
+        };
         /**
          * FinetuneProvider
          * @description Finetune provider: list of models a provider supports for fine-tuning
@@ -4385,6 +4424,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FineTuneParameter"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    finetune_dataset_info_api_projects__project_id__tasks__task_id__finetune_dataset_info_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FinetuneDatasetInfo"];
                 };
             };
             /** @description Validation Error */

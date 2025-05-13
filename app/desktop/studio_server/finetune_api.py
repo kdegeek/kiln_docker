@@ -1,5 +1,6 @@
 import logging
 from enum import Enum
+from typing import Dict
 
 import httpx
 from fastapi import FastAPI, HTTPException
@@ -33,6 +34,7 @@ from kiln_ai.datamodel.dataset_split import (
     Train60Test20Val20SplitDefinition,
     Train80Test10Val10SplitDefinition,
     Train80Test20SplitDefinition,
+    Train80Val20SplitDefinition,
 )
 from kiln_ai.utils.config import Config
 from kiln_ai.utils.name_generator import generate_memorable_name
@@ -64,9 +66,25 @@ class FinetuneProvider(BaseModel):
     models: list[FinetuneProviderModel]
 
 
+class FinetuneDatasetTagInfo(BaseModel):
+    """Finetune dataset tag info"""
+
+    tag: str
+    count: int
+
+
+class FinetuneDatasetInfo(BaseModel):
+    """Finetune dataset info"""
+
+    existing_datasets: list[DatasetSplit]
+    existing_finetunes: list[Finetune]
+    funetune_tags: list[FinetuneDatasetTagInfo]
+
+
 class DatasetSplitType(Enum):
     """Dataset split types used in the API. Any split type can be created in code."""
 
+    TRAIN_VAL = "train_val"
     TRAIN_TEST = "train_test"
     TRAIN_TEST_VAL = "train_test_val"
     TRAIN_TEST_VAL_80 = "train_test_val_80"
@@ -75,6 +93,7 @@ class DatasetSplitType(Enum):
 
 api_split_types = {
     DatasetSplitType.TRAIN_TEST: Train80Test20SplitDefinition,
+    DatasetSplitType.TRAIN_VAL: Train80Val20SplitDefinition,
     DatasetSplitType.TRAIN_TEST_VAL: Train60Test20Val20SplitDefinition,
     DatasetSplitType.TRAIN_TEST_VAL_80: Train80Test10Val10SplitDefinition,
     DatasetSplitType.ALL: AllSplitDefinition,
@@ -254,6 +273,29 @@ def connect_fine_tune_api(app: FastAPI):
             )
         finetune_adapter_class = finetune_registry[provider_id]
         return finetune_adapter_class.available_parameters()
+
+    @app.get("/api/projects/{project_id}/tasks/{task_id}/finetune_dataset_info")
+    async def finetune_dataset_info(
+        project_id: str, task_id: str
+    ) -> FinetuneDatasetInfo:
+        task = task_from_id(project_id, task_id)
+        existing_datasets = task.dataset_splits()
+        existing_finetunes = task.finetunes()
+
+        funetune_tag_counts: Dict[str, int] = {}
+        for sample in task.runs(readonly=True):
+            for tag in sample.tags:
+                if tag.startswith("fine_tune"):
+                    funetune_tag_counts[tag] = funetune_tag_counts.get(tag, 0) + 1
+
+        return FinetuneDatasetInfo(
+            existing_datasets=existing_datasets,
+            existing_finetunes=existing_finetunes,
+            funetune_tags=[
+                FinetuneDatasetTagInfo(tag=tag, count=count)
+                for tag, count in funetune_tag_counts.items()
+            ],
+        )
 
     @app.post("/api/projects/{project_id}/tasks/{task_id}/dataset_splits")
     async def create_dataset_split(
