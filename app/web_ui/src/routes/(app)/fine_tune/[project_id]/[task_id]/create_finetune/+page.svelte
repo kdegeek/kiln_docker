@@ -49,8 +49,7 @@
 
   let selected_dataset: DatasetSplit | null = null
   $: selecting_thinking_dataset =
-    selected_dataset?.filter === "thinking_model" ||
-    selected_dataset?.filter === "thinking_model_high_rated"
+    selected_dataset?.filter?.includes("thinking_model")
   $: selected_dataset_has_val = selected_dataset?.splits?.find(
     (s) => s.name === "val",
   )
@@ -350,6 +349,7 @@
     if (!model_provider || !base_model_id) {
       return
     }
+
     const data_strategies_labels: Record<FinetuneDataStrategy, string> = {
       final_only: "Disabled - (Recommended)",
       final_and_intermediate:
@@ -494,11 +494,13 @@
             {#if data_strategy === "final_and_intermediate" && !selecting_thinking_dataset}
               <Warning
                 warning_message="You are training a model for inference-time thinking, but are not using a dataset filtered to samples with reasoning or chain-of-thought training data. This is not recommended, as it may lead to poor performance. We suggest creating a new dataset with a thinking filter."
+                large_icon={true}
               />
             {/if}
             {#if data_strategy === "final_and_intermediate_r1_compatible" && !selecting_thinking_dataset}
               <Warning
                 warning_message="You are training a 'thinking' model, but did not explicitly select a dataset filtered to samples with reasoning or chain-of-thought training data. If any of your training samples are missing reasoning data, it will error. If your data contains reasoning, you can ignore this warning."
+                large_icon={true}
               />
             {/if}
           </div>
