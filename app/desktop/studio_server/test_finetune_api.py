@@ -1558,11 +1558,18 @@ def test_finetune_dataset_info(client, mock_task_from_id_disk_backed, test_task)
 
     # Verify fine_tune tags
     assert len(data["finetune_tags"]) == 2
-    tag_counts = {tag["tag"]: tag["count"] for tag in data["finetune_tags"]}
-    assert tag_counts == {
-        "fine_tune_1": 2,  # Appears in run1 and run2
-        "fine_tune_2": 1,  # Appears only in run2
-    }
+
+    tag1 = next(x for x in data["finetune_tags"] if x["tag"] == "fine_tune_1")
+    assert tag1["count"] == 2
+    assert tag1["reasoning_count"] == 0
+    assert tag1["high_quality_count"] == 0
+    assert tag1["reasoning_and_high_quality_count"] == 0
+
+    tag2 = next(x for x in data["finetune_tags"] if x["tag"] == "fine_tune_2")
+    assert tag2["count"] == 1
+    assert tag2["reasoning_count"] == 0
+    assert tag2["high_quality_count"] == 0
+    assert tag2["reasoning_and_high_quality_count"] == 0
 
     # Verify task_from_id was called correctly
     mock_task_from_id_disk_backed.assert_called_once_with("project1", "task1")

@@ -6,7 +6,10 @@ import httpx
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
 from kiln_ai.adapters.fine_tune.base_finetune import FineTuneParameter, FineTuneStatus
-from kiln_ai.adapters.fine_tune.dataset_formatter import DatasetFormat, DatasetFormatter
+from kiln_ai.adapters.fine_tune.dataset_formatter import (
+    DatasetFormat,
+    DatasetFormatter,
+)
 from kiln_ai.adapters.fine_tune.finetune_registry import finetune_registry
 from kiln_ai.adapters.ml_model_list import (
     KilnModel,
@@ -28,7 +31,11 @@ from kiln_ai.datamodel import (
     Task,
 )
 from kiln_ai.datamodel.datamodel_enums import THINKING_DATA_STRATEGIES
-from kiln_ai.datamodel.dataset_filters import DatasetFilterId
+from kiln_ai.datamodel.dataset_filters import (
+    DatasetFilterId,
+    HighRatingDatasetFilter,
+    ThinkingModelDatasetFilter,
+)
 from kiln_ai.datamodel.dataset_split import (
     AllSplitDefinition,
     Train60Test20Val20SplitDefinition,
@@ -71,6 +78,9 @@ class FinetuneDatasetTagInfo(BaseModel):
 
     tag: str
     count: int
+    reasoning_count: int
+    high_quality_count: int
+    reasoning_and_high_quality_count: int
 
 
 class FinetuneDatasetInfo(BaseModel):
@@ -282,18 +292,39 @@ def connect_fine_tune_api(app: FastAPI):
         existing_datasets = task.dataset_splits()
         existing_finetunes = task.finetunes()
 
-        funetune_tag_counts: Dict[str, int] = {}
+        finetune_tag_counts: Dict[str, int] = {}
+        reasoning_count: Dict[str, int] = {}
+        high_quality_count: Dict[str, int] = {}
+        reasoning_and_high_quality_count: Dict[str, int] = {}
         for sample in task.runs(readonly=True):
             for tag in sample.tags:
                 if tag.startswith("fine_tune"):
-                    funetune_tag_counts[tag] = funetune_tag_counts.get(tag, 0) + 1
+                    finetune_tag_counts[tag] = finetune_tag_counts.get(tag, 0) + 1
+                    is_reasoning = ThinkingModelDatasetFilter(sample)
+                    is_high_quality = HighRatingDatasetFilter(sample)
+                    if is_reasoning:
+                        reasoning_count[tag] = reasoning_count.get(tag, 0) + 1
+                    if is_high_quality:
+                        high_quality_count[tag] = high_quality_count.get(tag, 0) + 1
+                    if is_reasoning and is_high_quality:
+                        reasoning_and_high_quality_count[tag] = (
+                            reasoning_and_high_quality_count.get(tag, 0) + 1
+                        )
 
         return FinetuneDatasetInfo(
             existing_datasets=existing_datasets,
             existing_finetunes=existing_finetunes,
             finetune_tags=[
-                FinetuneDatasetTagInfo(tag=tag, count=count)
-                for tag, count in funetune_tag_counts.items()
+                FinetuneDatasetTagInfo(
+                    tag=tag,
+                    count=count,
+                    reasoning_count=reasoning_count.get(tag, 0),
+                    high_quality_count=high_quality_count.get(tag, 0),
+                    reasoning_and_high_quality_count=reasoning_and_high_quality_count.get(
+                        tag, 0
+                    ),
+                )
+                for tag, count in finetune_tag_counts.items()
             ],
         )
 

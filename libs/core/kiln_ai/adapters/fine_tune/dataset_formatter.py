@@ -90,10 +90,7 @@ def build_training_data(
 
     if data_strategy in THINKING_DATA_STRATEGIES:
         # Prefer reasoning to cot if both are present
-        intermediate_outputs = task_run.intermediate_outputs or {}
-        thinking = intermediate_outputs.get("reasoning") or intermediate_outputs.get(
-            "chain_of_thought"
-        )
+        thinking = task_run.thinking_training_data()
 
         if data_strategy == FinetuneDataStrategy.final_and_intermediate_r1_compatible:
             if not task_run.has_thinking_training_data() or not thinking:

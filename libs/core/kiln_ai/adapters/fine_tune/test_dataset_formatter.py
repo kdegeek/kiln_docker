@@ -44,6 +44,7 @@ def mock_task():
                 "input": '{"test": "input 你好"}',
                 "repaired_output": None,
                 "intermediate_outputs": {},
+                "thinking_training_data": Mock(return_value=None),
                 "input_source": Mock(
                     spec=DataSource,
                     **{
@@ -85,6 +86,7 @@ def mock_task():
 def mock_intermediate_outputs(mock_task):
     for run in mock_task.runs():
         run.intermediate_outputs = {"reasoning": "thinking output"}
+        run.thinking_training_data.return_value = "thinking output"
     mock_task.thinking_instruction = "thinking instructions"
     return mock_task
 
@@ -725,6 +727,7 @@ def test_build_training_data_with_COT(mock_task):
     mock_task_run = mock_task.runs()[0]
     assert mock_task_run.parent_task() == mock_task
     mock_task_run.intermediate_outputs = {"chain_of_thought": "cot output"}
+    mock_task_run.thinking_training_data.return_value = "cot output"
 
     training_data_output = build_training_data(
         mock_task_run,
@@ -774,6 +777,7 @@ def test_build_training_data_with_COT_r1_style(mock_task):
     mock_task_run = mock_task.runs()[0]
     assert mock_task_run.parent_task() == mock_task
     mock_task_run.intermediate_outputs = {"chain_of_thought": "cot output"}
+    mock_task_run.thinking_training_data.return_value = "cot output"
 
     training_data_output = build_training_data(
         mock_task_run,
@@ -799,6 +803,7 @@ def test_build_training_data_with_thinking(mock_task):
         "reasoning": "thinking output",
         "chain_of_thought": "cot output",
     }
+    mock_task_run.thinking_training_data.return_value = "thinking output"
     mock_task.thinking_instruction = "thinking instructions"
     assert mock_task.thinking_instruction == "thinking instructions"
 
@@ -826,7 +831,9 @@ def test_build_training_data_with_thinking_r1_style(mock_task):
         "reasoning": "thinking output",
         "chain_of_thought": "cot output",
     }
+    mock_task_run.thinking_training_data.return_value = "thinking output"
     mock_task.thinking_instruction = "thinking instructions"
+
     assert mock_task.thinking_instruction == "thinking instructions"
 
     training_data_output = build_training_data(
