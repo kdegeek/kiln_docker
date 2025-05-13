@@ -23,6 +23,8 @@ from kiln_ai.datamodel import (
     Project,
     Task,
     TaskOutput,
+    TaskOutputRating,
+    TaskOutputRatingType,
     TaskRun,
 )
 from kiln_ai.datamodel.dataset_filters import DatasetFilterId
@@ -112,9 +114,15 @@ def test_task(tmp_path):
             tags=["fine_tune_1", "other_tag"],
             input="Test input 1",
             input_source={"type": "human", "properties": {"created_by": "user1"}},
+            # Reasoning and high rated
+            intermediate_outputs={"reasoning": "thinking output"},
             output=TaskOutput(
                 output="Test output 1",
                 source={"type": "human", "properties": {"created_by": "user1"}},
+                rating=TaskOutputRating(
+                    value=5.0,
+                    type=TaskOutputRatingType.five_star,
+                ),
             ),
         ),
         TaskRun(
@@ -1561,9 +1569,9 @@ def test_finetune_dataset_info(client, mock_task_from_id_disk_backed, test_task)
 
     tag1 = next(x for x in data["finetune_tags"] if x["tag"] == "fine_tune_1")
     assert tag1["count"] == 2
-    assert tag1["reasoning_count"] == 0
-    assert tag1["high_quality_count"] == 0
-    assert tag1["reasoning_and_high_quality_count"] == 0
+    assert tag1["reasoning_count"] == 1
+    assert tag1["high_quality_count"] == 1
+    assert tag1["reasoning_and_high_quality_count"] == 1
 
     tag2 = next(x for x in data["finetune_tags"] if x["tag"] == "fine_tune_2")
     assert tag2["count"] == 1
