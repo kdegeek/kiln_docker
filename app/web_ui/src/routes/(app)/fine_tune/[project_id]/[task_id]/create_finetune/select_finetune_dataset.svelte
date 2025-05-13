@@ -79,8 +79,7 @@
       ? [
           {
             id: "existing_dataset",
-            name: "Use Existing Tuning Dataset",
-            header: "Select a dataset from an existing fine-tune",
+            name: "Use Training Dataset from Existing Fine-Tune",
             description:
               "When comparing multiple models, it's best to used exactly the same training dataset.",
           },
@@ -91,43 +90,36 @@
           {
             id: "new_dataset",
             name: "New Training Dataset",
-            description:
-              "Create a new training set using your current dataset.",
+            description: "Create a training set using your current data.",
           },
         ]
       : []),
     {
       id: "add",
-      name: "Add Fine Tuning Data",
+      name: "Add Training Data",
       description:
-        "Add a new fine-tuning data using synthetic data, csv upload, or by tagging existing data.",
+        "Add a new training data using synthetic data generation, CSV upload, or by tagging existing data.",
     },
   ]
 
-  export let top_option_selected: string | null = null
+  let select_existing_dataset = false
   function select_top_option(option: string) {
+    select_existing_dataset = false
     if (option === "new_dataset") {
       if (finetune_dataset_info?.funetune_tags.length === 1) {
         dataset_tag = finetune_dataset_info?.funetune_tags[0].tag
       }
       create_dataset_dialog?.show()
-      top_option_selected = null
     } else if (option === "add") {
       show_add_data()
-      top_option_selected = null
-    } else {
-      top_option_selected = option
+    } else if (option === "existing_dataset") {
+      select_existing_dataset = true
     }
   }
-  function reset_top_option() {
-    top_option_selected = null
-  }
-  $: selected_option_name =
-    top_options.find((o) => o.id === top_option_selected)?.header || ""
 
   function edit_dataset() {
-    top_option_selected = null
     selected_dataset = null
+    select_existing_dataset = false
   }
 
   let new_dataset_split = "train_val"
@@ -175,17 +167,6 @@
       }
       selected_dataset = create_dataset_split_response
       create_dataset_dialog?.close()
-      /*if (!datasets) {
-        datasets = []
-      }
-      datasets.push(create_dataset_split_response)
-      build_available_dataset_select(datasets)
-      dataset_id = create_dataset_split_response.id
-      const modal = document.getElementById("create_dataset_modal")
-      if (modal) {
-        // @ts-expect-error daisyui functions not typed
-        modal.close()
-      }*/
     } catch (e) {
       if (e instanceof Error && e.message.includes("Load failed")) {
         create_dataset_split_error = new KilnError(
@@ -228,75 +209,58 @@
             {formatDate(selected_dataset.created_at)}
           </div>
         </div>
-        <button class="btn btn-sm btn-md" on:click={edit_dataset}>Edit</button>
+        <button class="btn btn-sm btn-md" on:click={edit_dataset}
+          >Change Dataset</button
+        >
       </div>
-    {:else if !top_option_selected}
+    {:else if !select_existing_dataset}
       <OptionList options={top_options} select_option={select_top_option} />
-    {:else}
+    {:else if select_existing_dataset}
       <div class="text font-medium mb-4">
-        {selected_option_name}
+        Use Training Dataset from Existing Fine-Tune
         {#if top_options.length > 1}
           <span class="text-sm text-gray-500 font-normal">
-            <button class="link" on:click={reset_top_option}>
+            <button
+              class="link"
+              on:click={() => {
+                select_existing_dataset = false
+              }}
+            >
               or select another option
             </button>
           </span>
         {/if}
       </div>
-      {#if top_option_selected === "existing_dataset"}
-        <div class="flex flex-col gap-4 text-sm max-w-[600px]">
-          {#each finetune_dataset_info.existing_datasets as dataset}
-            {@const finetunes = finetune_dataset_info.existing_finetunes.filter(
-              (f) => f.dataset_split_id === dataset.id,
-            )}
-            {#if finetunes.length > 0 && dataset.id}
-              <button
-                class="card card-bordered border-base-300 bg-base-200 shadow-md w-full px-4 py-3 indicator grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 overflow-hidden text-left"
-                on:click={() => {
-                  selected_dataset = dataset
-                }}
-              >
-                <div class="text-xs text-gray-500">Dataset ID</div>
-                <div class="text-medium">{dataset.id}</div>
-                <div class="text-xs text-gray-500">Created</div>
-                <div>{formatDate(dataset.created_at)}</div>
-                {#each Object.keys(dataset.split_contents) as split_type}
-                  <div class="text-xs text-gray-500">
-                    Split: {split_type}
-                  </div>
-                  <div>
-                    {dataset.split_contents[split_type].length} items
-                  </div>
-                {/each}
-                <div class="text-xs text-gray-500">Tunes Using Dataset</div>
-                <div>{finetunes.map((f) => f.name).join(", ")}</div>
-              </button>
-            {/if}
-          {/each}
-        </div>
-      {:else if top_option_selected === "new_dataset"}
-        <div
-          class="grid grid-cols-1 md:grid-cols-[repeat(auto-fit,minmax(380px,1fr))] gap-4 text-sm"
-        >
-          {#each finetune_dataset_info.funetune_tags as tag}
+      <div class="flex flex-col gap-4 text-sm max-w-[600px]">
+        {#each finetune_dataset_info.existing_datasets as dataset}
+          {@const finetunes = finetune_dataset_info.existing_finetunes.filter(
+            (f) => f.dataset_split_id === dataset.id,
+          )}
+          {#if finetunes.length > 0 && dataset.id}
             <button
               class="card card-bordered border-base-300 bg-base-200 shadow-md w-full px-4 py-3 indicator grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 overflow-hidden text-left"
               on:click={() => {
-                console.log("tag", tag)
+                selected_dataset = dataset
               }}
             >
-              <div class="text-xs text-gray-500">Tag</div>
-              <div>{tag.tag}</div>
-              <div class="text-xs text-gray-500">Sample Count</div>
-              <div>{tag.count}</div>
+              <div class="text-xs text-gray-500">Dataset Name</div>
+              <div class="text-medium">{dataset.name}</div>
+              <div class="text-xs text-gray-500">Created</div>
+              <div>{formatDate(dataset.created_at)}</div>
+              {#each Object.keys(dataset.split_contents) as split_type}
+                <div class="text-xs text-gray-500">
+                  Split: {split_type}
+                </div>
+                <div>
+                  {dataset.split_contents[split_type].length} items
+                </div>
+              {/each}
+              <div class="text-xs text-gray-500">Tunes Using Dataset</div>
+              <div>{finetunes.map((f) => f.name).join(", ")}</div>
             </button>
-          {/each}
-        </div>
-      {:else if top_option_selected === "add"}
-        <div>
-          <div>New Dataset</div>
-        </div>
-      {/if}
+          {/if}
+        {/each}
+      </div>
     {/if}
   </div>
 {/if}
@@ -304,9 +268,7 @@
 <Dialog title="Create Training Dataset" bind:this={create_dataset_dialog}>
   <div class="font-light text-sm mb-6">
     <div class="font-light text-sm mb-6">
-      Create a new training dataset from dataset tag. We'll freeze a copy so
-      that you can create multiple fine-tunes from exactly the same training
-      data.
+      Snapshot your current dataset for training, filtering to a specific tag.
     </div>
     <div class="flex flex-row gap-6 justify-center flex-col">
       <FormContainer
@@ -317,9 +279,9 @@
       >
         <div>
           <FormElement
-            label="Dataset Tag"
-            description="Samples with this tag will be used for training."
-            info_description="Any tag starting with 'fine_tune' will be available here. Advanced users can create their own tags, and manage multiple training datasets."
+            label="Filter to Tag"
+            description="Samples with this tag will be included in the training dataset."
+            info_description="Any tag starting with 'fine_tune' will be available here. Advanced users can create their own tags to manage multiple training datasets."
             inputType="fancy_select"
             optional={false}
             id="dataset_filter"
