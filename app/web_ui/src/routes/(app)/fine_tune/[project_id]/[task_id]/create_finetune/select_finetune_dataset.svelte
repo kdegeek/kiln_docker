@@ -20,6 +20,7 @@
   export let selected_dataset: DatasetSplit | null = null
 
   let create_dataset_dialog: Dialog | null = null
+  let existing_dataset_dialog: Dialog | null = null
 
   onMount(async () => {
     load_finetune_dataset_info()
@@ -102,9 +103,7 @@
     },
   ]
 
-  let select_existing_dataset = false
   function select_top_option(option: string) {
-    select_existing_dataset = false
     if (option === "new_dataset") {
       if (finetune_dataset_info?.funetune_tags.length === 1) {
         dataset_tag = finetune_dataset_info?.funetune_tags[0].tag
@@ -113,13 +112,12 @@
     } else if (option === "add") {
       show_add_data()
     } else if (option === "existing_dataset") {
-      select_existing_dataset = true
+      existing_dataset_dialog?.show()
     }
   }
 
   function edit_dataset() {
     selected_dataset = null
-    select_existing_dataset = false
   }
 
   let new_dataset_split = "train_val"
@@ -213,54 +211,8 @@
           >Change Dataset</button
         >
       </div>
-    {:else if !select_existing_dataset}
+    {:else}
       <OptionList options={top_options} select_option={select_top_option} />
-    {:else if select_existing_dataset}
-      <div class="text font-medium mb-4">
-        Use Training Dataset from Existing Fine-Tune
-        {#if top_options.length > 1}
-          <span class="text-sm text-gray-500 font-normal">
-            <button
-              class="link"
-              on:click={() => {
-                select_existing_dataset = false
-              }}
-            >
-              or select another option
-            </button>
-          </span>
-        {/if}
-      </div>
-      <div class="flex flex-col gap-4 text-sm max-w-[600px]">
-        {#each finetune_dataset_info.existing_datasets as dataset}
-          {@const finetunes = finetune_dataset_info.existing_finetunes.filter(
-            (f) => f.dataset_split_id === dataset.id,
-          )}
-          {#if finetunes.length > 0 && dataset.id}
-            <button
-              class="card card-bordered border-base-300 bg-base-200 shadow-md w-full px-4 py-3 indicator grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 overflow-hidden text-left"
-              on:click={() => {
-                selected_dataset = dataset
-              }}
-            >
-              <div class="text-xs text-gray-500">Dataset Name</div>
-              <div class="text-medium">{dataset.name}</div>
-              <div class="text-xs text-gray-500">Created</div>
-              <div>{formatDate(dataset.created_at)}</div>
-              {#each Object.keys(dataset.split_contents) as split_type}
-                <div class="text-xs text-gray-500">
-                  Split: {split_type}
-                </div>
-                <div>
-                  {dataset.split_contents[split_type].length} items
-                </div>
-              {/each}
-              <div class="text-xs text-gray-500">Tunes Using Dataset</div>
-              <div>{finetunes.map((f) => f.name).join(", ")}</div>
-            </button>
-          {/if}
-        {/each}
-      </div>
     {/if}
   </div>
 {/if}
@@ -328,4 +280,56 @@
       </FormContainer>
     </div>
   </div>
+</Dialog>
+
+<Dialog
+  title="Select Training Dataset from Existing Fine-Tune"
+  bind:this={existing_dataset_dialog}
+  action_buttons={[
+    {
+      label: "Cancel",
+      isCancel: true,
+    },
+  ]}
+>
+  {#if !finetune_dataset_info}
+    <div class="text-error">No existing fine-tune datasets found.</div>
+  {:else}
+    <div class="font-light text-sm mb-6">
+      Select an existing training dataset to use exactly the same data for this
+      fine-tune.
+    </div>
+    <div class="flex flex-col gap-4 text-sm max-w-[600px]">
+      {#each finetune_dataset_info.existing_datasets as dataset}
+        {@const finetunes = finetune_dataset_info.existing_finetunes.filter(
+          (f) => f.dataset_split_id === dataset.id,
+        )}
+        {#if finetunes.length > 0 && dataset.id}
+          <button
+            class="card card-bordered border-base-300 bg-base-200 shadow-md w-full px-4 py-3 indicator grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 overflow-hidden text-left"
+            on:click={() => {
+              selected_dataset = dataset
+              existing_dataset_dialog?.close()
+            }}
+          >
+            <div class="text-xs text-gray-500">Dataset Name</div>
+            <div class="text-medium">{dataset.name}</div>
+            <div class="text-xs text-gray-500">Created</div>
+            <div>{formatDate(dataset.created_at)}</div>
+
+            <div class="text-xs text-gray-500">Dataset Size</div>
+            <div>
+              {Object.keys(dataset.split_contents)
+                .map((split_type) => {
+                  return `${dataset.split_contents[split_type].length} in '${split_type}'`
+                })
+                .join(", ")}
+            </div>
+            <div class="text-xs text-gray-500">Tunes Using Dataset</div>
+            <div>{finetunes.map((f) => f.name).join(", ")}</div>
+          </button>
+        {/if}
+      {/each}
+    </div>
+  {/if}
 </Dialog>
