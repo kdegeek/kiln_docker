@@ -14,6 +14,7 @@ export async function get_available_models() {
       return
     }
     available_models_loading.set(true)
+    available_models_error.set(null)
     const { data: available_models_response, error: get_error } =
       await client.GET("/api/finetune_providers", {})
     if (get_error) {
