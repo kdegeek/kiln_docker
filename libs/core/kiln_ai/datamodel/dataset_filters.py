@@ -66,8 +66,7 @@ class MultiDatasetFilter:
     The filters are specified in a query string format after 'multi_filter::'
     Example: multi_filter::high_rating&thinking_model&tag::tag_name
 
-    Ampersands in filter IDs can be escaped with a backslash: \\& (single backslash, if viewing in code and not docs you will see double backslashes)
-    Example: multi_filter::high_rating&tag::tag\\&name
+    Ampersands in filter IDs can be escaped with a backslash.
     """
 
     PREFIX: ClassVar[str] = "multi_filter::"
@@ -78,7 +77,6 @@ class MultiDatasetFilter:
     def parse_filter_string(cls, filter_string: str) -> List[str]:
         """
         Parse a filter string into individual filter IDs, handling escaped ampersands.
-        Example: "high_rating&tag::tag\&name" -> ["high_rating", "tag::tag&name"]
         """
         if not filter_string.startswith(cls.PREFIX):
             raise ValueError(f"Filter string must start with {cls.PREFIX}")
