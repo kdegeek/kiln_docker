@@ -1900,6 +1900,12 @@ export interface components {
             tag: string;
             /** Count */
             count: number;
+            /** Reasoning Count */
+            reasoning_count: number;
+            /** High Quality Count */
+            high_quality_count: number;
+            /** Reasoning And High Quality Count */
+            reasoning_and_high_quality_count: number;
         };
         /**
          * FinetuneProvider

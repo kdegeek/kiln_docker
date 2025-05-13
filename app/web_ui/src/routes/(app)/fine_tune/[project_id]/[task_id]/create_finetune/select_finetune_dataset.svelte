@@ -10,6 +10,7 @@
   import FormElement from "$lib/utils/form_element.svelte"
   import { goto } from "$app/navigation"
   import type { DatasetSplit } from "$lib/types"
+  import Warning from "$lib/ui/warning.svelte"
 
   let finetune_dataset_info: FinetuneDatasetInfo | null = null
   let loading = true
@@ -21,6 +22,9 @@
 
   let create_dataset_dialog: Dialog | null = null
   let existing_dataset_dialog: Dialog | null = null
+
+  let filter_to_reasoning_data = false
+  let filter_to_highly_rated_data = false
 
   onMount(async () => {
     load_finetune_dataset_info()
@@ -185,6 +189,22 @@
     )}`
     goto(link)
   }
+
+  let new_dataset_filter_count: number | undefined = undefined
+  $: if (selected_dataset_tag_data) {
+    if (filter_to_reasoning_data && filter_to_highly_rated_data) {
+      new_dataset_filter_count =
+        selected_dataset_tag_data.reasoning_and_high_quality_count
+    } else if (filter_to_reasoning_data) {
+      new_dataset_filter_count = selected_dataset_tag_data.reasoning_count
+    } else if (filter_to_highly_rated_data) {
+      new_dataset_filter_count = selected_dataset_tag_data.high_quality_count
+    } else {
+      new_dataset_filter_count = selected_dataset_tag_data.count
+    }
+  } else {
+    new_dataset_filter_count = undefined
+  }
 </script>
 
 {#if loading}
@@ -259,10 +279,12 @@
         on:submit={create_dataset}
         bind:error={create_dataset_split_error}
         bind:submitting={create_dataset_split_loading}
+        submit_visible={new_dataset_filter_count !== undefined &&
+          new_dataset_filter_count > 0}
       >
-        <div>
+        <div class="flex flex-col gap-4">
           <FormElement
-            label="Filter to Tag"
+            label="Target Dataset Tag"
             description="Samples with this tag will be included in the training dataset."
             info_description="Any tag starting with 'fine_tune' will be available here. Advanced users can create their own tags to manage multiple training datasets."
             inputType="fancy_select"
@@ -271,42 +293,72 @@
             fancy_select_options={tag_select_options || []}
             bind:value={dataset_tag}
           />
-          {#if selected_dataset_tag_data && selected_dataset_tag_data.count < 25}
-            <div class="text-error text-sm mt-1">
-              The selected dataset tag has less than 25 samples. We suggest at
-              least 25 samples for a good fine-tune.
-            </div>
-          {:else if selected_dataset_tag_data}
-            <div class="text-sm mt-1">
-              The selected dataset tag has {selected_dataset_tag_data.count}
-              samples.
-            </div>
-          {/if}
-        </div>
 
-        <div class="collapse collapse-arrow bg-base-200">
-          <input type="checkbox" class="peer" />
-          <div class="collapse-title font-medium flex items-center">
-            Advanced Options
+          <FormElement
+            inputType="checkbox"
+            label="Filter to Reasoning Samples"
+            info_description="Only samples with a thinking data (reasoning or chain of thought) will be included in the training dataset. Required when training a reasoning model."
+            id="use_reasoning_data"
+            bind:value={filter_to_reasoning_data}
+          />
+          <FormElement
+            inputType="checkbox"
+            label="Filter to Highly Rated Samples"
+            info_description="Only samples with an overall rating of 4 or 5 stars will be included in the training dataset. Required when training a high-quality model."
+            id="filter_to_highly_rated_data"
+            bind:value={filter_to_highly_rated_data}
+          />
+
+          <div class="collapse collapse-arrow bg-base-200">
+            <input type="checkbox" class="peer" />
+            <div class="collapse-title font-medium flex items-center">
+              Advanced Options
+            </div>
+            <div class="collapse-content flex flex-col gap-4">
+              <FormElement
+                label="Dataset Splits"
+                description="Select ratios for splitting the data into training, validation, and test."
+                info_description="If in doubt, leave the the recommended value. If you're using an external test set such as Kiln Evals, you don't need a test set here."
+                inputType="select"
+                optional={false}
+                id="dataset_split"
+                select_options={[
+                  ["train_val", "80% Training, 20% Validation (Recommended)"],
+                  ["train_test", "80% Training, 10% Test, 10% Validation"],
+                  ["train_test_val", "60% Training, 20% Test, 20% Validation"],
+                  [
+                    "train_test_val_80",
+                    "80% Training, 10% Test, 10% Validation",
+                  ],
+                  ["all", "100% Training"],
+                ]}
+                bind:value={new_dataset_split}
+              />
+            </div>
           </div>
-          <div class="collapse-content flex flex-col gap-4">
-            <FormElement
-              label="Dataset Splits"
-              description="Select ratios for splitting the data into training, validation, and test."
-              info_description="If in doubt, leave the the recommended value. If you're using an external test set such as Kiln Evals, you don't need a test set here."
-              inputType="select"
-              optional={false}
-              id="dataset_split"
-              select_options={[
-                ["train_val", "80% Training, 20% Validation (Recommended)"],
-                ["train_test", "80% Training, 10% Test, 10% Validation"],
-                ["train_test_val", "60% Training, 20% Test, 20% Validation"],
-                ["train_test_val_80", "80% Training, 10% Test, 10% Validation"],
-                ["all", "100% Training"],
-              ]}
-              bind:value={new_dataset_split}
-            />
-          </div>
+
+          {#if new_dataset_filter_count !== undefined}
+            {#if new_dataset_filter_count == 0}
+              <Warning
+                warning_message="Zero samples match your filters. Your dataset must include at least 1 sample. Please try a different filter or add more data."
+                large_icon={true}
+              />
+            {:else if new_dataset_filter_count < 50}
+              <Warning
+                warning_message="The dataset will only have {new_dataset_filter_count} samples. We suggest at least 50 samples for fine-tuning."
+                warning_color={new_dataset_filter_count < 25
+                  ? "error"
+                  : "warning"}
+                large_icon={true}
+              />
+            {:else}
+              <Warning
+                warning_message="The dataset will have {new_dataset_filter_count} samples"
+                warning_icon="info"
+                warning_color="success"
+              />
+            {/if}
+          {/if}
         </div>
       </FormContainer>
     </div>

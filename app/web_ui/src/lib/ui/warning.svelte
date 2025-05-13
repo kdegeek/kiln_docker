@@ -1,8 +1,14 @@
 <script lang="ts">
   export let warning_message: string | undefined | null = undefined
-  export let warning_color: "error" | "warning" = "error"
+  export let warning_color: "error" | "warning" | "success" | undefined =
+    undefined
+  export let warning_icon: "exclaim" | "info" = "exclaim"
+  export let large_icon: boolean = false
   export let tight: boolean = false
   export let trusted: boolean = false
+
+  // Default to error if no color is provided
+  $: color = warning_color || "error"
 
   function html_warning_message() {
     let message = warning_message
@@ -25,9 +31,13 @@
 {#if warning_message}
   <div class="text-sm text-gray-500 flex flex-row items-center mt-2">
     <svg
-      class="w-5 h-5 flex-none {warning_color === 'error'
+      class="{large_icon ? 'w-8 h-8' : 'w-5 h-5'} flex-none {color === 'error'
         ? 'text-error'
-        : 'text-warning'}"
+        : color === 'warning'
+          ? 'text-warning'
+          : color === 'success'
+            ? 'text-success'
+            : ''} {warning_icon === 'info' ? 'rotate-180' : ''} "
       fill="currentColor"
       width="800px"
       height="800px"
