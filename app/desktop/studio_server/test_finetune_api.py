@@ -1557,8 +1557,8 @@ def test_finetune_dataset_info(client, mock_task_from_id_disk_backed, test_task)
     assert finetune_ids == {"ft1", "ft2"}
 
     # Verify fine_tune tags
-    assert len(data["funetune_tags"]) == 2
-    tag_counts = {tag["tag"]: tag["count"] for tag in data["funetune_tags"]}
+    assert len(data["finetune_tags"]) == 2
+    tag_counts = {tag["tag"]: tag["count"] for tag in data["finetune_tags"]}
     assert tag_counts == {
         "fine_tune_1": 2,  # Appears in run1 and run2
         "fine_tune_2": 1,  # Appears only in run2
@@ -1586,7 +1586,7 @@ def test_finetune_dataset_info_no_tags(
     assert len(data["existing_finetunes"]) == 2
 
     # Verify no fine_tune tags
-    assert len(data["funetune_tags"]) == 0
+    assert len(data["finetune_tags"]) == 0
 
 
 def test_finetune_dataset_info_no_datasets_or_finetunes(
@@ -1616,6 +1616,6 @@ def test_finetune_dataset_info_no_datasets_or_finetunes(
     # Verify empty lists
     assert len(data["existing_datasets"]) == 0
     assert len(data["existing_finetunes"]) == 0
-    assert len(data["funetune_tags"]) == 0
+    assert len(data["finetune_tags"]) == 0
 
     mock_task_from_id_disk_backed.assert_called_once_with("project1", "task1")

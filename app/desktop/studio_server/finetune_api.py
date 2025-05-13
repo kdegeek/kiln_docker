@@ -78,7 +78,7 @@ class FinetuneDatasetInfo(BaseModel):
 
     existing_datasets: list[DatasetSplit]
     existing_finetunes: list[Finetune]
-    funetune_tags: list[FinetuneDatasetTagInfo]
+    finetune_tags: list[FinetuneDatasetTagInfo]
 
 
 class DatasetSplitType(Enum):
@@ -291,7 +291,7 @@ def connect_fine_tune_api(app: FastAPI):
         return FinetuneDatasetInfo(
             existing_datasets=existing_datasets,
             existing_finetunes=existing_finetunes,
-            funetune_tags=[
+            finetune_tags=[
                 FinetuneDatasetTagInfo(tag=tag, count=count)
                 for tag, count in funetune_tag_counts.items()
             ],

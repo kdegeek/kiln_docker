@@ -67,7 +67,7 @@
     {
       label: "Dataset Tags",
       options:
-        finetune_dataset_info?.funetune_tags?.map((tag) => ({
+        finetune_dataset_info?.finetune_tags?.map((tag) => ({
           label: tag.tag,
           value: tag.tag,
           description: `The tag '${tag.tag}' has ${tag.count} samples.`,
@@ -86,7 +86,7 @@
           },
         ]
       : []),
-    ...(finetune_dataset_info?.funetune_tags.length
+    ...(finetune_dataset_info?.finetune_tags.length
       ? [
           {
             id: "new_dataset",
@@ -105,8 +105,8 @@
 
   function select_top_option(option: string) {
     if (option === "new_dataset") {
-      if (finetune_dataset_info?.funetune_tags.length === 1) {
-        dataset_tag = finetune_dataset_info?.funetune_tags[0].tag
+      if (finetune_dataset_info?.finetune_tags.length === 1) {
+        dataset_tag = finetune_dataset_info?.finetune_tags[0].tag
       }
       create_dataset_dialog?.show()
     } else if (option === "add") {
@@ -122,7 +122,7 @@
 
   let new_dataset_split = "train_val"
   let dataset_tag: string | null = null
-  $: selected_dataset_tag_data = finetune_dataset_info?.funetune_tags.find(
+  $: selected_dataset_tag_data = finetune_dataset_info?.finetune_tags.find(
     (t) => t.tag === dataset_tag,
   )
   let create_dataset_split_error: KilnError | null = null

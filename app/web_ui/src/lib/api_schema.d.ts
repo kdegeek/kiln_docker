@@ -1888,8 +1888,8 @@ export interface components {
             existing_datasets: components["schemas"]["DatasetSplit"][];
             /** Existing Finetunes */
             existing_finetunes: components["schemas"]["Finetune"][];
-            /** Funetune Tags */
-            funetune_tags: components["schemas"]["FinetuneDatasetTagInfo"][];
+            /** Finetune Tags */
+            finetune_tags: components["schemas"]["FinetuneDatasetTagInfo"][];
         };
         /**
          * FinetuneDatasetTagInfo
