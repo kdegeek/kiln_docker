@@ -61,6 +61,7 @@
       ? "all"
       : null
 
+  $: step_2_visible = $model_provider && $model_provider !== disabled_header
   $: step_3_visible =
     $model_provider && $model_provider !== disabled_header && !!selected_dataset
   $: is_download = !!$model_provider?.startsWith("download_")
@@ -90,6 +91,13 @@
             ": " +
             model.name +
             (provider.enabled ? "" : " --- Requires API Key in Settings"),
+        ])
+      }
+      // Providers with zero models should still appear and be disabled. Logging in will typically load their models
+      if (!provider.enabled && provider.models.length === 0) {
+        available_model_select.push([
+          "disabled_" + provider.id,
+          provider.name + " --- Requires API Key in Settings",
         ])
       }
     }
@@ -402,7 +410,7 @@
 <div class="max-w-[1400px]">
   <AppPage
     title="Create a New Fine Tune"
-    subtitle="Fine-tuned models learn on your dataset."
+    subtitle="Fine-tuned models learn from your dataset."
   >
     {#if $available_models_loading}
       <div class="w-full min-h-[50vh] flex justify-center items-center">
@@ -434,7 +442,9 @@
         bind:error={create_finetune_error}
         bind:submitting={create_finetune_loading}
       >
-        <div class="text-xl font-bold">Step 1: Select Model</div>
+        <div class="text-xl font-bold">
+          Step 1: Select Base Model to Fine-Tune
+        </div>
         <FormElement
           label="Model & Provider"
           description="Select which model to fine-tune. Alternatively, download a JSONL file to fine-tune using any infrastructure."
@@ -444,7 +454,7 @@
           select_options={available_model_select}
           bind:value={$model_provider}
         />
-        {#if $model_provider && $model_provider !== disabled_header}
+        {#if step_2_visible}
           <div class="text-xl font-bold">Step 2: Training Dataset</div>
           <SelectFinetuneDataset {project_id} {task_id} bind:selected_dataset />
         {/if}
