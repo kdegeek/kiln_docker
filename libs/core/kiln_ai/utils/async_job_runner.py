@@ -14,8 +14,9 @@ class Progress:
 
 class AsyncJobRunner:
     def __init__(self, concurrency: int = 1):
+        if concurrency < 1:
+            raise ValueError("concurrency must be ≥ 1")
         self.concurrency = concurrency
-
     async def run(
         self,
         jobs: List[T],
