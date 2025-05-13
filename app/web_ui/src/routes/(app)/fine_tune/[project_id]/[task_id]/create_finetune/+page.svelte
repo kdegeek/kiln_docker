@@ -367,6 +367,7 @@
     model_provider: string | null,
     base_model_id: string | null,
     is_download: boolean,
+    available_models: FinetuneProvider[] | null,
   ) {
     if (!model_provider || !base_model_id) {
       return
@@ -416,6 +417,7 @@
     $model_provider,
     base_model_id,
     is_download,
+    available_models,
   )
 </script>
 
