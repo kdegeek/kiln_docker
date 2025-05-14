@@ -11,6 +11,8 @@
   import { goto } from "$app/navigation"
   import type { DatasetSplit } from "$lib/types"
   import Warning from "$lib/ui/warning.svelte"
+  import { progress_ui_state } from "$lib/stores/progress_ui_store"
+  import { page } from "$app/stores"
 
   let finetune_dataset_info: FinetuneDatasetInfo | null = null
   let loading = true
@@ -190,6 +192,15 @@
   }
 
   function show_add_data() {
+    progress_ui_state.set({
+      title: "Creating Fine-Tune",
+      body: "When you're done adding data, ",
+      link: $page.url.pathname,
+      cta: "return to fine-tuning",
+      progress: null,
+      step_count: 4,
+      current_step: 2,
+    })
     let link = `/dataset/${project_id}/${task_id}/add_data?reason=fine_tune&splits=fine_tune_data:1.0&finetune_link=${encodeURIComponent(
       `/fine_tune/${project_id}/${task_id}/create_finetune`,
     )}`
