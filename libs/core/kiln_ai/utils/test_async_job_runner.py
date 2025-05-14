@@ -1,5 +1,5 @@
 from typing import List
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -180,3 +180,20 @@ async def test_async_job_runner_partial_raises(concurrency):
 
     # we should have seen one update for each job, plus one for the initial status update
     assert len(updates) == job_count + 1
+
+
+@pytest.mark.parametrize("concurrency", [1, 25])
+@pytest.mark.asyncio
+async def test_async_job_runner_cancelled(concurrency):
+    runner = AsyncJobRunner(concurrency=concurrency)
+    jobs = [{"id": i} for i in range(10)]
+
+    with patch.object(
+        runner,
+        "_run_worker",
+        side_effect=Exception("run_worker raised an exception"),
+    ):
+        # if an exception is raised in the task, we should see it bubble up
+        with pytest.raises(Exception, match="run_worker raised an exception"):
+            async for _ in runner.run(jobs, AsyncMock(return_value=True)):
+                pass
