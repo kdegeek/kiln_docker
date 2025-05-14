@@ -93,14 +93,14 @@ class AsyncJobRunner:
 
             try:
                 success = await run_job(job)
-            except Exception as exc:
-                logger.exception("Job failed to complete", exc_info=exc)
+            except Exception:
+                logger.error("Job failed to complete", exc_info=True)
                 success = False
 
             try:
                 await status_queue.put(success)
-            except Exception as e:
-                logger.exception("Failed to enqueue status for job", exc_info=e)
+            except Exception:
+                logger.error("Failed to enqueue status for job", exc_info=True)
             finally:
                 # Always mark the dequeued task as done, even on exceptions
                 worker_queue.task_done()
