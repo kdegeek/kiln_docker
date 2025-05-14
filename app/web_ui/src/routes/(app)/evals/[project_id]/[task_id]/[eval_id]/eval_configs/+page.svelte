@@ -654,7 +654,7 @@
                       {:else}
                         None
                         <InfoTooltip
-                          tooltip_text="No scores were found for this eval method. Click 'Run Eval' to generate scores."
+                          tooltip_text="No scores were found for this eval method. Click 'Run Eval' to generate scores and ensure your golden dataset has human ratings."
                           no_pad={true}
                         />
                       {/if}
