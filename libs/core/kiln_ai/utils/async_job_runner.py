@@ -1,15 +1,18 @@
 import asyncio
+import logging
 from dataclasses import dataclass
 from typing import AsyncGenerator, Awaitable, Callable, List, TypeVar
+
+logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
 
 
 @dataclass
 class Progress:
-    complete: int | None = None
-    total: int | None = None
-    errors: int | None = None
+    complete: int
+    total: int
+    errors: int
 
 
 class AsyncJobRunner:
@@ -43,7 +46,7 @@ class AsyncJobRunner:
         workers = []
         for _ in range(self.concurrency):
             task = asyncio.create_task(
-                self._run_worker(worker_queue, status_queue, run_job)
+                self._run_worker(worker_queue, status_queue, run_job),
             )
             workers.append(task)
 
@@ -80,9 +83,17 @@ class AsyncJobRunner:
             except asyncio.QueueEmpty:
                 # worker can end when the queue is empty
                 break
+
             try:
                 success = await run_job(job)
+            except Exception as exc:
+                logger.exception("Job failed to complete", exc_info=exc)
+                success = False
+
+            try:
                 await status_queue.put(success)
+            except Exception as e:
+                logger.exception("Failed to enqueue status for job", exc_info=e)
             finally:
                 # Always mark the dequeued task as done, even on exceptions
                 worker_queue.task_done()

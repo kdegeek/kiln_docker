@@ -1,8 +1,15 @@
+from typing import List
 from unittest.mock import AsyncMock
 
 import pytest
 
-from kiln_ai.utils.async_job_runner import AsyncJobRunner
+from kiln_ai.utils.async_job_runner import AsyncJobRunner, Progress
+
+
+@pytest.mark.parametrize("concurrency", [0, -1, -25])
+def test_invalid_concurrency_raises(concurrency):
+    with pytest.raises(ValueError):
+        AsyncJobRunner(concurrency=concurrency)
 
 
 # Test with and without concurrency
@@ -34,6 +41,32 @@ async def test_async_job_runner_status_updates(concurrency):
     # Verify run_job was called with the correct arguments
     for i in range(job_count):
         mock_run_job_success.assert_any_await(jobs[i])
+
+
+# Test with and without concurrency
+@pytest.mark.parametrize("concurrency", [1, 25])
+@pytest.mark.asyncio
+async def test_async_job_runner_status_updates_empty_job_list(concurrency):
+    empty_job_list = []
+
+    runner = AsyncJobRunner(concurrency=concurrency)
+
+    # fake run_job that succeeds
+    mock_run_job_success = AsyncMock(return_value=True)
+
+    updates: List[Progress] = []
+    async for progress in runner.run(empty_job_list, mock_run_job_success):
+        updates.append(progress)
+
+    # Verify last status update was complete
+    assert len(updates) == 1
+
+    assert updates[0].complete == 0
+    assert updates[0].errors == 0
+    assert updates[0].total == 0
+
+    # Verify run_job was called for each job
+    assert mock_run_job_success.call_count == 0
 
 
 @pytest.mark.parametrize("concurrency", [1, 25])
@@ -73,7 +106,7 @@ async def test_async_job_runner_partial_failures(concurrency):
     jobs = [{"id": i} for i in range(job_count)]
 
     # we want to fail on some jobs and succeed on others
-    jobs_to_fail = (0, 2, 4, 6, 8, 20, 25)
+    jobs_to_fail = set([0, 2, 4, 6, 8, 20, 25])
 
     runner = AsyncJobRunner(concurrency=concurrency)
 
@@ -88,7 +121,7 @@ async def test_async_job_runner_partial_failures(concurrency):
         assert progress.total == job_count
 
     # Verify last status update was complete
-    expected_error_count = len([job for job in jobs if job["id"] in jobs_to_fail])
+    expected_error_count = len(jobs_to_fail)
     expected_success_count = len(jobs) - expected_error_count
     assert progress.errors == expected_error_count
     assert progress.complete == expected_success_count
@@ -101,34 +134,49 @@ async def test_async_job_runner_partial_failures(concurrency):
         mock_run_job_partial_success.assert_any_await(jobs[i])
 
 
+@pytest.mark.parametrize("concurrency", [1, 25])
 @pytest.mark.asyncio
-async def test_async_job_runner_partial_raises():
+async def test_async_job_runner_partial_raises(concurrency):
     job_count = 50
     jobs = [{"id": i} for i in range(job_count)]
 
-    # we use concurrency=1 to avoid having the other workers complete jobs
-    # concurrently as that would make it hard to verify when the runner exits
-    runner = AsyncJobRunner(concurrency=1)
+    runner = AsyncJobRunner(concurrency=concurrency)
 
-    id_to_fail = 10
+    ids_to_fail = set([10, 25])
 
     def failure_fn(job):
-        if job["id"] == id_to_fail:
+        if job["id"] in ids_to_fail:
             raise Exception("job failed unexpectedly")
         return True
 
     # fake run_job that fails
     mock_run_job_partial_success = AsyncMock(side_effect=failure_fn)
 
-    # Expect the status updates in order, and 1 for each job
-    # until we hit the job that raises an exception
-    with pytest.raises(Exception, match="job failed unexpectedly"):
-        expected_complete = 0
-        async for progress in runner.run(jobs, mock_run_job_partial_success):
-            assert progress.complete == expected_complete
-            assert progress.errors == 0
-            assert progress.total == job_count
-            expected_complete += 1
+    # generate all the values we expect to see in progress updates
+    complete_values_expected = set([i for i in range(job_count - len(ids_to_fail) + 1)])
+    errors_values_expected = set([i for i in range(len(ids_to_fail) + 1)])
 
-    # verify that we yielded progress for jobs all the way up to the job that raised an exception
-    assert expected_complete == id_to_fail + 1
+    # keep track of all the updates we see
+    updates: List[Progress] = []
+
+    # we keep track of the progress values we have actually seen
+    complete_values_actual = set()
+    errors_values_actual = set()
+
+    # Expect the status updates in order, and 1 for each job
+    async for progress in runner.run(jobs, mock_run_job_partial_success):
+        updates.append(progress)
+        complete_values_actual.add(progress.complete)
+        errors_values_actual.add(progress.errors)
+
+        assert progress.total == job_count
+
+    # complete values should be all the jobs, except for the ones that failed
+    assert progress.complete == job_count - len(ids_to_fail)
+
+    # check that the actual updates and expected updates are equivalent sets
+    assert complete_values_actual == complete_values_expected
+    assert errors_values_actual == errors_values_expected
+
+    # we should have seen one update for each job, plus one for the initial status update
+    assert len(updates) == job_count + 1
