@@ -336,17 +336,19 @@
     )}:0.8,${encodeURIComponent(golden_tag)}:0.2&eval_link=${encodeURIComponent(
       window.location.pathname,
     )}`
-    show_progress_ui("When you're done adding data, ", 0.25)
+    show_progress_ui("When you're done adding data, ", 2)
     goto(url)
   }
 
-  function show_progress_ui(body: string, progress: number) {
+  function show_progress_ui(body: string, step: number) {
     progress_ui_state.set({
       title: "Creating Eval",
       body,
       link: $page.url.pathname,
       cta: "return to the eval",
-      progress,
+      progress: null,
+      step_count: 5,
+      current_step: step,
     })
   }
 
@@ -359,19 +361,19 @@
       return
     }
 
-    show_progress_ui("When you're done rating, ", 0.5)
+    show_progress_ui("When you're done rating, ", 3)
     goto(url)
   }
 
   function compare_eval_methods() {
     let url = `/evals/${project_id}/${task_id}/${eval_id}/eval_configs`
-    show_progress_ui("When you're done comparing eval methods, ", 0.7)
+    show_progress_ui("When you're done comparing eval methods, ", 4)
     goto(url)
   }
 
   function compare_run_methods() {
     let url = `/evals/${project_id}/${task_id}/${eval_id}/compare_run_methods`
-    show_progress_ui("When you're done comparing run methods, ", 0.9)
+    show_progress_ui("When you're done comparing run methods, ", 5)
     goto(url)
   }
 </script>

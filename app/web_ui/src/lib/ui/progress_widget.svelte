@@ -34,7 +34,7 @@
 
 {#if $state}
   <button
-    class="bg-white border border-primary flex flex-col items-start gap-1 relative"
+    class="bg-white border border-primary flex flex-col gap-1 items-start relative"
     on:click={openLink}
   >
     <button
@@ -54,6 +54,25 @@
         value={$state.progress * 100}
         max="100"
       ></progress>
+    {:else if $state?.step_count !== null && $state?.current_step !== null}
+      <div class="h-4 overflow-hidden w-48 mt-1 ml-[-8px]">
+        <div class="scale-[0.35] origin-top-left w-[160]">
+          <ul class="steps pl-0 ml-0">
+            {#each Array($state.step_count) as _, index}
+              <li
+                class="step {$state.step_count <= 6
+                  ? 'w-[90px]'
+                  : ''} {$state.current_step > index ? 'step-primary' : ''}"
+                data-content=""
+              >
+                &nbsp;
+              </li>
+            {/each}
+          </ul>
+        </div>
+      </div>
+    {:else}
+      <div class="badge badge-primary text-xs">In Progress</div>
     {/if}
   </button>
 {/if}

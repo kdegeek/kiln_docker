@@ -2,11 +2,13 @@ import type { Writable } from "svelte/store"
 import { localStorageStore } from "../stores"
 
 export type ProgressUIState = {
-  progress: number | null
   title: string
   body: string
   cta: string | null
   link: string
+  progress: number | null
+  step_count: number | null
+  current_step: number | null
 }
 
 export const progress_ui_state: Writable<ProgressUIState | null> =

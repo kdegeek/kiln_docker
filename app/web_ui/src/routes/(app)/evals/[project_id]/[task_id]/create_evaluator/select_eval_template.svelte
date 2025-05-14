@@ -205,7 +205,9 @@
       body: "When you're done editing requirements, ",
       link: $page.url.pathname,
       cta: "return to the eval",
-      progress: 0.1,
+      progress: null,
+      step_count: 5,
+      current_step: 1,
     })
     return true
   }
