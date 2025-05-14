@@ -44,8 +44,8 @@ class GEvalTask(Task, parent_of={}):
         # Build the COT eval instructions
         cot_instructions = "First, think step by step about the model's performance following these evaluation steps:\n\n"
         steps = eval_config.properties.get("eval_steps", None)
-        if not steps or not isinstance(steps, list):
-            raise ValueError("eval_steps must be a list")
+        if not isinstance(steps, list):
+            raise ValueError("eval_steps must be a list. Was: " + str(steps))
         for i, step in enumerate(steps):
             cot_instructions += f"{i + 1}) {step}\n"
 
