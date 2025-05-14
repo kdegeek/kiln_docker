@@ -1,10 +1,13 @@
 <script lang="ts">
+  import { page } from "$app/stores"
+
   export let generate_subtopics: () => void
   export let generate_samples: () => void
   export let project_id: string
   export let task_id: string
 
   let let_me_in: boolean = false
+  $: reason = $page.url.searchParams.get("reason")
 </script>
 
 <div class="flex flex-col md:flex-row gap-32 justify-center items-center">
@@ -30,14 +33,9 @@
         />
       </svg>
     </div>
-    <div class="font-medium text-lg">
-      {#if let_me_in}
-        Synthetic Data Tips
-      {:else}
-        Generate Synthetic Data for Training or Evaluations
-      {/if}
-    </div>
-    {#if let_me_in}
+
+    {#if let_me_in || reason}
+      <div class="font-medium text-lg">Synthetic Data Tips</div>
       <div>
         1. Adding topics will help generate diverse data. They can be nested,
         forming a topic tree. <a
@@ -68,6 +66,9 @@
         Read the Docs
       </a>
     {:else}
+      <div class="font-medium text-lg">
+        Generate Synthetic Data for Training or Evaluations
+      </div>
       <div>
         We suggest adding synthetic data as part of creating an eval or creating
         a fine-tuning training set.
