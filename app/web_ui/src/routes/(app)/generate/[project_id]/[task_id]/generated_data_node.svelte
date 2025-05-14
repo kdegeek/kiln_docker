@@ -236,6 +236,8 @@
         <DataGenIntro
           generate_subtopics={open_generate_subtopics_modal}
           generate_samples={open_generate_samples_modal}
+          {project_id}
+          {task_id}
         />
       </div>
     {:else}
