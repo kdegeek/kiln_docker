@@ -75,6 +75,34 @@
     running_progress_dialog?.show()
     return true
   }
+
+  // Returns false so the dialog isn't closed
+  function re_run_eval(): boolean {
+    run_eval()
+    return false
+  }
+
+  function run_dialog_buttons(eval_state: string) {
+    let buttons = []
+
+    if (eval_state === "complete" || eval_state === "complete_with_errors") {
+      buttons.push({
+        label: "Close",
+        isCancel: true,
+        isPrimary: false,
+      })
+    }
+
+    if (eval_state === "complete_with_errors") {
+      buttons.push({
+        label: "Re-run Eval",
+        isPrimary: true,
+        action: re_run_eval,
+      })
+    }
+
+    return buttons
+  }
 </script>
 
 {#if eval_state === "not_started"}
@@ -109,16 +137,7 @@
 <Dialog
   bind:this={running_progress_dialog}
   title=""
-  action_buttons={eval_state === "complete" ||
-  eval_state === "complete_with_errors"
-    ? [
-        {
-          label: "Close",
-          isCancel: true,
-          isPrimary: false,
-        },
-      ]
-    : []}
+  action_buttons={run_dialog_buttons(eval_state)}
 >
   <div
     class="mt-12 mb-6 flex flex-col items-center justify-center min-h-[100px] text-center"
