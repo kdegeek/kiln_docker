@@ -50,26 +50,33 @@ class AsyncJobRunner:
             )
             workers.append(task)
 
-        # Send status updates until workers are done, and they are all sent
-        while not status_queue.empty() or not all(worker.done() for worker in workers):
-            try:
-                # Use timeout to prevent hanging if all workers complete
-                # between our while condition check and get()
-                success = await asyncio.wait_for(status_queue.get(), timeout=0.1)
-                if success:
-                    complete += 1
-                else:
-                    errors += 1
+        try:
+            # Send status updates until workers are done, and they are all sent
+            while not status_queue.empty() or not all(
+                worker.done() for worker in workers
+            ):
+                try:
+                    # Use timeout to prevent hanging if all workers complete
+                    # between our while condition check and get()
+                    success = await asyncio.wait_for(status_queue.get(), timeout=0.1)
+                    if success:
+                        complete += 1
+                    else:
+                        errors += 1
 
-                yield Progress(complete=complete, total=total, errors=errors)
-            except asyncio.TimeoutError:
-                # Timeout is expected, just continue to recheck worker status
-                # Don't love this but beats sentinels for reliability
-                continue
+                    yield Progress(complete=complete, total=total, errors=errors)
+                except asyncio.TimeoutError:
+                    # Timeout is expected, just continue to recheck worker status
+                    # Don't love this but beats sentinels for reliability
+                    continue
+        finally:
+            # Cancel outstanding workers on early exit or error
+            for w in workers:
+                w.cancel()
 
-        # These are redundant, but keeping them will catch async errors
-        await asyncio.gather(*workers)
-        await worker_queue.join()
+            # These are redundant, but keeping them will catch async errors
+            await asyncio.gather(*workers)
+            await worker_queue.join()
 
     async def _run_worker(
         self,
