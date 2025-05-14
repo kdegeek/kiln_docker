@@ -9,12 +9,15 @@
   import Warning from "$lib/ui/warning.svelte"
   import { available_tuning_models } from "$lib/stores/fine_tune_store"
 
+  export let highlight_finetune = false
+
   type Provider = {
     name: string
     id: string
     description: string
     image: string
     featured: boolean
+    pill_text?: string
     api_key_steps?: string[]
     api_key_warning?: string
     api_key_fields?: string[]
@@ -27,7 +30,7 @@
       description:
         "Proxies requests to OpenAI, Anthropic, and more. Works with almost any model.",
       image: "/images/openrouter.svg",
-      featured: true,
+      featured: !highlight_finetune,
       api_key_steps: [
         "Go to https://openrouter.ai/settings/keys",
         "Create a new API Key",
@@ -40,6 +43,7 @@
       description: "The OG home to GPT-4o and more. Supports fine-tuning.",
       image: "/images/openai.svg",
       featured: false,
+      pill_text: highlight_finetune ? "Tuneable" : undefined,
       api_key_steps: [
         "Create an OpenAI Platform account at https://platform.openai.com/signup and add a payment method.",
         "Go to https://platform.openai.com/account/api-keys",
@@ -74,6 +78,7 @@
       id: "fireworks_ai",
       description: "Open models (Llama, Phi), plus the ability to fine-tune.",
       image: "/images/fireworks.svg",
+      pill_text: highlight_finetune ? "Tuneable" : undefined,
       api_key_steps: [
         "Go to https://fireworks.ai/account/api-keys",
         "Create a new API Key and paste it below",
@@ -144,6 +149,7 @@
         "Google's Vertex AI API. Not to be confused with Gemini AI Studio.",
       image: "/images/google_logo.svg",
       featured: false,
+      pill_text: highlight_finetune ? "Tuneable" : undefined,
       api_key_steps: [
         "Create a Google Cloud account.",
         "Install the glcoud CLI, then run `gcloud auth application-default login` in the terminal. This will add Google Vertex credentials to you environment.",
@@ -162,6 +168,7 @@
       description: "Inference service from Together.ai",
       image: "/images/together_ai.svg",
       featured: false,
+      pill_text: highlight_finetune ? "Tuneable" : undefined,
       api_key_steps: [
         "Create a Together account.",
         "Create an API Key (or user key) here: https://api.together.ai/settings/api-keys",
@@ -777,8 +784,12 @@
             >
               {provider.name}
               {#if provider.featured}
-                <div class="badge ml-2 badge-secondary text-xs font-medium">
+                <div class="badge badge-sm ml-2 badge-secondary">
                   Recommended
+                </div>
+              {:else if provider.pill_text}
+                <div class="badge badge-sm ml-2 badge-primary">
+                  {provider.pill_text}
                 </div>
               {/if}
             </h3>

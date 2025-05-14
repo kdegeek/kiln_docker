@@ -17,6 +17,8 @@
     available_models_loading,
     get_available_models,
   } from "$lib/stores/fine_tune_store"
+  import { progress_ui_state } from "$lib/stores/progress_ui_store"
+  import { goto } from "$app/navigation"
 
   import type {
     FinetuneProvider,
@@ -264,6 +266,15 @@
         throw new Error("Invalid response from server")
       }
       created_finetune = create_finetune_response
+      progress_ui_state.set({
+        title: "Creating Fine-Tune",
+        body: "In progress,  ",
+        link: `/fine_tune/${project_id}/${task_id}/fine_tune/${created_finetune?.id}`,
+        cta: "view job status",
+        progress: null,
+        step_count: 4,
+        current_step: 3,
+      })
     } catch (e) {
       if (e instanceof Error && e.message.includes("Load failed")) {
         create_finetune_error = new KilnError(
@@ -405,6 +416,19 @@
     is_download,
     $available_tuning_models,
   )
+
+  function go_to_providers_settings() {
+    progress_ui_state.set({
+      title: "Creating Fine-Tune",
+      body: "When you're done connecting providers, ",
+      link: $page.url.pathname,
+      cta: "return to fine-tuning",
+      progress: null,
+      step_count: 4,
+      current_step: 1,
+    })
+    goto("/settings/providers?highlight=finetune")
+  }
 </script>
 
 <div class="max-w-[1400px]">
@@ -445,15 +469,28 @@
         <div class="text-xl font-bold">
           Step 1: Select Base Model to Fine-Tune
         </div>
-        <FormElement
-          label="Model & Provider"
-          description="Select which model to fine-tune. Alternatively, download a JSONL file to fine-tune using any infrastructure."
-          info_description="Fine-tuning requires a lot of compute. Generally we suggest you use a hosted cloud option, but if you have enough compute and expertise you can fine-tune on your own using tools like Unsloth, Axolotl, and others."
-          inputType="select"
-          id="provider"
-          select_options={available_model_select}
-          bind:value={$model_provider}
-        />
+        <div>
+          <FormElement
+            label="Model & Provider"
+            description="Select which model to fine-tune. Alternatively, download a JSONL file to fine-tune using any infrastructure."
+            info_description="Connect providers in settings for 1-click fine-tuning. Alternatively, download a JSONL file to fine-tune using any infrastructure, like Unsloth or Axolotl."
+            inputType="select"
+            id="provider"
+            select_options={available_model_select}
+            bind:value={$model_provider}
+          />
+          <button
+            class="mt-1 hover:underline"
+            on:click={go_to_providers_settings}
+          >
+            <Warning
+              warning_message="For 1-click fine-tuning connect OpenAI, Fireworks, Together, or Google Vertex."
+              warning_icon="info"
+              warning_color="success"
+              tight={true}
+            />
+          </button>
+        </div>
         {#if step_2_visible}
           <div class="text-xl font-bold">Step 2: Training Dataset</div>
           <SelectFinetuneDataset {project_id} {task_id} bind:selected_dataset />
@@ -572,15 +609,15 @@
         <div class="text-sm">
           Download JSONL files to fine-tune using any infrastructure, such as
           <a
-            href="https://github.com/axolotl-ai-cloud/axolotl"
-            class="link"
-            target="_blank">Axolotl</a
-          >
-          or
-          <a
             href="https://github.com/unslothai/unsloth"
             class="link"
             target="_blank">Unsloth</a
+          >
+          or
+          <a
+            href="https://github.com/axolotl-ai-cloud/axolotl"
+            class="link"
+            target="_blank">Axolotl</a
           >.
         </div>
         <div class="flex flex-col gap-4 mt-6">

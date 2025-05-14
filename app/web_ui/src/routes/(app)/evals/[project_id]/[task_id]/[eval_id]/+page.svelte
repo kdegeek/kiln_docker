@@ -18,6 +18,7 @@
   import type { ProviderModels, PromptResponse } from "$lib/types"
   import { goto } from "$app/navigation"
   import { prompt_link } from "$lib/utils/link_builder"
+  import { progress_ui_state } from "$lib/stores/progress_ui_store"
 
   import EditDialog from "$lib/ui/edit_dialog.svelte"
 
@@ -335,6 +336,44 @@
     )}:0.8,${encodeURIComponent(golden_tag)}:0.2&eval_link=${encodeURIComponent(
       window.location.pathname,
     )}`
+    show_progress_ui("When you're done adding data, ", 2)
+    goto(url)
+  }
+
+  function show_progress_ui(body: string, step: number) {
+    progress_ui_state.set({
+      title: "Creating Eval",
+      body,
+      link: $page.url.pathname,
+      cta: "return to the eval",
+      progress: null,
+      step_count: 5,
+      current_step: step,
+    })
+  }
+
+  function show_golden_dataset() {
+    if (!evaluator) {
+      return
+    }
+    const url = link_from_filter_id(evaluator.eval_configs_filter_id)
+    if (!url) {
+      return
+    }
+
+    show_progress_ui("When you're done rating, ", 3)
+    goto(url)
+  }
+
+  function compare_eval_methods() {
+    let url = `/evals/${project_id}/${task_id}/${eval_id}/eval_configs`
+    show_progress_ui("When you're done comparing eval methods, ", 4)
+    goto(url)
+  }
+
+  function compare_run_methods() {
+    let url = `/evals/${project_id}/${task_id}/${eval_id}/compare_run_methods`
+    show_progress_ui("When you're done comparing run methods, ", 5)
     goto(url)
   }
 </script>
@@ -438,17 +477,15 @@
                       </div>
                       <div>
                         {#if link_from_filter_id(evaluator.eval_configs_filter_id)}
-                          <a
+                          <button
                             class="btn btn-sm {current_step == 3
                               ? 'btn-primary'
                               : ''}"
-                            href={link_from_filter_id(
-                              evaluator.eval_configs_filter_id,
-                            )}
+                            on:click={show_golden_dataset}
                           >
                             {golden_dataset_explanation ? "Rate" : "View"} Golden
                             Dataset
-                          </a>
+                          </button>
                         {:else}
                           <!-- We always use "tag::" so this shouldn't happen unless it's created by code. -->
                           Your golden dataset is filtered by
@@ -477,14 +514,14 @@
                         {/if}
                       </div>
                       <div>
-                        <a
+                        <button
                           class="btn btn-sm {current_step == 4
                             ? 'btn-primary'
                             : ''}"
-                          href={`/evals/${project_id}/${task_id}/${eval_id}/eval_configs`}
+                          on:click={compare_eval_methods}
                         >
                           Compare Eval Methods
-                        </a>
+                        </button>
                       </div>
                     {:else if step == 5}
                       <div class="mb-1">
@@ -506,14 +543,14 @@
                         {/if}
                       </div>
                       <div>
-                        <a
+                        <button
                           class="btn btn-sm {current_step == 5
                             ? 'btn-primary'
                             : ''}"
-                          href={`/evals/${project_id}/${task_id}/${eval_id}/compare_run_methods`}
+                          on:click={compare_run_methods}
                         >
                           Compare Run Methods
-                        </a>
+                        </button>
                       </div>
                     {/if}
                   </div>
