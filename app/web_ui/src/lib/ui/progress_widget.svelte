@@ -39,6 +39,7 @@
   >
     <button
       class="hover:text-xl h-8 w-8 leading-none absolute top-0 right-0 flex items-center justify-center"
+      aria-label="Close progress notification"
       on:click={close}>&#x2715;</button
     >
     <div class="font-medium pr-6">

@@ -97,7 +97,7 @@
           {
             id: "new_dataset",
             name: "New Training Dataset",
-            description: "Create a training set using your current data.",
+            description: "Create a training set using a tag in your dataset.",
           },
         ]
       : []),
