@@ -112,7 +112,7 @@ export async function load_projects() {
 }
 
 // Custom function to create a localStorage-backed store
-function localStorageStore<T>(key: string, initialValue: T) {
+export function localStorageStore<T>(key: string, initialValue: T) {
   // Check if localStorage is available
   const isBrowser = typeof window !== "undefined" && window.localStorage
 

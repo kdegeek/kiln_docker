@@ -5,6 +5,8 @@
   import { goto } from "$app/navigation"
   import { rating_name } from "$lib/utils/formatters"
   import { current_project, current_task } from "$lib/stores"
+  import { progress_ui_state } from "$lib/stores/progress_ui_store"
+  import { page } from "$app/stores"
 
   export let selected_template_callback: (template: EvalTemplateResult) => void
   export let task: Task | null | undefined
@@ -193,6 +195,20 @@
       return
     }
   }
+
+  function edit_requirements() {
+    goto(
+      `/settings/edit_task/${$current_project?.id}/${$current_task?.id}#requirements_part`,
+    )
+    progress_ui_state.set({
+      title: "Creating Eval",
+      body: "When you're done editing requirements, ",
+      link: $page.url.pathname,
+      cta: "return to the eval",
+      progress: 0.1,
+    })
+    return true
+  }
 </script>
 
 <div class="flex flex-col gap-6 pt-8 max-w-[500px] mx-auto">
@@ -240,12 +256,7 @@
   action_buttons={[
     {
       label: "Edit Requirements",
-      action: () => {
-        goto(
-          `/settings/edit_task/${$current_project?.id}/${$current_task?.id}#requirements_part`,
-        )
-        return true
-      },
+      action: edit_requirements,
     },
     {
       label: "Create Eval",
