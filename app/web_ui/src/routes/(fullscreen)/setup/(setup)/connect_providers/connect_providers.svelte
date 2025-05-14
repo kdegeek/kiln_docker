@@ -784,11 +784,11 @@
             >
               {provider.name}
               {#if provider.featured}
-                <div class="badge ml-2 badge-secondary text-xs font-normal">
+                <div class="badge badge-sm ml-2 badge-secondary">
                   Recommended
                 </div>
               {:else if provider.pill_text}
-                <div class="badge ml-2 badge-primary text-xs font-normal">
+                <div class="badge badge-sm ml-2 badge-primary">
                   {provider.pill_text}
                 </div>
               {/if}
