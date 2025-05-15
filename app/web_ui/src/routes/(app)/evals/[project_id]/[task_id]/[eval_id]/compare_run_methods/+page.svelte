@@ -57,6 +57,12 @@
   $: loading = eval_loading || eval_configs_loading || task_run_configs_loading
   $: error = eval_error || eval_configs_error || task_run_configs_error
 
+  $: should_select_eval_config =
+    task_run_configs?.length && !evaluator?.current_run_config_id
+  $: focus_select_eval_config = !!(
+    should_select_eval_config && eval_state?.includes("complete")
+  )
+
   onMount(async () => {
     // Wait for page params to load
     await tick()
@@ -562,6 +568,16 @@
               />
             </button>
           </div>
+        {:else if should_select_eval_config}
+          <div class="mb-4">
+            <Warning
+              warning_message="Ready to select a winner? Click 'Set as default' below.."
+              warning_color={focus_select_eval_config ? "primary" : "gray"}
+              warning_icon="info"
+              large_icon={focus_select_eval_config}
+              tight={true}
+            />
+          </div>
         {/if}
 
         <div class="overflow-x-auto rounded-lg border">
@@ -659,7 +675,9 @@
                       </button>
                     {:else}
                       <button
-                        class="link text-sm text-gray-500"
+                        class="badge mt-1 {focus_select_eval_config
+                          ? 'badge-primary'
+                          : 'badge-secondary badge-outline'}"
                         on:click={(event) => {
                           event.stopPropagation()
                           set_current_run_config(task_run_config.id)
