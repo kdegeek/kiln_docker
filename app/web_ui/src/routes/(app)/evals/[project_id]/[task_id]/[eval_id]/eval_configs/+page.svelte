@@ -55,6 +55,18 @@
   $: error = eval_error || eval_configs_error || score_summary_error
   $: run_eval_url = `${base_url}/api/projects/${$page.params.project_id}/tasks/${$page.params.task_id}/eval/${$page.params.eval_id}/run_eval_config_eval`
 
+  let eval_state:
+    | "not_started"
+    | "running"
+    | "complete"
+    | "complete_with_errors" = "not_started"
+  $: should_select_eval_config = !!(
+    eval_configs?.length && !evaluator?.current_config_id
+  )
+  $: focus_select_eval_config = !!(
+    should_select_eval_config && eval_state?.includes("complete")
+  )
+
   // Update sorting when score_type or score_summary changes
   $: if (eval_configs && score_summary && evaluator) {
     sortEvalConfigs()
@@ -394,18 +406,20 @@
   subtitle="Find the evaluation method that best matches human-ratings"
   sub_subtitle="Read the docs"
   sub_subtitle_link="https://docs.getkiln.ai/docs/evaluations#finding-the-ideal-eval-method"
-  action_buttons={[
-    {
-      label: "Instructions",
-      handler: () => {
-        score_legend_dialog?.show()
-      },
-    },
-    {
-      label: "Add Eval Method",
-      href: `/evals/${$page.params.project_id}/${$page.params.task_id}/${$page.params.eval_id}/create_eval_config?next_page=eval_configs`,
-    },
-  ]}
+  action_buttons={eval_configs?.length
+    ? [
+        {
+          label: "Instructions",
+          handler: () => {
+            score_legend_dialog?.show()
+          },
+        },
+        {
+          label: "Add Eval Method",
+          href: `/evals/${$page.params.project_id}/${$page.params.task_id}/${$page.params.eval_id}/create_eval_config?next_page=eval_configs`,
+        },
+      ]
+    : []}
 >
   {#if loading}
     <div class="w-full min-h-[50vh] flex justify-center items-center">
@@ -421,32 +435,32 @@
       </div>
     </div>
   {:else if evaluator}
-    <div class="flex flex-col xl:flex-row gap-8 xl:gap-16 mb-8">
-      <div class="grow">
-        <div class="text-xl font-bold mb-4">Evaluator Properties</div>
-        <div
-          class="grid grid-cols-[auto,1fr] gap-y-2 gap-x-4 text-sm 2xl:text-base"
-        >
-          {#each get_eval_properties(evaluator, score_summary) as property}
-            <div class="flex items-center">{property.name}</div>
-            <div class="flex items-center text-gray-500 overflow-x-hidden">
-              {property.value}
-            </div>
-          {/each}
-        </div>
-        {#if score_summary && score_summary.dataset_size > 0 && score_summary.dataset_size < 25}
-          <div class="mt-4">
-            <Warning
-              warning_message={`There are only ${score_summary.dataset_size} item(s) in your Eval Method Dataset. This is generally too small to get a sense of how eval methods perform.`}
-              warning_color="warning"
-              tight={true}
-            />
+    {#if eval_configs?.length}
+      <div class="flex flex-col xl:flex-row gap-8 xl:gap-16 mb-8">
+        <div class="grow">
+          <div class="text-xl font-bold mb-4">Evaluator Properties</div>
+          <div
+            class="grid grid-cols-[auto,1fr] gap-y-2 gap-x-4 text-sm 2xl:text-base"
+          >
+            {#each get_eval_properties(evaluator, score_summary) as property}
+              <div class="flex items-center">{property.name}</div>
+              <div class="flex items-center text-gray-500 overflow-x-hidden">
+                {property.value}
+              </div>
+            {/each}
           </div>
-        {/if}
+          {#if score_summary && score_summary.dataset_size > 0 && score_summary.dataset_size < 25}
+            <div class="mt-4">
+              <Warning
+                warning_message={`There are only ${score_summary.dataset_size} item(s) in your Eval Method Dataset. This is generally too small to get a sense of how eval methods perform.`}
+                warning_color="warning"
+                tight={true}
+              />
+            </div>
+          {/if}
+        </div>
       </div>
-    </div>
-    <div class="mt-16">
-      {#if eval_configs?.length}
+      <div class="mt-16">
         <div class="flex flex-col lg:flex-row gap-4 lg:gap-8 mb-6">
           <div class="grow">
             <div class="text-xl font-bold">Correlation to Human Ratings</div>
@@ -481,6 +495,7 @@
             <div class="mt-1">
               <RunEval
                 btn_size="normal"
+                bind:eval_state
                 bind:run_url={run_eval_url}
                 on_run_complete={() => {
                   get_score_summary()
@@ -503,6 +518,16 @@
                 <li>{warning}</li>
               {/each}
             </ul>
+          </div>
+        {:else if should_select_eval_config}
+          <div class="mb-4">
+            <Warning
+              warning_message="Click 'Set as default' below to select a winner."
+              warning_color={focus_select_eval_config ? "primary" : "gray"}
+              warning_icon={focus_select_eval_config ? "exclaim" : "info"}
+              large_icon={focus_select_eval_config}
+              tight={true}
+            />
           </div>
         {/if}
 
@@ -568,11 +593,13 @@
                           set_current_eval_config(null)
                         }}
                       >
-                        Default
+                        Default <span class="pl-2">&#x2715;</span>
                       </button>
                     {:else}
                       <button
-                        class="link text-sm text-gray-500"
+                        class="badge mt-1 {focus_select_eval_config
+                          ? 'badge-primary'
+                          : 'badge-secondary badge-outline'}"
                         on:click={() => {
                           set_current_eval_config(eval_config.id)
                         }}
@@ -652,7 +679,7 @@
                       {:else}
                         None
                         <InfoTooltip
-                          tooltip_text="No scores were found for this eval method. Click 'Run Eval' to generate scores."
+                          tooltip_text="No scores were found for this eval method. Click 'Run Eval' to generate scores and ensure your golden dataset has human ratings."
                           no_pad={true}
                         />
                       {/if}
@@ -663,10 +690,22 @@
             </tbody>
           </table>
         </div>
-      {:else}
-        <!-- TODO error case here-->
-      {/if}
-    </div>
+      </div>
+    {:else}
+      <div class="max-w-[280px] mx-auto flex flex-col gap-2 mt-[20vh]">
+        <div class="font-medium">Create an Eval Method to Get Started</div>
+        <div class="font-light text-sm">
+          An evaluation method specifies how an eval is run (algorithm, model,
+          instructions, etc).
+        </div>
+        <a
+          class="btn btn-primary mt-2"
+          href={`/evals/${$page.params.project_id}/${$page.params.task_id}/${$page.params.eval_id}/create_eval_config?next_page=eval_configs`}
+        >
+          Add Eval Method
+        </a>
+      </div>
+    {/if}
   {/if}
 </AppPage>
 

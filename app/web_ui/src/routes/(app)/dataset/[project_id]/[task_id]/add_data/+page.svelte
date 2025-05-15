@@ -77,7 +77,7 @@
       goto("/run")
     } else if (id === "synthetic") {
       goto(
-        `/generate/${$page.params.project_id}/${$page.params.task_id}?splits=${$page.url.searchParams.get("splits")}`,
+        `/generate/${$page.params.project_id}/${$page.params.task_id}?reason=${reason}&splits=${$page.url.searchParams.get("splits")}`,
       )
     }
   }

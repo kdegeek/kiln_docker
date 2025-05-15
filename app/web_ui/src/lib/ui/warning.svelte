@@ -1,7 +1,12 @@
 <script lang="ts">
   export let warning_message: string | undefined | null = undefined
-  export let warning_color: "error" | "warning" | "success" | undefined =
-    undefined
+  export let warning_color:
+    | "error"
+    | "warning"
+    | "success"
+    | "primary"
+    | "gray"
+    | undefined = undefined
   export let warning_icon: "exclaim" | "info" = "exclaim"
   export let large_icon: boolean = false
   export let tight: boolean = false
@@ -26,6 +31,23 @@
       })
       .join("")
   }
+
+  function get_color() {
+    switch (color) {
+      case "error":
+        return "text-error"
+      case "warning":
+        return "text-warning"
+      case "success":
+        return "text-success"
+      case "primary":
+        return "text-primary"
+      case "gray":
+        return "text-gray-500"
+      default:
+        return ""
+    }
+  }
 </script>
 
 {#if warning_message}
@@ -33,14 +55,10 @@
     <svg
       class="{large_icon
         ? 'w-8 h-8'
-        : 'w-5 h-5'} flex-none transition-[width,height,transform] duration-500 ease-in-out {color ===
-      'error'
-        ? 'text-error'
-        : color === 'warning'
-          ? 'text-warning'
-          : color === 'success'
-            ? 'text-success'
-            : ''} {warning_icon === 'info' ? 'rotate-180' : 'rotate-0'}"
+        : 'w-5 h-5'} flex-none transition-[width,height,transform] duration-500 ease-in-out {get_color()} {warning_icon ===
+      'info'
+        ? 'rotate-180'
+        : 'rotate-0'}"
       style="transform-origin: center; will-change: transform, width, height, rotate;"
       fill="currentColor"
       width="800px"

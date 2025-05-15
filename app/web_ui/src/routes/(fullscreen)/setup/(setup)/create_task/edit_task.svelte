@@ -208,6 +208,16 @@
       }),
     }
   }
+
+  function prompt_description() {
+    if (!editing) {
+      return "The prompt for the model to follow."
+    }
+    if (task.requirements.length > 0) {
+      return "The base prompt used by prompt generators (Basic, Multi-shot, etc). The task requirements below are appended to this. You can create additional prompts in the 'Prompts' tab to compare prompt performance."
+    }
+    return "The base prompt used by prompt generators (Basic, Multi-shot, etc). You can create additional prompts in the 'Prompts' tab to compare prompt performance."
+  }
 </script>
 
 <div class="flex flex-col gap-2 w-full">
@@ -239,10 +249,10 @@
     />
 
     <FormElement
-      label="Task Instructions / Prompt"
+      label="Prompt / Task Instructions"
       inputType="textarea"
       id="task_instructions"
-      description="A prompt for the model to follow. You can override this later."
+      description={prompt_description()}
       bind:value={task.instruction}
     />
 
@@ -299,6 +309,7 @@
             <div class="grow flex flex-col gap-1">
               <FormElement
                 label="Requirement Name"
+                info_description="A short name to uniquely identify the requirement. This will appear in the rating UI. It's not used by the model."
                 id="requirement_name_{item_index}"
                 light_label={true}
                 bind:value={task.requirements[item_index].name}
@@ -337,7 +348,8 @@
           </div>
           <div class="grow flex flex-col gap-1">
             <FormElement
-              label="Instructions"
+              label="Instructions: a few sentences describing this requirement for the model"
+              info_description="These instructions will be appended to the prompt and using during evals. It should be written with the model in mind. Example requirement: Name='Be Succinct' and Instruction='Use short sentences and simple language. Don't repeat yourself.'"
               inputType="textarea"
               id="requirement_instructions_{item_index}"
               light_label={true}

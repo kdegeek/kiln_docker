@@ -417,7 +417,8 @@ class LiteLlmAdapter(BaseAdapter):
 
         if isinstance(cost, float):
             usage.cost = cost
-        else:
+        elif cost is not None:
+            # None is allowed, but no other types are expected
             logger.warning(
                 f"Unexpected cost format from litellm: {cost}. Expected float, got {type(cost)}"
             )
