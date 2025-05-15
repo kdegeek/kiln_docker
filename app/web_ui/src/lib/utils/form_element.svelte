@@ -108,7 +108,7 @@
           >{info_msg || (optional ? "Optional" : "")}</span
         >
         {#if info_description}
-          <div class={light_label ? "h-4 mt-[-4px] text-gray-500" : ""}>
+          <div class="text-gray-500 {light_label ? 'h-4 mt-[-4px]' : ''}">
             <InfoTooltip tooltip_text={info_description} />
           </div>
         {/if}
