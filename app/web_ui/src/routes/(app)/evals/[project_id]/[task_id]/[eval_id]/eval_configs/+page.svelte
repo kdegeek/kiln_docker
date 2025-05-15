@@ -55,6 +55,18 @@
   $: error = eval_error || eval_configs_error || score_summary_error
   $: run_eval_url = `${base_url}/api/projects/${$page.params.project_id}/tasks/${$page.params.task_id}/eval/${$page.params.eval_id}/run_eval_config_eval`
 
+  let eval_state:
+    | "not_started"
+    | "running"
+    | "complete"
+    | "complete_with_errors" = "not_started"
+  $: should_select_eval_config = !!(
+    eval_configs?.length && !evaluator?.current_config_id
+  )
+  $: focus_select_eval_config = !!(
+    should_select_eval_config && eval_state?.includes("complete")
+  )
+
   // Update sorting when score_type or score_summary changes
   $: if (eval_configs && score_summary && evaluator) {
     sortEvalConfigs()
@@ -483,6 +495,7 @@
             <div class="mt-1">
               <RunEval
                 btn_size="normal"
+                bind:eval_state
                 bind:run_url={run_eval_url}
                 on_run_complete={() => {
                   get_score_summary()
@@ -505,6 +518,16 @@
                 <li>{warning}</li>
               {/each}
             </ul>
+          </div>
+        {:else if should_select_eval_config}
+          <div class="mb-4">
+            <Warning
+              warning_message="Click 'Set as default' below to select a winner."
+              warning_color={focus_select_eval_config ? "primary" : "gray"}
+              warning_icon={focus_select_eval_config ? "exclaim" : "info"}
+              large_icon={focus_select_eval_config}
+              tight={true}
+            />
           </div>
         {/if}
 
@@ -570,11 +593,13 @@
                           set_current_eval_config(null)
                         }}
                       >
-                        Default
+                        Default <span class="pl-2">&#x2715;</span>
                       </button>
                     {:else}
                       <button
-                        class="link text-sm text-gray-500"
+                        class="badge mt-1 {focus_select_eval_config
+                          ? 'badge-primary'
+                          : 'badge-secondary badge-outline'}"
                         on:click={() => {
                           set_current_eval_config(eval_config.id)
                         }}

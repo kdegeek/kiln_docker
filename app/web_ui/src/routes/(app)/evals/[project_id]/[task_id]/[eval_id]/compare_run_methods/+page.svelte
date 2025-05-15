@@ -571,7 +571,7 @@
         {:else if should_select_eval_config}
           <div class="mb-4">
             <Warning
-              warning_message="Ready to select a winner? Click 'Set as default' below.."
+              warning_message="Click 'Set as default' below to select a winner."
               warning_color={focus_select_eval_config ? "primary" : "gray"}
               warning_icon="info"
               large_icon={focus_select_eval_config}
@@ -671,7 +671,7 @@
                           set_current_run_config("None")
                         }}
                       >
-                        Default
+                        Default <span class="pl-2">&#x2715;</span>
                       </button>
                     {:else}
                       <button
