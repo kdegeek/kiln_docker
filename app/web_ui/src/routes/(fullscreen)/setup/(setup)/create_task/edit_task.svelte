@@ -239,10 +239,12 @@
     />
 
     <FormElement
-      label="Task Instructions / Prompt"
+      label="Prompt / Task Instructions"
       inputType="textarea"
       id="task_instructions"
-      description="A prompt for the model to follow. You can override this later."
+      description={!editing
+        ? "The prompt for the model to follow."
+        : "The prompt used by prompt generators (Basic, Multi-shot, etc). You can create additional prompts in the 'Prompts' tab to compare prompt performance."}
       bind:value={task.instruction}
     />
 
