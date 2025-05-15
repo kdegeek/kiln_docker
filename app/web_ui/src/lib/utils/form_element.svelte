@@ -101,14 +101,14 @@
       class="text-sm font-medium text-left flex flex-col gap-1 w-full"
     >
       <div class="flex flex-row items-center {hide_label ? 'hidden' : ''}">
-        <span class="grow {light_label ? 'text-xs text-gray-500' : ''}"
+        <span class="grow {light_label ? 'text-xs text-gray-500 h-4' : ''}"
           >{label}</span
         >
         <span class="pl-1 text-xs text-gray-500 flex-none"
           >{info_msg || (optional ? "Optional" : "")}</span
         >
         {#if info_description}
-          <div>
+          <div class={light_label ? "h-4 mt-[-4px] text-gray-500" : ""}>
             <InfoTooltip tooltip_text={info_description} />
           </div>
         {/if}
