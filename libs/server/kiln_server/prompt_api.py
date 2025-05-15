@@ -165,4 +165,11 @@ _prompt_generators = [
         description="Combines our 'Chain of Thought' generator with our 'Many-Shot' generator, for both the thinking and the many shot examples.",
         chain_of_thought=True,
     ),
+    PromptGenerator(
+        id="short_prompt_builder",
+        name="Short",
+        short_description="Just the prompt, no requirements or examples.",
+        description="A short prompt generator. It will include only the task's instruction/prompt. It excludes your task's requirements, and does not include any examples from your dataset.",
+        chain_of_thought=False,
+    ),
 ]
