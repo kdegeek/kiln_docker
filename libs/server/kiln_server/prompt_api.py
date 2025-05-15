@@ -169,7 +169,7 @@ _prompt_generators = [
         id="short_prompt_builder",
         name="Short",
         short_description="Just the prompt, no requirements or examples.",
-        description="A short prompt generator. It will include the only the task instruction from your task definition. It excludes your task's requirements, and includes no examples from your dataset.",
+        description="A short prompt generator. It will include only the task's instruction/prompt. It excludes your task's requirements, and does not include any examples from your dataset.",
         chain_of_thought=False,
     ),
 ]
