@@ -272,6 +272,7 @@
           bind:model
           bind:model_name
           bind:provider_name
+          suggested_mode="data_gen"
         />
         <Warning
           warning_icon={!model

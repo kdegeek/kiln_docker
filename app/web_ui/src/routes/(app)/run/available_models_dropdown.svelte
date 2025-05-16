@@ -14,6 +14,7 @@
   export let requires_data_gen: boolean = false
   export let requires_logprobs: boolean = false
   export let error_message: string | null = null
+  export let suggested_mode: "data_gen" | null = null
   $: $ui_state.selected_model = model
   $: model_options = format_model_options(
     $available_models || {},
@@ -81,7 +82,11 @@
           unsupported_models.push([id, long_label])
           continue
         }
-        model_list.push([id, model.name])
+        let model_name = model.name
+        if (suggested_mode === "data_gen" && model.suggested_for_data_gen) {
+          model_name = model.name + "  —  Recommended"
+        }
+        model_list.push([id, model_name])
       }
       if (model_list.length > 0) {
         options.push([provider.provider_name, model_list])
