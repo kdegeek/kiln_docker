@@ -315,6 +315,7 @@
             bind:provider_name
             requires_structured_output={selected_algo !== "g_eval"}
             requires_logprobs={selected_algo === "g_eval"}
+            suggested_mode="evals"
           />
         {/if}
 

@@ -82,7 +82,9 @@ class ModelDetails(BaseModel):
     name: str
     supports_structured_output: bool
     supports_data_gen: bool
+    suggested_for_data_gen: bool
     supports_logprobs: bool
+    suggested_for_evals: bool
     # True if this is a untested model (typically user added). We don't know if these support structured output, data gen, etc. They should appear in their own section in the UI.
     untested_model: bool = Field(default=False)
     task_filter: List[str] | None = Field(default=None)
@@ -150,7 +152,9 @@ def connect_provider_api(app: FastAPI):
                                 name=model.friendly_name,
                                 supports_structured_output=provider.supports_structured_output,
                                 supports_data_gen=provider.supports_data_gen,
+                                suggested_for_data_gen=provider.suggested_for_data_gen,
                                 supports_logprobs=provider.supports_logprobs,
+                                suggested_for_evals=provider.suggested_for_evals,
                             )
                         )
 
@@ -845,6 +849,8 @@ async def available_ollama_models() -> AvailableModels | None:
                         supports_structured_output=ollama_provider.supports_structured_output,
                         supports_data_gen=ollama_provider.supports_data_gen,
                         supports_logprobs=False,  # Ollama doesn't support logprobs https://github.com/ollama/ollama/issues/2415
+                        suggested_for_data_gen=ollama_provider.suggested_for_data_gen,
+                        suggested_for_evals=ollama_provider.suggested_for_evals,
                     )
                 )
         for ollama_model in ollama_connection.untested_models:
@@ -856,6 +862,8 @@ async def available_ollama_models() -> AvailableModels | None:
                     supports_data_gen=False,
                     supports_logprobs=False,
                     untested_model=True,
+                    suggested_for_data_gen=False,
+                    suggested_for_evals=False,
                 )
             )
 
@@ -908,6 +916,8 @@ def custom_models() -> AvailableModels | None:
                     supports_data_gen=False,
                     supports_logprobs=False,
                     untested_model=True,
+                    suggested_for_data_gen=False,
+                    suggested_for_evals=False,
                 )
             )
         except Exception:
@@ -940,6 +950,8 @@ def all_fine_tuned_models() -> AvailableModels | None:
                             supports_data_gen=True,
                             supports_logprobs=False,
                             task_filter=[str(task.id)],
+                            suggested_for_data_gen=False,
+                            suggested_for_evals=False,
                         )
                     )
 
@@ -1042,6 +1054,8 @@ def openai_compatible_providers_load_cache() -> OpenAICompatibleProviderCache | 
                         supports_data_gen=False,
                         supports_logprobs=False,
                         untested_model=True,
+                        suggested_for_data_gen=False,
+                        suggested_for_evals=False,
                     )
                 )
 

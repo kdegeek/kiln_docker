@@ -155,12 +155,14 @@ class KilnModelProvider(BaseModel):
     model_id: str | None = None
     supports_structured_output: bool = True
     supports_data_gen: bool = True
+    suggested_for_data_gen: bool = False
     untested_model: bool = False
     provider_finetune_id: str | None = None
     structured_output_mode: StructuredOutputMode = StructuredOutputMode.default
     parser: ModelParserID | None = None
     reasoning_capable: bool = False
     supports_logprobs: bool = False
+    suggested_for_evals: bool = False
 
     # TODO P1: Need a more generalized way to handle custom provider parameters.
     # Making them quite declarative here for now, isolating provider specific logic
@@ -205,16 +207,22 @@ built_in_models: List[KilnModel] = [
                 provider_finetune_id="gpt-4.1-2025-04-14",
                 structured_output_mode=StructuredOutputMode.json_schema,
                 supports_logprobs=True,
+                suggested_for_data_gen=True,
+                suggested_for_evals=True,
             ),
             KilnModelProvider(
                 name=ModelProviderName.openrouter,
                 model_id="openai/gpt-4.1",
                 structured_output_mode=StructuredOutputMode.json_schema,
                 supports_logprobs=True,
+                suggested_for_data_gen=True,
+                suggested_for_evals=True,
             ),
             KilnModelProvider(
                 name=ModelProviderName.azure_openai,
                 model_id="gpt-4.1",
+                suggested_for_data_gen=True,
+                suggested_for_evals=True,
             ),
         ],
     ),
@@ -230,16 +238,22 @@ built_in_models: List[KilnModel] = [
                 provider_finetune_id="gpt-4.1-mini-2025-04-14",
                 structured_output_mode=StructuredOutputMode.json_schema,
                 supports_logprobs=True,
+                suggested_for_data_gen=True,
+                suggested_for_evals=True,
             ),
             KilnModelProvider(
                 name=ModelProviderName.openrouter,
                 model_id="openai/gpt-4.1-mini",
                 structured_output_mode=StructuredOutputMode.json_schema,
                 supports_logprobs=True,
+                suggested_for_data_gen=True,
+                suggested_for_evals=True,
             ),
             KilnModelProvider(
                 name=ModelProviderName.azure_openai,
                 model_id="gpt-4.1-mini",
+                suggested_for_data_gen=True,
+                suggested_for_evals=True,
             ),
         ],
     ),
@@ -625,11 +639,15 @@ built_in_models: List[KilnModel] = [
                 name=ModelProviderName.openrouter,
                 structured_output_mode=StructuredOutputMode.function_calling,
                 model_id="anthropic/claude-3.7-sonnet",
+                suggested_for_data_gen=True,
+                suggested_for_evals=True,
             ),
             KilnModelProvider(
                 name=ModelProviderName.anthropic,
                 model_id="claude-3-7-sonnet-20250219",
                 structured_output_mode=StructuredOutputMode.function_calling,
+                suggested_for_data_gen=True,
+                suggested_for_evals=True,
             ),
         ],
     ),
@@ -666,16 +684,22 @@ built_in_models: List[KilnModel] = [
                 name=ModelProviderName.openrouter,
                 model_id="google/gemini-2.5-pro-preview-03-25",
                 structured_output_mode=StructuredOutputMode.json_schema,
+                suggested_for_data_gen=True,
+                suggested_for_evals=True,
             ),
             KilnModelProvider(
                 name=ModelProviderName.gemini_api,
                 model_id="gemini-2.5-pro-preview-03-25",
                 structured_output_mode=StructuredOutputMode.json_schema,
+                suggested_for_data_gen=True,
+                suggested_for_evals=True,
             ),
             KilnModelProvider(
                 name=ModelProviderName.vertex,
                 model_id="gemini-2.5-pro-preview-03-25",
                 structured_output_mode=StructuredOutputMode.json_schema,
+                suggested_for_data_gen=True,
+                suggested_for_evals=True,
             ),
         ],
     ),
@@ -1574,6 +1598,8 @@ built_in_models: List[KilnModel] = [
                 reasoning_capable=True,
                 r1_openrouter_options=True,
                 require_openrouter_reasoning=True,
+                suggested_for_data_gen=True,
+                suggested_for_evals=True,
             ),
             KilnModelProvider(
                 name=ModelProviderName.fireworks_ai,
@@ -1581,6 +1607,8 @@ built_in_models: List[KilnModel] = [
                 parser=ModelParserID.r1_thinking,
                 structured_output_mode=StructuredOutputMode.json_instructions,
                 reasoning_capable=True,
+                suggested_for_data_gen=True,
+                suggested_for_evals=True,
             ),
             KilnModelProvider(
                 # I want your RAM
@@ -1589,6 +1617,8 @@ built_in_models: List[KilnModel] = [
                 parser=ModelParserID.r1_thinking,
                 structured_output_mode=StructuredOutputMode.json_instructions,
                 reasoning_capable=True,
+                suggested_for_data_gen=True,
+                suggested_for_evals=True,
             ),
             KilnModelProvider(
                 name=ModelProviderName.together_ai,
@@ -1596,6 +1626,8 @@ built_in_models: List[KilnModel] = [
                 structured_output_mode=StructuredOutputMode.json_instructions,
                 parser=ModelParserID.r1_thinking,
                 reasoning_capable=True,
+                suggested_for_data_gen=True,
+                suggested_for_evals=True,
             ),
         ],
     ),
