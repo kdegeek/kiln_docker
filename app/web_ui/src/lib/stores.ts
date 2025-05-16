@@ -238,7 +238,6 @@ export function available_model_details(
   // No-op if already loaded
   load_available_models()
 
-  // Parse the provider_model_id into provider_id and model_id
   if (!model_id || !provider_id) {
     return null
   }
