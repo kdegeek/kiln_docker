@@ -15,7 +15,7 @@
   export let requires_data_gen: boolean = false
   export let requires_logprobs: boolean = false
   export let error_message: string | null = null
-  export let suggested_mode: "data_gen" | null = null
+  export let suggested_mode: "data_gen" | "evals" | null = null
   $: $ui_state.selected_model = model
   $: model_options = format_model_options(
     $available_models || {},
@@ -86,6 +86,8 @@
         let model_name = model.name
         if (suggested_mode === "data_gen" && model.suggested_for_data_gen) {
           model_name = model.name + "  —  Recommended"
+        } else if (suggested_mode === "evals" && model.suggested_for_evals) {
+          model_name = model.name + "  —  Recommended"
         }
         model_list.push([id, model_name])
       }
@@ -130,6 +132,10 @@
   $: selected_model_suggested_data_gen =
     available_model_details(model_name, provider_name, $available_models)
       ?.suggested_for_data_gen || false
+
+  $: selected_model_suggested_evals =
+    available_model_details(model_name, provider_name, $available_models)
+      ?.suggested_for_evals || false
 </script>
 
 <div>
@@ -173,6 +179,20 @@
           ? "success"
           : "warning"}
       warning_message="We suggest using a high quality model for topic generation, such as GPT 4.1, Claude Sonnet, Gemini Pro or Deepseek R1."
+    />
+  {:else if suggested_mode === "evals"}
+    <Warning
+      warning_icon={!model
+        ? "info"
+        : selected_model_suggested_evals
+          ? "check"
+          : "exclaim"}
+      warning_color={!model
+        ? "gray"
+        : selected_model_suggested_evals
+          ? "success"
+          : "warning"}
+      warning_message="We suggest using a high quality model for evals, such as GPT 4.1, Claude Sonnet, Gemini Pro or Deepseek R1."
     />
   {/if}
 </div>
