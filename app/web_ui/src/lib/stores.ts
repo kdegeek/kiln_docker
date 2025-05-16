@@ -8,10 +8,12 @@ import type {
   PromptResponse,
   RatingOptionResponse,
   TaskRequirement,
+  ModelDetails,
 } from "./types"
 import { client } from "./api_client"
 import { createKilnError } from "$lib/utils/error_handlers"
 import type { Writable } from "svelte/store"
+import type { ProviderModel } from "./types"
 
 export type AllProjects = {
   projects: Project[]
@@ -184,17 +186,28 @@ export async function load_current_task(project: Project | null) {
 
 // Available models for each provider
 export const available_models = writable<AvailableModels[]>([])
+let available_models_loaded: "not_loaded" | "loading" | "loaded" = "not_loaded"
 
 export async function load_available_models() {
   try {
+    if (
+      available_models_loaded === "loading" ||
+      available_models_loaded === "loaded"
+    ) {
+      // Block parallel requests or if already loaded
+      return
+    }
+    available_models_loaded = "loading"
     const { data, error } = await client.GET("/api/available_models")
     if (error) {
       throw error
     }
     available_models.set(data)
+    available_models_loaded = "loaded"
   } catch (error: unknown) {
     console.error(createKilnError(error).getMessage())
     available_models.set([])
+    available_models_loaded = "not_loaded"
   }
 }
 
@@ -217,6 +230,62 @@ export async function load_model_info() {
   }
 }
 
+export function available_model_details(
+  provider_model_id: string,
+  available_models: AvailableModels[],
+): ModelDetails | null {
+  // No-op if already loaded
+  load_available_models()
+
+  // Parse the provider_model_id into provider_id and model_id
+  if (!provider_model_id || !provider_model_id.includes("/")) {
+    return null
+  }
+  const provider_id = provider_model_id.split("/")[0]
+  const model_id = provider_model_id.split("/").slice(1).join("/")
+
+  // Find the model in the available models list which has fine-tunes and custom models
+  for (const provider of available_models) {
+    if (provider.provider_id !== provider_id) {
+      continue
+    }
+    const models = provider.models || []
+    for (const model of models) {
+      if (model.id === model_id) {
+        return model
+      }
+    }
+  }
+  return null
+}
+
+export function get_model_info(
+  model_id: string | number | undefined,
+  provider_models: ProviderModels | null,
+): ProviderModel | null {
+  if (!model_id) {
+    return null
+  }
+  // Could be a number, so convert to string
+  model_id = "" + model_id
+  const model = provider_models?.models[model_id]
+  if (model) {
+    return model
+  }
+
+  // Or find the model in the available models list which has fine-tunes and custom models
+  for (const provider of get(available_models)) {
+    // No filter on provider_id, as we want to find the model in any provider
+    const models = provider.models || []
+    for (const model of models) {
+      if (model.id === model_id) {
+        return model
+      }
+    }
+  }
+  return null
+}
+
 export function model_name(
   model_id: string | number | undefined,
   provider_models: ProviderModels | null,
@@ -224,24 +293,11 @@ export function model_name(
   if (!model_id) {
     return "Unknown"
   }
-  // Could be a number, so convert to string
-  model_id = "" + model_id
-  const model = provider_models?.models[model_id]
+
+  const model = get_model_info(model_id, provider_models)
   if (model?.name) {
     return model.name
   }
-
-  // Find the model in the available models list which has fine-tunes and custom models
-  const available_model = get(available_models) || {}
-  for (const provider of available_model) {
-    const models = provider.models || []
-    for (const model of models) {
-      if (model.id === model_id && model.name) {
-        return model.name
-      }
-    }
-  }
-
   return "Model ID: " + model_id
 }
 

@@ -2016,8 +2016,12 @@ export interface components {
             supports_structured_output: boolean;
             /** Supports Data Gen */
             supports_data_gen: boolean;
+            /** Suggested For Data Gen */
+            suggested_for_data_gen: boolean;
             /** Supports Logprobs */
             supports_logprobs: boolean;
+            /** Suggested For Evals */
+            suggested_for_evals: boolean;
             /**
              * Untested Model
              * @default false

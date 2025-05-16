@@ -395,6 +395,8 @@ async def test_get_available_models(app, client):
                     "name": "Model 2",
                     "supports_structured_output": True,
                     "supports_data_gen": True,
+                    "suggested_for_data_gen": False,
+                    "suggested_for_evals": False,
                     "supports_logprobs": False,
                     "task_filter": None,
                     "untested_model": False,
@@ -413,6 +415,8 @@ async def test_get_available_models(app, client):
                     "supports_logprobs": False,
                     "task_filter": None,
                     "untested_model": False,
+                    "suggested_for_data_gen": False,
+                    "suggested_for_evals": False,
                 }
             ],
         },
@@ -428,6 +432,8 @@ async def test_get_available_models(app, client):
                     "supports_logprobs": False,
                     "task_filter": None,
                     "untested_model": False,
+                    "suggested_for_data_gen": False,
+                    "suggested_for_evals": False,
                 }
             ],
         },
@@ -493,6 +499,8 @@ async def test_get_available_models_ollama_exception(app, client):
                     "supports_logprobs": False,
                     "task_filter": None,
                     "untested_model": False,
+                    "suggested_for_data_gen": False,
+                    "suggested_for_evals": False,
                 }
             ],
         },
@@ -1215,6 +1223,8 @@ def test_openai_compatible_providers():
                             supports_data_gen=False,
                             supports_logprobs=False,
                             untested_model=True,
+                            suggested_for_data_gen=False,
+                            suggested_for_evals=False,
                         )
                     ],
                 ),
