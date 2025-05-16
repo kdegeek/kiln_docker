@@ -31,6 +31,8 @@
   export let model: string
   export let num_samples_to_generate: number = 8
   export let custom_topics_string: string | null = null
+  let model_name: string | null = null
+  let provider_name: string | null = null
 
   /**
    * If true, generate samples for each topic leaf descendant of the current topic.
@@ -236,8 +238,8 @@
   }
 
   $: selected_model_suggested =
-    available_model_details(model, $available_models)?.suggested_for_data_gen ||
-    false
+    available_model_details(model_name, provider_name, $available_models)
+      ?.suggested_for_data_gen || false
 </script>
 
 <dialog id={`${id}-generate-samples`} class="modal">
@@ -265,7 +267,12 @@
           <div class="flex-grow font-medium text-sm">Sample Count</div>
           <IncrementUi bind:value={num_samples_to_generate} />
         </div>
-        <AvailableModelsDropdown requires_data_gen={true} bind:model />
+        <AvailableModelsDropdown
+          requires_data_gen={true}
+          bind:model
+          bind:model_name
+          bind:provider_name
+        />
         <Warning
           warning_icon={!model
             ? "info"

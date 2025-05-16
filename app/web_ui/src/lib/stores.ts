@@ -231,18 +231,17 @@ export async function load_model_info() {
 }
 
 export function available_model_details(
-  provider_model_id: string,
+  model_id: string | null,
+  provider_id: string | null,
   available_models: AvailableModels[],
 ): ModelDetails | null {
   // No-op if already loaded
   load_available_models()
 
   // Parse the provider_model_id into provider_id and model_id
-  if (!provider_model_id || !provider_model_id.includes("/")) {
+  if (!model_id || !provider_id) {
     return null
   }
-  const provider_id = provider_model_id.split("/")[0]
-  const model_id = provider_model_id.split("/").slice(1).join("/")
 
   // Find the model in the available models list which has fine-tunes and custom models
   for (const provider of available_models) {
