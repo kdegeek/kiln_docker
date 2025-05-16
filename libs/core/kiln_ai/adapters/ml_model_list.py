@@ -1931,12 +1931,16 @@ built_in_models: List[KilnModel] = [
                 structured_output_mode=StructuredOutputMode.json_instructions,
                 formatter=ModelFormatterID.qwen3_style_no_think,
                 supports_data_gen=False,
+                # Even though thinking is disabled, this parser will still remove <think></think> which is sometimes returned
+                parser=ModelParserID.r1_thinking,
             ),
             KilnModelProvider(
                 name=ModelProviderName.ollama,
                 model_id="qwen3:1.7b",
                 formatter=ModelFormatterID.qwen3_style_no_think,
                 supports_data_gen=False,
+                # Even though thinking is disabled, this parser will still remove <think></think> which is sometimes returned
+                parser=ModelParserID.r1_thinking,
             ),
         ],
     ),
@@ -1975,12 +1979,16 @@ built_in_models: List[KilnModel] = [
                 structured_output_mode=StructuredOutputMode.json_instructions,
                 formatter=ModelFormatterID.qwen3_style_no_think,
                 supports_data_gen=False,
+                # Even though thinking is disabled, this parser will still remove <think></think> which is sometimes returned
+                parser=ModelParserID.r1_thinking,
             ),
             KilnModelProvider(
                 name=ModelProviderName.ollama,
                 model_id="qwen3:4b",
                 formatter=ModelFormatterID.qwen3_style_no_think,
                 supports_data_gen=False,
+                # Even though thinking is disabled, this parser will still remove <think></think> which is sometimes returned
+                parser=ModelParserID.r1_thinking,
             ),
         ],
     ),
@@ -2020,12 +2028,16 @@ built_in_models: List[KilnModel] = [
                 structured_output_mode=StructuredOutputMode.json_instructions,
                 formatter=ModelFormatterID.qwen3_style_no_think,
                 supports_data_gen=False,
+                # Even though thinking is disabled, this parser will still remove <think></think> which is sometimes returned
+                parser=ModelParserID.r1_thinking,
             ),
             KilnModelProvider(
                 name=ModelProviderName.ollama,
                 model_id="qwen3:8b",
                 formatter=ModelFormatterID.qwen3_style_no_think,
                 supports_data_gen=False,
+                # Even though thinking is disabled, this parser will still remove <think></think> which is sometimes returned
+                parser=ModelParserID.r1_thinking,
             ),
         ],
     ),
@@ -2064,12 +2076,16 @@ built_in_models: List[KilnModel] = [
                 structured_output_mode=StructuredOutputMode.json_instructions,
                 formatter=ModelFormatterID.qwen3_style_no_think,
                 supports_data_gen=True,
+                # Even though thinking is disabled, this parser will still remove <think></think> which is sometimes returned
+                parser=ModelParserID.r1_thinking,
             ),
             KilnModelProvider(
                 name=ModelProviderName.ollama,
                 model_id="qwen3:14b",
                 formatter=ModelFormatterID.qwen3_style_no_think,
                 supports_data_gen=True,
+                # Even though thinking is disabled, this parser will still remove <think></think> which is sometimes returned
+                parser=ModelParserID.r1_thinking,
             ),
         ],
     ),
@@ -2094,6 +2110,9 @@ built_in_models: List[KilnModel] = [
                 name=ModelProviderName.fireworks_ai,
                 model_id="accounts/fireworks/models/qwen3-30b-a3b",
                 supports_data_gen=True,
+                reasoning_capable=True,
+                structured_output_mode=StructuredOutputMode.json_instructions,
+                parser=ModelParserID.r1_thinking,
             ),
         ],
     ),
@@ -2109,12 +2128,25 @@ built_in_models: List[KilnModel] = [
                 structured_output_mode=StructuredOutputMode.json_instructions,
                 formatter=ModelFormatterID.qwen3_style_no_think,
                 supports_data_gen=True,
+                # Even though thinking is disabled, this parser will still remove <think></think> which is sometimes returned
+                parser=ModelParserID.r1_thinking,
             ),
             KilnModelProvider(
                 name=ModelProviderName.ollama,
                 model_id="qwen3:30b-a3b",
                 formatter=ModelFormatterID.qwen3_style_no_think,
                 supports_data_gen=True,
+                # Even though thinking is disabled, this parser will still remove <think></think> which is sometimes returned
+                parser=ModelParserID.r1_thinking,
+            ),
+            KilnModelProvider(
+                name=ModelProviderName.fireworks_ai,
+                model_id="accounts/fireworks/models/qwen3-30b-a3b",
+                supports_data_gen=True,
+                formatter=ModelFormatterID.qwen3_style_no_think,
+                structured_output_mode=StructuredOutputMode.json_instructions,
+                # Even though thinking is disabled, this parser will still remove <think></think> which is sometimes returned
+                parser=ModelParserID.r1_thinking,
             ),
         ],
     ),
@@ -2153,12 +2185,16 @@ built_in_models: List[KilnModel] = [
                 structured_output_mode=StructuredOutputMode.json_instructions,
                 formatter=ModelFormatterID.qwen3_style_no_think,
                 supports_data_gen=True,
+                # Even though thinking is disabled, this parser will still remove <think></think> which is sometimes returned
+                parser=ModelParserID.r1_thinking,
             ),
             KilnModelProvider(
                 name=ModelProviderName.ollama,
                 model_id="qwen3:32b",
                 formatter=ModelFormatterID.qwen3_style_no_think,
                 supports_data_gen=True,
+                # Even though thinking is disabled, this parser will still remove <think></think> which is sometimes returned
+                parser=ModelParserID.r1_thinking,
             ),
         ],
     ),
@@ -2183,6 +2219,10 @@ built_in_models: List[KilnModel] = [
             KilnModelProvider(
                 name=ModelProviderName.fireworks_ai,
                 model_id="accounts/fireworks/models/qwen3-235b-a22b",
+                supports_data_gen=True,
+                reasoning_capable=True,
+                structured_output_mode=StructuredOutputMode.json_instructions,
+                parser=ModelParserID.r1_thinking,
             ),
             KilnModelProvider(
                 name=ModelProviderName.together_ai,
@@ -2203,12 +2243,25 @@ built_in_models: List[KilnModel] = [
                 formatter=ModelFormatterID.qwen3_style_no_think,
                 supports_data_gen=True,
                 reasoning_capable=False,
+                # Even though thinking is disabled, this parser will still remove <think></think> which is sometimes returned
+                parser=ModelParserID.r1_thinking,
             ),
             KilnModelProvider(
                 name=ModelProviderName.ollama,
                 model_id="qwen3:235b-a22b",
                 formatter=ModelFormatterID.qwen3_style_no_think,
                 supports_data_gen=True,
+                # Even though thinking is disabled, this parser will still remove <think></think> which is sometimes returned
+                parser=ModelParserID.r1_thinking,
+            ),
+            KilnModelProvider(
+                name=ModelProviderName.fireworks_ai,
+                model_id="accounts/fireworks/models/qwen3-235b-a22b",
+                supports_data_gen=True,
+                formatter=ModelFormatterID.qwen3_style_no_think,
+                structured_output_mode=StructuredOutputMode.json_instructions,
+                # Even though thinking is disabled, this parser will still remove <think></think> which is sometimes returned
+                parser=ModelParserID.r1_thinking,
             ),
         ],
     ),

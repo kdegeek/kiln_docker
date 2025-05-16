@@ -74,7 +74,8 @@ class R1ThinkingParser(BaseParser):
 
         # Add thinking content to intermediate outputs if it exists
         intermediate_outputs = original_output.intermediate_outputs or {}
-        intermediate_outputs["reasoning"] = thinking_content
+        if thinking_content is not None and len(thinking_content) > 0:
+            intermediate_outputs["reasoning"] = thinking_content
 
         return RunOutput(
             output=result,

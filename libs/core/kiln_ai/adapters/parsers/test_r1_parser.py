@@ -46,6 +46,21 @@ def test_response_with_whitespace(parser):
     assert parsed.output.strip() == "This is the result"
 
 
+def test_empty_thinking_content(parser):
+    response = RunOutput(
+        output="""
+        <think>
+
+        </think>
+            This is the result
+    """,
+        intermediate_outputs=None,
+    )
+    parsed = parser.parse_output(response)
+    assert "reasoning" not in parsed.intermediate_outputs
+    assert parsed.output.strip() == "This is the result"
+
+
 def test_missing_start_tag(parser):
     parsed = parser.parse_output(
         RunOutput(output="Some content</think>result", intermediate_outputs=None)
@@ -86,7 +101,7 @@ def test_empty_thinking_content(parser):
         output="<think></think>This is the result", intermediate_outputs=None
     )
     parsed = parser.parse_output(response)
-    assert parsed.intermediate_outputs == {"reasoning": ""}
+    assert "reasoning" not in parsed.intermediate_outputs
     assert parsed.output == "This is the result"
 
 
