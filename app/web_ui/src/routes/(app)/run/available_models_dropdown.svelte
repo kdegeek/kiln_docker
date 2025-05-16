@@ -178,7 +178,7 @@
         : selected_model_suggested_data_gen
           ? "success"
           : "warning"}
-      warning_message="We suggest using a high quality model for topic generation, such as GPT 4.1, Claude Sonnet, Gemini Pro or Deepseek R1."
+      warning_message="For data gen we suggest using a high quality model such as GPT 4.1, Sonnet, Gemini Pro or R1."
     />
   {:else if suggested_mode === "evals"}
     <Warning
@@ -192,7 +192,7 @@
         : selected_model_suggested_evals
           ? "success"
           : "warning"}
-      warning_message="We suggest using a high quality model for evals, such as GPT 4.1, Claude Sonnet, Gemini Pro or Deepseek R1."
+      warning_message="For evals we suggest using a high quality model such as GPT 4.1, Sonnet, Gemini Pro or R1."
     />
   {/if}
 </div>

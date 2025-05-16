@@ -510,6 +510,7 @@ async def test_invoke_parsing_flow(adapter):
     # Mock dependencies
     mock_provider = MagicMock()
     mock_provider.parser = "test_parser"
+    mock_provider.formatter = None
     mock_provider.reasoning_capable = False
 
     mock_parser = MagicMock()
