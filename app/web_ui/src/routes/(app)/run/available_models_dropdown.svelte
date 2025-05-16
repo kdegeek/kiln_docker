@@ -2,6 +2,7 @@
   import {
     available_models,
     load_available_models,
+    available_model_details,
     ui_state,
   } from "$lib/stores"
   import type { AvailableModels } from "$lib/types"
@@ -125,6 +126,10 @@
 
   $: selected_model_untested = untested_models.find((m) => m[0] === model)
   $: selected_model_unsupported = unsupported_models.find((m) => m[0] === model)
+
+  $: selected_model_suggested_data_gen =
+    available_model_details(model_name, provider_name, $available_models)
+      ?.suggested_for_data_gen || false
 </script>
 
 <div>
@@ -155,5 +160,19 @@
         warning_message="This model is not recommended for use with tasks requiring structured output. It fails to consistently return structured data."
       />
     {/if}
+  {:else if suggested_mode === "data_gen"}
+    <Warning
+      warning_icon={!model
+        ? "info"
+        : selected_model_suggested_data_gen
+          ? "check"
+          : "exclaim"}
+      warning_color={!model
+        ? "gray"
+        : selected_model_suggested_data_gen
+          ? "success"
+          : "warning"}
+      warning_message="We suggest using a high quality model for topic generation, such as GPT 4.1, Claude Sonnet, Gemini Pro or Deepseek R1."
+    />
   {/if}
 </div>

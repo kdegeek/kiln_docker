@@ -6,8 +6,6 @@
   import { client } from "$lib/api_client"
   import { createKilnError } from "$lib/utils/error_handlers"
   import FormElement from "../../../../../lib/utils/form_element.svelte"
-  import Warning from "$lib/ui/warning.svelte"
-  import { available_models, available_model_details } from "$lib/stores"
 
   // the number of workers to use for parallel generation
   const PARALLEL_WORKER_COUNT = 25
@@ -31,8 +29,6 @@
   export let model: string
   export let num_samples_to_generate: number = 8
   export let custom_topics_string: string | null = null
-  let model_name: string | null = null
-  let provider_name: string | null = null
 
   /**
    * If true, generate samples for each topic leaf descendant of the current topic.
@@ -236,10 +232,6 @@
   function serialize_topic_path(path: string[]) {
     return path.join("/")
   }
-
-  $: selected_model_suggested =
-    available_model_details(model_name, provider_name, $available_models)
-      ?.suggested_for_data_gen || false
 </script>
 
 <dialog id={`${id}-generate-samples`} class="modal">
@@ -270,22 +262,7 @@
         <AvailableModelsDropdown
           requires_data_gen={true}
           bind:model
-          bind:model_name
-          bind:provider_name
           suggested_mode="data_gen"
-        />
-        <Warning
-          warning_icon={!model
-            ? "info"
-            : selected_model_suggested
-              ? "check"
-              : "exclaim"}
-          warning_color={!model
-            ? "gray"
-            : selected_model_suggested
-              ? "success"
-              : "warning"}
-          warning_message="We suggest using a high quality model for data generation, such as GPT 4.1, Claude Sonnet, Gemini Pro or Deepseek R1."
         />
         {#if cascade_mode}
           <!-- parallelization only makes sense in cascade mode -->
