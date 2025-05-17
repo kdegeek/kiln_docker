@@ -840,19 +840,22 @@ async def available_ollama_models() -> AvailableModels | None:
         )
 
         for ollama_model_tag in ollama_connection.supported_models:
-            model, ollama_provider = model_from_ollama_tag(ollama_model_tag)
-            if model and ollama_provider:
-                ollama_models.models.append(
-                    ModelDetails(
-                        id=model.name,
-                        name=model.friendly_name,
-                        supports_structured_output=ollama_provider.supports_structured_output,
-                        supports_data_gen=ollama_provider.supports_data_gen,
-                        supports_logprobs=False,  # Ollama doesn't support logprobs https://github.com/ollama/ollama/issues/2415
-                        suggested_for_data_gen=ollama_provider.suggested_for_data_gen,
-                        suggested_for_evals=ollama_provider.suggested_for_evals,
+            # Get all Kiln models that match the Ollama model tag
+            # There may be multiple (Qwen 3 has thinking and non-thinking versions)
+            models = models_from_ollama_tag(ollama_model_tag)
+            for model, ollama_provider in models:
+                if model and ollama_provider:
+                    ollama_models.models.append(
+                        ModelDetails(
+                            id=model.name,
+                            name=model.friendly_name,
+                            supports_structured_output=ollama_provider.supports_structured_output,
+                            supports_data_gen=ollama_provider.supports_data_gen,
+                            supports_logprobs=False,  # Ollama doesn't support logprobs https://github.com/ollama/ollama/issues/2415
+                            suggested_for_data_gen=ollama_provider.suggested_for_data_gen,
+                            suggested_for_evals=ollama_provider.suggested_for_evals,
+                        )
                     )
-                )
         for ollama_model in ollama_connection.untested_models:
             ollama_models.models.append(
                 ModelDetails(
@@ -876,9 +879,10 @@ async def available_ollama_models() -> AvailableModels | None:
         return None
 
 
-def model_from_ollama_tag(
+def models_from_ollama_tag(
     tag: str,
-) -> tuple[KilnModel | None, KilnModelProvider | None]:
+) -> List[tuple[KilnModel | None, KilnModelProvider | None]]:
+    models: list[tuple[KilnModel | None, KilnModelProvider | None]] = []
     for model in built_in_models:
         ollama_provider = next(
             (p for p in model.providers if p.name == ModelProviderName.ollama), None
@@ -888,14 +892,14 @@ def model_from_ollama_tag(
 
         model_name = ollama_provider.model_id
         if tag in [model_name, f"{model_name}:latest"]:
-            return model, ollama_provider
+            models.append((model, ollama_provider))
         if ollama_provider.ollama_model_aliases is not None:
             # all aliases (and :latest)
             for alias in ollama_provider.ollama_model_aliases:
                 if tag in [alias, f"{alias}:latest"]:
-                    return model, ollama_provider
+                    models.append((model, ollama_provider))
 
-    return None, None
+    return models
 
 
 def custom_models() -> AvailableModels | None:

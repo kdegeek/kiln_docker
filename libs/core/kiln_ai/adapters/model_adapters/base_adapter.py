@@ -8,6 +8,7 @@ import jsonschema
 from kiln_ai.adapters.ml_model_list import KilnModelProvider, StructuredOutputMode
 from kiln_ai.adapters.parsers.json_parser import parse_json_string
 from kiln_ai.adapters.parsers.parser_registry import model_parser_from_id
+from kiln_ai.adapters.parsers.request_formatters import request_formatter_from_id
 from kiln_ai.adapters.prompt_builders import prompt_builder_from_id
 from kiln_ai.adapters.provider_tools import kiln_model_provider_from
 from kiln_ai.adapters.run_output import RunOutput
@@ -113,14 +114,19 @@ class BaseAdapter(metaclass=ABCMeta):
                 "This task requires a specific input schema. While the model produced JSON, that JSON didn't meet the schema. Search 'Troubleshooting Structured Data Issues' in our docs for more information.",
             )
 
+        # Format model input for model call (we save the original input in the task without formatting)
+        formatted_input = input
+        formatter_id = self.model_provider().formatter
+        if formatter_id is not None:
+            formatter = request_formatter_from_id(formatter_id)
+            formatted_input = formatter.format_input(input)
+
         # Run
-        run_output, usage = await self._run(input)
+        run_output, usage = await self._run(formatted_input)
 
         # Parse
         provider = self.model_provider()
-        parser = model_parser_from_id(provider.parser)(
-            structured_output=self.has_structured_output()
-        )
+        parser = model_parser_from_id(provider.parser)
         parsed_output = parser.parse_output(original_output=run_output)
 
         # validate output
