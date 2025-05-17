@@ -147,7 +147,7 @@ class LiteLlmAdapter(BaseAdapter):
             and message.reasoning_content
             and len(message.reasoning_content.strip()) > 0
         ):
-            intermediate_outputs["reasoning"] = message.reasoning_content
+            intermediate_outputs["reasoning"] = message.reasoning_content.strip()
 
         # the string content of the response
         response_content = message.content
