@@ -2152,8 +2152,7 @@ built_in_models: List[KilnModel] = [
                 supports_data_gen=True,
                 formatter=ModelFormatterID.qwen3_style_no_think,
                 structured_output_mode=StructuredOutputMode.json_instructions,
-                # Even though thinking is disabled, this parser will still remove <think></think> which is sometimes returned
-                parser=ModelParserID.r1_thinking,
+                parser=ModelParserID.optional_r1_thinking,
             ),
         ],
     ),
@@ -2240,6 +2239,10 @@ built_in_models: List[KilnModel] = [
             KilnModelProvider(
                 name=ModelProviderName.together_ai,
                 model_id="Qwen/Qwen3-235B-A22B-fp8-tput",
+                supports_data_gen=True,
+                reasoning_capable=True,
+                structured_output_mode=StructuredOutputMode.json_instructions,
+                parser=ModelParserID.r1_thinking,
             ),
         ],
     ),
@@ -2271,8 +2274,15 @@ built_in_models: List[KilnModel] = [
                 supports_data_gen=True,
                 formatter=ModelFormatterID.qwen3_style_no_think,
                 structured_output_mode=StructuredOutputMode.json_instructions,
-                # Even though thinking is disabled, this parser will still remove <think></think> which is sometimes returned
-                parser=ModelParserID.r1_thinking,
+                parser=ModelParserID.optional_r1_thinking,
+            ),
+            KilnModelProvider(
+                name=ModelProviderName.together_ai,
+                model_id="Qwen/Qwen3-235B-A22B-fp8-tput",
+                supports_data_gen=True,
+                formatter=ModelFormatterID.qwen3_style_no_think,
+                structured_output_mode=StructuredOutputMode.json_instructions,
+                parser=ModelParserID.optional_r1_thinking,
             ),
         ],
     ),
