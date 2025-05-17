@@ -224,10 +224,7 @@ async def run_structured_input_task(
     with pytest.raises(ValueError):
         # not structured input in dictionary
         await a.invoke("a=1, b=2, c=3")
-    with pytest.raises(
-        ValueError,
-        match="This task requires a specific output schema. While the model produced JSON, that JSON didn't meet the schema.",
-    ):
+    with pytest.raises(ValueError, match="This task requires a specific input"):
         # invalid structured input
         await a.invoke({"a": 1, "b": 2, "d": 3})
 
