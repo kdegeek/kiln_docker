@@ -245,7 +245,7 @@ async def test_input_formatting(
         ) as mock_parser_factory,
     ):
         mock_factory.return_value = mock_formatter
-        mock_parser_factory.return_value = lambda **kwargs: mock_parser
+        mock_parser_factory.return_value = mock_parser
 
         # Mock the _run method to capture the input
         captured_input = None

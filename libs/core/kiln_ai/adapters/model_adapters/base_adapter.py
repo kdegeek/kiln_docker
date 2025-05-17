@@ -126,9 +126,7 @@ class BaseAdapter(metaclass=ABCMeta):
 
         # Parse
         provider = self.model_provider()
-        parser = model_parser_from_id(provider.parser)(
-            structured_output=self.has_structured_output()
-        )
+        parser = model_parser_from_id(provider.parser)
         parsed_output = parser.parse_output(original_output=run_output)
 
         # validate output

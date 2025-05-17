@@ -150,6 +150,7 @@ class ModelParserID(str, Enum):
     """
 
     r1_thinking = "r1_thinking"
+    optional_r1_thinking = "optional_r1_thinking"
 
 
 class ModelFormatterID(str, Enum):
@@ -1935,8 +1936,7 @@ built_in_models: List[KilnModel] = [
                 structured_output_mode=StructuredOutputMode.json_instructions,
                 formatter=ModelFormatterID.qwen3_style_no_think,
                 supports_data_gen=False,
-                # Even though thinking is disabled, this parser will still remove <think></think> which is sometimes returned
-                parser=ModelParserID.r1_thinking,
+                parser=ModelParserID.optional_r1_thinking,
             ),
             KilnModelProvider(
                 name=ModelProviderName.ollama,
@@ -1984,8 +1984,7 @@ built_in_models: List[KilnModel] = [
                 structured_output_mode=StructuredOutputMode.json_instructions,
                 formatter=ModelFormatterID.qwen3_style_no_think,
                 supports_data_gen=False,
-                # Even though thinking is disabled, this parser will still remove <think></think> which is sometimes returned
-                parser=ModelParserID.r1_thinking,
+                parser=ModelParserID.optional_r1_thinking,
             ),
             KilnModelProvider(
                 name=ModelProviderName.ollama,
@@ -2034,8 +2033,7 @@ built_in_models: List[KilnModel] = [
                 structured_output_mode=StructuredOutputMode.json_instructions,
                 formatter=ModelFormatterID.qwen3_style_no_think,
                 supports_data_gen=False,
-                # Even though thinking is disabled, this parser will still remove <think></think> which is sometimes returned
-                parser=ModelParserID.r1_thinking,
+                parser=ModelParserID.optional_r1_thinking,
             ),
             KilnModelProvider(
                 name=ModelProviderName.ollama,
@@ -2083,8 +2081,7 @@ built_in_models: List[KilnModel] = [
                 structured_output_mode=StructuredOutputMode.json_instructions,
                 formatter=ModelFormatterID.qwen3_style_no_think,
                 supports_data_gen=True,
-                # Even though thinking is disabled, this parser will still remove <think></think> which is sometimes returned
-                parser=ModelParserID.r1_thinking,
+                parser=ModelParserID.optional_r1_thinking,
             ),
             KilnModelProvider(
                 name=ModelProviderName.ollama,
@@ -2140,8 +2137,7 @@ built_in_models: List[KilnModel] = [
                 structured_output_mode=StructuredOutputMode.json_instructions,
                 formatter=ModelFormatterID.qwen3_style_no_think,
                 supports_data_gen=True,
-                # Even though thinking is disabled, this parser will still remove <think></think> which is sometimes returned
-                parser=ModelParserID.r1_thinking,
+                parser=ModelParserID.optional_r1_thinking,
             ),
             KilnModelProvider(
                 name=ModelProviderName.ollama,
@@ -2198,8 +2194,7 @@ built_in_models: List[KilnModel] = [
                 structured_output_mode=StructuredOutputMode.json_instructions,
                 formatter=ModelFormatterID.qwen3_style_no_think,
                 supports_data_gen=True,
-                # Even though thinking is disabled, this parser will still remove <think></think> which is sometimes returned
-                parser=ModelParserID.r1_thinking,
+                parser=ModelParserID.optional_r1_thinking,
             ),
             KilnModelProvider(
                 name=ModelProviderName.ollama,
@@ -2261,8 +2256,7 @@ built_in_models: List[KilnModel] = [
                 formatter=ModelFormatterID.qwen3_style_no_think,
                 supports_data_gen=True,
                 reasoning_capable=False,
-                # Even though thinking is disabled, this parser will still remove <think></think> which is sometimes returned
-                parser=ModelParserID.r1_thinking,
+                parser=ModelParserID.optional_r1_thinking,
             ),
             KilnModelProvider(
                 name=ModelProviderName.ollama,

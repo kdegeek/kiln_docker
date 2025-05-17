@@ -518,13 +518,11 @@ async def test_invoke_parsing_flow(adapter):
         output="parsed test output", intermediate_outputs={"key": "value"}
     )
 
-    mock_parser_class = MagicMock(return_value=mock_parser)
-
     with (
         patch.object(adapter, "model_provider", return_value=mock_provider),
         patch(
             "kiln_ai.adapters.model_adapters.base_adapter.model_parser_from_id",
-            return_value=mock_parser_class,
+            return_value=mock_parser,
         ),
         patch("kiln_ai.adapters.model_adapters.base_adapter.Config") as mock_config,
     ):
@@ -534,9 +532,6 @@ async def test_invoke_parsing_flow(adapter):
 
         # Execute
         result = await adapter.invoke("test input")
-
-        # Verify parser was created correctly
-        mock_parser_class.assert_called_once_with(structured_output=False)
 
         # Verify parsing occurred
         mock_parser.parse_output.assert_called_once()

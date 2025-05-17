@@ -7,6 +7,9 @@ class R1ThinkingParser(BaseParser):
     START_TAG = "<think>"
     END_TAG = "</think>"
 
+    def __init__(self, allow_missing_thinking: bool = False):
+        self.allow_missing_thinking = allow_missing_thinking
+
     def parse_output(self, original_output: RunOutput) -> RunOutput:
         """
         Parse the <think> </think> tags from the response into the intermediate and final outputs.
@@ -47,7 +50,10 @@ class R1ThinkingParser(BaseParser):
         # Find the thinking tags
         think_end = cleaned_response.find(self.END_TAG)
         if think_end == -1:
-            raise ValueError("Missing </think> tag")
+            if self.allow_missing_thinking:
+                return original_output
+            else:
+                raise ValueError("Missing </think> tag")
 
         think_tag_start = cleaned_response.find(self.START_TAG)
         if think_tag_start == -1:
