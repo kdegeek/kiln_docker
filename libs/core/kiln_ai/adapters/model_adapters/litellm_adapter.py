@@ -142,7 +142,11 @@ class LiteLlmAdapter(BaseAdapter):
             raise RuntimeError("Logprobs were required, but no logprobs were returned.")
 
         # Save reasoning if it exists and was parsed by LiteLLM (or openrouter, or anyone upstream)
-        if hasattr(message, "reasoning_content") and message.reasoning_content:
+        if (
+            hasattr(message, "reasoning_content")
+            and message.reasoning_content
+            and len(message.reasoning_content.strip()) > 0
+        ):
             intermediate_outputs["reasoning"] = message.reasoning_content
 
         # the string content of the response
