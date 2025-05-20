@@ -88,7 +88,7 @@
             id: "existing_dataset",
             name: "Use Training Dataset from Existing Fine-Tune",
             description:
-              "When comparing multiple models, it's best to used exactly the same training dataset.",
+              "When comparing multiple models, it's best to use exactly the same training dataset.",
           },
         ]
       : []),
