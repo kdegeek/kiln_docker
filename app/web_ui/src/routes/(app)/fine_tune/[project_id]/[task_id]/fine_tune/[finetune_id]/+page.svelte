@@ -121,7 +121,7 @@
       const url_id = finetune.finetune.provider_id?.split("/").pop()
       if (finetune.finetune.properties["endpoint_version"] === "v2") {
         // V2 style URL
-        return `https://fireworks.ai/dashboard/fine-tuning/${url_id}`
+        return `https://fireworks.ai/dashboard/fine-tuning/supervised/${url_id}`
       } else {
         // V1 style URL
         return `https://fireworks.ai/dashboard/fine-tuning/v1/${url_id}`
