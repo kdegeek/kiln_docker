@@ -26,7 +26,7 @@ Running the web-UI and Python servers separately is useful for development, as b
 
 To run the API server, Studio server, and Studio Web UI with auto-reload for development:
 
-1. In your first terminal:
+1. In your first terminal, navigate to the base Kiln directory:
 
    ```bash
    uv run python -m app.desktop.dev_server
