@@ -71,7 +71,6 @@ We suggest the following extensions for VSCode/Cursor. With them, you'll get com
 - Svelte for VS Code
 - Vitest
 - ESLint
-- Cursor Pyright
 
 ### llms.txt
 
