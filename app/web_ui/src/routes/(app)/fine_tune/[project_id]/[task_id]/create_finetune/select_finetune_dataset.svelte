@@ -384,7 +384,7 @@
 </Dialog>
 
 <Dialog
-  title="Select Training Dataset from Existing Fine-Tune"
+  title="Select Dataset from an Existing Fine-Tune"
   bind:this={existing_dataset_dialog}
   action_buttons={[
     {
@@ -397,8 +397,8 @@
     <div class="text-error">No existing fine-tune datasets found.</div>
   {:else}
     <div class="font-light text-sm mb-6">
-      Select an existing training dataset to use exactly the same data for this
-      fine-tune.
+      Select an existing fine-tuning dataset to use exactly the same data for
+      this fine-tune.
     </div>
     <div class="flex flex-col gap-4 text-sm max-w-[600px]">
       {#each finetune_dataset_info.existing_datasets as dataset}
