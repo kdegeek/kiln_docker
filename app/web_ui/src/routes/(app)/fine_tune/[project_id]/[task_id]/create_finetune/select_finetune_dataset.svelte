@@ -86,9 +86,9 @@
       ? [
           {
             id: "existing_dataset",
-            name: "Use Training Dataset from Existing Fine-Tune",
+            name: "Reuse Dataset from an Existing Fine-Tune",
             description:
-              "When comparing multiple models, it's best to use exactly the same training dataset.",
+              "When comparing multiple base models, it's best to use exactly the same fine-tuning dataset.",
           },
         ]
       : []),
@@ -96,16 +96,17 @@
       ? [
           {
             id: "new_dataset",
-            name: "New Training Dataset",
-            description: "Create a training set using a tag in your dataset.",
+            name: "Create a New Fine-Tuning Dataset",
+            description:
+              "Create a new fine-tuning dataset by selecting a subset of your data.",
           },
         ]
       : []),
     {
       id: "add",
-      name: "Add Training Data",
+      name: "Create or Add Fine-Tuning Data",
       description:
-        "Add a new training data using synthetic data generation, CSV upload, or by tagging existing data.",
+        "Add data for fine-tuning using synthetic data generation, CSV upload, or by tagging existing data. Once done, you'll need to return to this page to create a fine-tuning dataset from the data you added.",
     },
   ]
 

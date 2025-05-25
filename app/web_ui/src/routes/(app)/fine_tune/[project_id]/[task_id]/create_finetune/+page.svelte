@@ -27,6 +27,7 @@
     FineTuneParameter,
   } from "$lib/types"
   import SelectFinetuneDataset from "./select_finetune_dataset.svelte"
+  import InfoTooltip from "$lib/ui/info_tooltip.svelte"
 
   let finetune_description = ""
   let finetune_name = ""
@@ -480,7 +481,7 @@
             bind:value={$model_provider}
           />
           <button
-            class="mt-1 hover:underline"
+            class="mt-1 underline decoration-gray-400"
             on:click={go_to_providers_settings}
           >
             <Warning
@@ -492,7 +493,19 @@
           </button>
         </div>
         {#if step_2_visible}
-          <div class="text-xl font-bold">Step 2: Training Dataset</div>
+          <div>
+            <div class="text-xl font-bold">
+              Step 2: Select Fine-Tuning Dataset
+            </div>
+            <div class="font-light">
+              Select a dataset to use for this fine-tune.
+              <InfoTooltip
+                tooltip_text="A fine-tuning dataset is a subset of your dataset which is used to train and validate the fine-tuned model. This is typically a subset of your dataset, which is intentionally kept separate from your eval data."
+                position="bottom"
+                no_pad={true}
+              />
+            </div>
+          </div>
           <SelectFinetuneDataset {project_id} {task_id} bind:selected_dataset />
         {/if}
 
