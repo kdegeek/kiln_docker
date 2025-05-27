@@ -81,8 +81,13 @@
     },
   ]
 
+  $: show_existing_dataset_option =
+    finetune_dataset_info?.existing_finetunes.length
+  $: show_new_dataset_option = finetune_dataset_info?.finetune_tags.length
+  $: can_select_dataset =
+    show_existing_dataset_option || show_new_dataset_option
   $: top_options = [
-    ...(finetune_dataset_info?.existing_finetunes.length
+    ...(show_existing_dataset_option
       ? [
           {
             id: "existing_dataset",
@@ -92,7 +97,7 @@
           },
         ]
       : []),
-    ...(finetune_dataset_info?.finetune_tags.length
+    ...(show_new_dataset_option
       ? [
           {
             id: "new_dataset",
@@ -102,12 +107,16 @@
           },
         ]
       : []),
-    {
-      id: "add",
-      name: "Create or Add Fine-Tuning Data",
-      description:
-        "Add data for fine-tuning using synthetic data generation, CSV upload, or by tagging existing data. Once done, you'll need to return to this page to create a fine-tuning dataset from the data you added.",
-    },
+    ...(!can_select_dataset
+      ? [
+          {
+            id: "add",
+            name: "Add Fine-Tuning Data",
+            description:
+              "Add data for fine-tuning using synthetic data generation, CSV upload, or by tagging existing data.",
+          },
+        ]
+      : []),
   ]
 
   function select_top_option(option: string) {
@@ -292,14 +301,22 @@
       </div>
     {:else}
       <OptionList options={top_options} select_option={select_top_option} />
+      {#if can_select_dataset}
+        <div class="pt-4 font-light">
+          or
+          <button class="link font-normal" on:click={show_add_data}
+            >add additional fine-tuning data</button
+          > before you start.
+        </div>
+      {/if}
     {/if}
   </div>
 {/if}
 
-<Dialog title="Create Training Dataset" bind:this={create_dataset_dialog}>
+<Dialog title="New Fine-Tuning Dataset" bind:this={create_dataset_dialog}>
   <div class="font-light text-sm mb-6">
     <div class="font-light text-sm mb-6">
-      Snapshot your current dataset for training, filtering to a specific tag.
+      Snapshot a subset of your dataset to be used for fine-tuning.
     </div>
     <div class="flex flex-row gap-6 justify-center flex-col">
       <FormContainer
@@ -312,9 +329,9 @@
       >
         <div class="flex flex-col gap-4">
           <FormElement
-            label="Target Dataset Tag"
-            description="Samples with this tag will be included in the training dataset."
-            info_description="Any tag starting with 'fine_tune' will be available here. Advanced users can create their own tags to manage multiple training datasets."
+            label="Dataset Filter Tag (Required)"
+            description="Select a tag. Only samples with this tag will be used in fine-tuning."
+            info_description="Available tags start with 'fine_tune'. You can create custom tags with this prefix to organize different fine-tuning datasets."
             inputType="fancy_select"
             optional={false}
             id="dataset_filter"
