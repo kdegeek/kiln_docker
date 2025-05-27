@@ -62,6 +62,7 @@ class BaseEval:
             self.target_task,
             self.run_config.model_name,
             ModelProviderName(self.run_config.model_provider_name),
+            prompt_id=self.run_config.prompt_id,
             base_adapter_config=AdapterConfig(allow_saving=False),
         )
 
