@@ -17,7 +17,7 @@ def adapter_for_task(
     kiln_task: datamodel.Task,
     model_name: str,
     provider: ModelProviderName,
-    prompt_id: PromptId | None = None,
+    prompt_id: PromptId,
     base_adapter_config: AdapterConfig | None = None,
 ) -> BaseAdapter:
     # Get the provider to run. For things like the fine-tune provider, we want to run the underlying provider

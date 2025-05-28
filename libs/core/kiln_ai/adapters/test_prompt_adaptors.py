@@ -130,6 +130,7 @@ async def test_mock_returning_run(tmp_path):
                 additional_body_options={"api_key": "test_key"},
             ),
             kiln_task=task,
+            prompt_id="simple_prompt_builder",
         )
 
         run = await adapter.invoke("You are a mock, send me the response!")
@@ -212,7 +213,10 @@ async def run_simple_task(
     prompt_id: PromptId | None = None,
 ) -> datamodel.TaskRun:
     adapter = adapter_for_task(
-        task, model_name=model_name, provider=provider, prompt_id=prompt_id
+        task,
+        model_name=model_name,
+        provider=provider,
+        prompt_id=prompt_id or "simple_prompt_builder",
     )
 
     run = await adapter.invoke(

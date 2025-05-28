@@ -5,6 +5,7 @@ from kiln_ai.adapters.adapter_registry import adapter_for_task
 from kiln_ai.adapters.repair.repair_task import RepairTaskRun
 from kiln_ai.datamodel import TaskRun
 from kiln_ai.datamodel.json_schema import validate_schema
+from kiln_ai.datamodel.prompt_id import PromptGenerators
 from kiln_ai.datamodel.task_output import DataSource, DataSourceType
 from kiln_ai.utils.config import Config
 from kiln_server.run_api import model_provider_from_string, task_and_run_from_id
@@ -68,6 +69,7 @@ def connect_repair_api(app: FastAPI):
             repair_task,
             model_name=model_name,
             provider=model_provider_from_string(provider),
+            prompt_id=PromptGenerators.SIMPLE,
         )
 
         repair_run = await adapter.invoke(repair_task_input.model_dump())

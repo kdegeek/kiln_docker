@@ -224,7 +224,10 @@ async def test_mocked_repair_task_run(sample_task, sample_task_run, sample_repai
         )
 
         adapter = adapter_for_task(
-            repair_task, model_name="llama_3_1_8b", provider="ollama"
+            repair_task,
+            model_name="llama_3_1_8b",
+            provider="ollama",
+            prompt_id="simple_prompt_builder",
         )
 
         run = await adapter.invoke(repair_task_input.model_dump())

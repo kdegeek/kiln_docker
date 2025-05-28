@@ -31,7 +31,7 @@ class LiteLlmAdapter(BaseAdapter):
         self,
         config: LiteLlmConfig,
         kiln_task: datamodel.Task,
-        prompt_id: PromptId | None = None,
+        prompt_id: PromptId,
         base_adapter_config: AdapterConfig | None = None,
     ):
         self.config = config
@@ -44,7 +44,7 @@ class LiteLlmAdapter(BaseAdapter):
             task=kiln_task,
             model_name=config.model_name,
             model_provider_name=config.provider_name,
-            prompt_id=prompt_id or PromptGenerators.SIMPLE,
+            prompt_id=prompt_id,
         )
 
         super().__init__(

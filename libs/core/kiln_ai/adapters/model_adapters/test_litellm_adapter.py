@@ -68,7 +68,9 @@ def test_initialization(config, mock_task):
 
 
 def test_adapter_info(config, mock_task):
-    adapter = LiteLlmAdapter(config=config, kiln_task=mock_task)
+    adapter = LiteLlmAdapter(
+        config=config, kiln_task=mock_task, prompt_id="simple_prompt_builder"
+    )
 
     assert adapter.adapter_name() == "kiln_openai_compatible_adapter"
 
@@ -79,7 +81,9 @@ def test_adapter_info(config, mock_task):
 
 @pytest.mark.asyncio
 async def test_response_format_options_unstructured(config, mock_task):
-    adapter = LiteLlmAdapter(config=config, kiln_task=mock_task)
+    adapter = LiteLlmAdapter(
+        config=config, kiln_task=mock_task, prompt_id="simple_prompt_builder"
+    )
 
     # Mock has_structured_output to return False
     with patch.object(adapter, "has_structured_output", return_value=False):
@@ -96,7 +100,9 @@ async def test_response_format_options_unstructured(config, mock_task):
 )
 @pytest.mark.asyncio
 async def test_response_format_options_json_mode(config, mock_task, mode):
-    adapter = LiteLlmAdapter(config=config, kiln_task=mock_task)
+    adapter = LiteLlmAdapter(
+        config=config, kiln_task=mock_task, prompt_id="simple_prompt_builder"
+    )
 
     with (
         patch.object(adapter, "has_structured_output", return_value=True),
@@ -117,7 +123,9 @@ async def test_response_format_options_json_mode(config, mock_task, mode):
 )
 @pytest.mark.asyncio
 async def test_response_format_options_function_calling(config, mock_task, mode):
-    adapter = LiteLlmAdapter(config=config, kiln_task=mock_task)
+    adapter = LiteLlmAdapter(
+        config=config, kiln_task=mock_task, prompt_id="simple_prompt_builder"
+    )
 
     with (
         patch.object(adapter, "has_structured_output", return_value=True),
@@ -139,7 +147,9 @@ async def test_response_format_options_function_calling(config, mock_task, mode)
 )
 @pytest.mark.asyncio
 async def test_response_format_options_json_instructions(config, mock_task, mode):
-    adapter = LiteLlmAdapter(config=config, kiln_task=mock_task)
+    adapter = LiteLlmAdapter(
+        config=config, kiln_task=mock_task, prompt_id="simple_prompt_builder"
+    )
 
     with (
         patch.object(adapter, "has_structured_output", return_value=True),
@@ -154,7 +164,9 @@ async def test_response_format_options_json_instructions(config, mock_task, mode
 
 @pytest.mark.asyncio
 async def test_response_format_options_json_schema(config, mock_task):
-    adapter = LiteLlmAdapter(config=config, kiln_task=mock_task)
+    adapter = LiteLlmAdapter(
+        config=config, kiln_task=mock_task, prompt_id="simple_prompt_builder"
+    )
 
     with (
         patch.object(adapter, "has_structured_output", return_value=True),
@@ -176,7 +188,9 @@ async def test_response_format_options_json_schema(config, mock_task):
 
 
 def test_tool_call_params_weak(config, mock_task):
-    adapter = LiteLlmAdapter(config=config, kiln_task=mock_task)
+    adapter = LiteLlmAdapter(
+        config=config, kiln_task=mock_task, prompt_id="simple_prompt_builder"
+    )
 
     params = adapter.tool_call_params(strict=False)
     expected_schema = mock_task.output_schema()
@@ -201,7 +215,9 @@ def test_tool_call_params_weak(config, mock_task):
 
 def test_tool_call_params_strict(config, mock_task):
     config.provider_name = "openai"
-    adapter = LiteLlmAdapter(config=config, kiln_task=mock_task)
+    adapter = LiteLlmAdapter(
+        config=config, kiln_task=mock_task, prompt_id="simple_prompt_builder"
+    )
 
     params = adapter.tool_call_params(strict=True)
     expected_schema = mock_task.output_schema()
@@ -246,7 +262,9 @@ def test_litellm_model_id_standard_providers(
     config, mock_task, provider_name, expected_prefix
 ):
     """Test litellm_model_id for standard providers"""
-    adapter = LiteLlmAdapter(config=config, kiln_task=mock_task)
+    adapter = LiteLlmAdapter(
+        config=config, kiln_task=mock_task, prompt_id="simple_prompt_builder"
+    )
 
     # Mock the model_provider method to return a provider with the specified name
     mock_provider = Mock()
@@ -272,7 +290,9 @@ def test_litellm_model_id_standard_providers(
 def test_litellm_model_id_custom_providers(config, mock_task, provider_name):
     """Test litellm_model_id for custom providers that require a base URL"""
     config.base_url = "https://api.custom.com"
-    adapter = LiteLlmAdapter(config=config, kiln_task=mock_task)
+    adapter = LiteLlmAdapter(
+        config=config, kiln_task=mock_task, prompt_id="simple_prompt_builder"
+    )
 
     # Mock the model_provider method
     mock_provider = Mock()
@@ -290,7 +310,9 @@ def test_litellm_model_id_custom_providers(config, mock_task, provider_name):
 def test_litellm_model_id_custom_provider_no_base_url(config, mock_task):
     """Test litellm_model_id raises error for custom providers without base URL"""
     config.base_url = None
-    adapter = LiteLlmAdapter(config=config, kiln_task=mock_task)
+    adapter = LiteLlmAdapter(
+        config=config, kiln_task=mock_task, prompt_id="simple_prompt_builder"
+    )
 
     # Mock the model_provider method
     mock_provider = Mock()
@@ -304,7 +326,9 @@ def test_litellm_model_id_custom_provider_no_base_url(config, mock_task):
 
 def test_litellm_model_id_no_model_id(config, mock_task):
     """Test litellm_model_id raises error when provider has no model_id"""
-    adapter = LiteLlmAdapter(config=config, kiln_task=mock_task)
+    adapter = LiteLlmAdapter(
+        config=config, kiln_task=mock_task, prompt_id="simple_prompt_builder"
+    )
 
     # Mock the model_provider method to return a provider with no model_id
     mock_provider = Mock()
@@ -318,7 +342,9 @@ def test_litellm_model_id_no_model_id(config, mock_task):
 
 def test_litellm_model_id_caching(config, mock_task):
     """Test that litellm_model_id caches the result"""
-    adapter = LiteLlmAdapter(config=config, kiln_task=mock_task)
+    adapter = LiteLlmAdapter(
+        config=config, kiln_task=mock_task, prompt_id="simple_prompt_builder"
+    )
 
     # Set the cached value directly
     adapter._litellm_model_id = "cached-value"
@@ -333,7 +359,9 @@ def test_litellm_model_id_caching(config, mock_task):
 
 def test_litellm_model_id_unknown_provider(config, mock_task):
     """Test litellm_model_id raises error for unknown provider"""
-    adapter = LiteLlmAdapter(config=config, kiln_task=mock_task)
+    adapter = LiteLlmAdapter(
+        config=config, kiln_task=mock_task, prompt_id="simple_prompt_builder"
+    )
 
     # Create a mock provider with an unknown name
     mock_provider = Mock()
@@ -372,7 +400,9 @@ async def test_build_completion_kwargs(
     config, mock_task, top_logprobs, response_format, extra_body
 ):
     """Test build_completion_kwargs with various configurations"""
-    adapter = LiteLlmAdapter(config=config, kiln_task=mock_task)
+    adapter = LiteLlmAdapter(
+        config=config, kiln_task=mock_task, prompt_id="simple_prompt_builder"
+    )
     mock_provider = Mock()
     messages = [{"role": "user", "content": "Hello"}]
 
@@ -443,7 +473,9 @@ async def test_build_completion_kwargs(
 )
 def test_usage_from_response(config, mock_task, litellm_usage, cost, expected_usage):
     """Test usage_from_response with various combinations of usage data and cost"""
-    adapter = LiteLlmAdapter(config=config, kiln_task=mock_task)
+    adapter = LiteLlmAdapter(
+        config=config, kiln_task=mock_task, prompt_id="simple_prompt_builder"
+    )
 
     # Create a mock response
     response = Mock(spec=litellm.types.utils.ModelResponse)
