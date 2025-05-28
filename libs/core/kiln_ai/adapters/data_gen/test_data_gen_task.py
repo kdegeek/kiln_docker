@@ -112,6 +112,7 @@ async def test_data_gen_all_models_providers(
         data_gen_task,
         model_name=model_name,
         provider=provider_name,
+        prompt_id="simple_prompt_builder",
     )
 
     input_dict = data_gen_input.model_dump()
@@ -256,6 +257,7 @@ async def test_data_gen_sample_all_models_providers(
         data_gen_task,
         model_name=model_name,
         provider=provider_name,
+        prompt_id="simple_prompt_builder",
     )
 
     input_dict = data_gen_input.model_dump()
@@ -306,6 +308,7 @@ async def test_data_gen_sample_all_models_providers_with_structured_output(
         data_gen_task,
         model_name=model_name,
         provider=provider_name,
+        prompt_id="simple_prompt_builder",
     )
 
     input_dict = data_gen_input.model_dump()

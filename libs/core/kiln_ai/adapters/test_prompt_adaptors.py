@@ -57,7 +57,7 @@ async def test_groq(tmp_path):
 )
 @pytest.mark.paid
 async def test_openrouter(tmp_path, model_name):
-    await run_simple_test(tmp_path, model_name, "openrouter")
+    await run_simple_test(tmp_path, model_name, "openrouter", "simple_prompt_builder")
 
 
 @pytest.mark.ollama
@@ -130,6 +130,7 @@ async def test_mock_returning_run(tmp_path):
                 additional_body_options={"api_key": "test_key"},
             ),
             kiln_task=task,
+            prompt_id="simple_prompt_builder",
         )
 
         run = await adapter.invoke("You are a mock, send me the response!")
@@ -153,7 +154,7 @@ async def test_mock_returning_run(tmp_path):
 @pytest.mark.parametrize("model_name,provider_name", get_all_models_and_providers())
 async def test_all_models_providers_plaintext(tmp_path, model_name, provider_name):
     task = build_test_task(tmp_path)
-    await run_simple_task(task, model_name, provider_name)
+    await run_simple_task(task, model_name, provider_name, "simple_prompt_builder")
 
 
 @pytest.mark.paid
@@ -209,7 +210,7 @@ async def run_simple_task(
     task: datamodel.Task,
     model_name: str,
     provider: str,
-    prompt_id: PromptId | None = None,
+    prompt_id: PromptId,
 ) -> datamodel.TaskRun:
     adapter = adapter_for_task(
         task, model_name=model_name, provider=provider, prompt_id=prompt_id

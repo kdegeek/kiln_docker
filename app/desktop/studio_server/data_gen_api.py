@@ -9,6 +9,7 @@ from kiln_ai.adapters.data_gen.data_gen_task import (
 )
 from kiln_ai.adapters.model_adapters.base_adapter import AdapterConfig
 from kiln_ai.datamodel import DataSource, DataSourceType, PromptId, TaskRun
+from kiln_ai.datamodel.prompt_id import PromptGenerators
 from kiln_server.run_api import model_provider_from_string
 from kiln_server.task_api import task_from_id
 from pydantic import BaseModel, ConfigDict, Field
@@ -94,6 +95,7 @@ def connect_data_gen_api(app: FastAPI):
             categories_task,
             model_name=input.model_name,
             provider=model_provider_from_string(input.provider),
+            prompt_id=PromptGenerators.SIMPLE,
         )
 
         categories_run = await adapter.invoke(task_input.model_dump())
@@ -117,6 +119,7 @@ def connect_data_gen_api(app: FastAPI):
             sample_task,
             model_name=input.model_name,
             provider=model_provider_from_string(input.provider),
+            prompt_id=PromptGenerators.SIMPLE,
         )
 
         samples_run = await adapter.invoke(task_input.model_dump())

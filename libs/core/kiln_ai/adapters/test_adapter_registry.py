@@ -40,7 +40,10 @@ def mock_finetune_from_id():
 
 def test_openai_adapter_creation(mock_config, basic_task):
     adapter = adapter_for_task(
-        kiln_task=basic_task, model_name="gpt-4", provider=ModelProviderName.openai
+        kiln_task=basic_task,
+        model_name="gpt-4",
+        provider=ModelProviderName.openai,
+        prompt_id="simple_prompt_builder",
     )
 
     assert isinstance(adapter, LiteLlmAdapter)
@@ -56,6 +59,7 @@ def test_openrouter_adapter_creation(mock_config, basic_task):
         kiln_task=basic_task,
         model_name="anthropic/claude-3-opus",
         provider=ModelProviderName.openrouter,
+        prompt_id="simple_prompt_builder",
     )
 
     assert isinstance(adapter, LiteLlmAdapter)
@@ -79,7 +83,10 @@ def test_openrouter_adapter_creation(mock_config, basic_task):
 )
 def test_openai_compatible_adapter_creation(mock_config, basic_task, provider):
     adapter = adapter_for_task(
-        kiln_task=basic_task, model_name="test-model", provider=provider
+        kiln_task=basic_task,
+        model_name="test-model",
+        provider=provider,
+        prompt_id="simple_prompt_builder",
     )
 
     assert isinstance(adapter, LiteLlmAdapter)
@@ -108,6 +115,7 @@ def test_tags_passed_through(mock_config, basic_task):
         base_adapter_config=AdapterConfig(
             default_tags=tags,
         ),
+        prompt_id="simple_prompt_builder",
     )
 
     assert adapter.base_adapter_config.default_tags == tags
@@ -116,7 +124,10 @@ def test_tags_passed_through(mock_config, basic_task):
 def test_invalid_provider(mock_config, basic_task):
     with pytest.raises(ValueError, match="Unhandled enum value"):
         adapter_for_task(
-            kiln_task=basic_task, model_name="test-model", provider="invalid"
+            kiln_task=basic_task,
+            model_name="test-model",
+            provider="invalid",
+            prompt_id="simple_prompt_builder",
         )
 
 
@@ -133,6 +144,7 @@ def test_openai_compatible_adapter(mock_compatible_config, mock_config, basic_ta
         kiln_task=basic_task,
         model_name="provider::test-model",
         provider=ModelProviderName.openai_compatible,
+        prompt_id="simple_prompt_builder",
     )
 
     assert isinstance(adapter, LiteLlmAdapter)
@@ -145,6 +157,7 @@ def test_custom_openai_compatible_provider(mock_config, basic_task):
         kiln_task=basic_task,
         model_name="openai::test-model",
         provider=ModelProviderName.kiln_custom_registry,
+        prompt_id="simple_prompt_builder",
     )
 
     assert isinstance(adapter, LiteLlmAdapter)
@@ -159,6 +172,7 @@ async def test_fine_tune_provider(mock_config, basic_task, mock_finetune_from_id
         kiln_task=basic_task,
         model_name="proj::task::tune",
         provider=ModelProviderName.kiln_fine_tune,
+        prompt_id="simple_prompt_builder",
     )
 
     mock_finetune_from_id.assert_called_once_with("proj::task::tune")

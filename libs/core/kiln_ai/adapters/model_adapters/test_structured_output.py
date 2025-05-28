@@ -146,7 +146,12 @@ def build_structured_output_test_task(tmp_path: Path):
 
 async def run_structured_output_test(tmp_path: Path, model_name: str, provider: str):
     task = build_structured_output_test_task(tmp_path)
-    a = adapter_for_task(task, model_name=model_name, provider=provider)
+    a = adapter_for_task(
+        task,
+        model_name=model_name,
+        provider=provider,
+        prompt_id="simple_prompt_builder",
+    )
     try:
         run = await a.invoke("Cows")  # a joke about cows
         parsed = json.loads(run.output.output)
@@ -197,10 +202,12 @@ def build_structured_input_test_task(tmp_path: Path):
     return task
 
 
-async def run_structured_input_test(tmp_path: Path, model_name: str, provider: str):
+async def run_structured_input_test(
+    tmp_path: Path, model_name: str, provider: str, prompt_id: PromptId
+):
     task = build_structured_input_test_task(tmp_path)
     try:
-        await run_structured_input_task(task, model_name, provider)
+        await run_structured_input_task(task, model_name, provider, prompt_id)
     except ValueError as e:
         if str(e) == "Failed to connect to Ollama. Ensure Ollama is running.":
             pytest.skip(
@@ -209,11 +216,11 @@ async def run_structured_input_test(tmp_path: Path, model_name: str, provider: s
         raise e
 
 
-async def run_structured_input_task(
+async def run_structured_input_task_no_validation(
     task: datamodel.Task,
     model_name: str,
     provider: str,
-    prompt_id: PromptId | None = None,
+    prompt_id: PromptId,
 ):
     a = adapter_for_task(
         task,
@@ -231,18 +238,29 @@ async def run_structured_input_task(
     try:
         run = await a.invoke({"a": 2, "b": 2, "c": 2})
         response = run.output.output
+        return response
     except ValueError as e:
         if str(e) == "Failed to connect to Ollama. Ensure Ollama is running.":
             pytest.skip(
                 f"Skipping {model_name} {provider} because Ollama is not running"
             )
         raise e
+
+
+async def run_structured_input_task(
+    task: datamodel.Task,
+    model_name: str,
+    provider: str,
+    prompt_id: PromptId,
+):
+    response = await run_structured_input_task_no_validation(
+        task, model_name, provider, prompt_id
+    )
     assert response is not None
     if isinstance(response, str):
         assert "[[equilateral]]" in response
     else:
         assert response["is_equilateral"] is True
-
     expected_pb_name = "simple_prompt_builder"
     if prompt_id is not None:
         expected_pb_name = prompt_id
@@ -269,7 +287,9 @@ async def test_structured_input_gpt_4o_mini(tmp_path):
 async def test_all_built_in_models_structured_input(
     tmp_path, model_name, provider_name
 ):
-    await run_structured_input_test(tmp_path, model_name, provider_name)
+    await run_structured_input_test(
+        tmp_path, model_name, provider_name, "simple_prompt_builder"
+    )
 
 
 @pytest.mark.paid
@@ -323,6 +343,11 @@ When asked for a final result, this is the format (for an equilateral example):
 """
     task.output_json_schema = json.dumps(triangle_schema)
     task.save_to_file()
-    await run_structured_input_task(
+    response = await run_structured_input_task_no_validation(
         task, model_name, provider_name, "simple_chain_of_thought_prompt_builder"
     )
+
+    formatted_response = json.loads(response)
+    assert formatted_response["is_equilateral"] is True
+    assert formatted_response["is_scalene"] is False
+    assert formatted_response["is_obtuse"] is False
