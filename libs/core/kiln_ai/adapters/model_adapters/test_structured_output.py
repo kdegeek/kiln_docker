@@ -238,7 +238,7 @@ async def run_structured_input_task_no_validation(
     try:
         run = await a.invoke({"a": 2, "b": 2, "c": 2})
         response = run.output.output
-        return response
+        return response, a
     except ValueError as e:
         if str(e) == "Failed to connect to Ollama. Ensure Ollama is running.":
             pytest.skip(
@@ -253,7 +253,7 @@ async def run_structured_input_task(
     provider: str,
     prompt_id: PromptId,
 ):
-    response = await run_structured_input_task_no_validation(
+    response, a = await run_structured_input_task_no_validation(
         task, model_name, provider, prompt_id
     )
     assert response is not None
