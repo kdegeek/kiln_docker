@@ -124,7 +124,7 @@
         return `https://app.fireworks.ai/dashboard/fine-tuning/supervised/${url_id}`
       } else {
         // V1 style URL
-        return `https://fireworks.ai/dashboard/fine-tuning/v1/${url_id}`
+        return `https://app.fireworks.ai/dashboard/fine-tuning/v1/${url_id}`
       }
     }
     return undefined
