@@ -12,10 +12,8 @@
     subscribed = true
     loading = true
     try {
-      // Critical Moments is another project of mine by the same company (same privacy policy)
-      // Using it's domain until we have a dedicated kiln server
       const res = await fetch(
-        "https://criticalmoments.io/account/api/kiln_subscribe",
+        "https://getkiln.ai/api/subscribe_to_newsletter",
         {
           method: "POST",
           body: JSON.stringify({ email }),
