@@ -256,7 +256,8 @@
       const model_name = model.split("/").slice(1).join("/")
 
       const queue = [...samples_to_save]
-      let parallelism = save_all_samples_mode === "parallel" ? 25 : 1
+      // 5 because browsers can only handle 6 concurrent requests. The 6th is for the rest of the UI to keep working.
+      let parallelism = save_all_samples_mode === "parallel" ? 5 : 1
 
       // Create and start N workers
       const workers = Array(parallelism)
