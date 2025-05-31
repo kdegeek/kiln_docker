@@ -69,13 +69,13 @@
     sub_topics: [],
   })
 
+  // Function to trigger save when data changes
+  function triggerSave() {
+    root_node.update((n) => n)
+  }
+
   onMount(() => {
     get_task()
-
-    setInterval(() => {
-      console.log("saving root_node")
-      root_node.update((n) => n)
-    }, 1000)
   })
 
   async function get_task() {
@@ -314,6 +314,7 @@
           {project_id}
           {task_id}
           {human_guidance}
+          {triggerSave}
           bind:num_subtopics_to_generate
           bind:num_samples_to_generate
         />

@@ -16,6 +16,7 @@
   export let project_id: string
   export let task_id: string
   export let human_guidance: string | null = null
+  export let triggerSave: () => void
 
   let model: string = $ui_state.selected_model
 
@@ -89,6 +90,9 @@
 
     // trigger reactivity
     data = data
+
+    // Trigger save to localStorage
+    triggerSave()
 
     // Close modal
     const modal = document.getElementById(`${id}-generate-subtopics`)
@@ -192,6 +196,7 @@
 
   function delete_topic() {
     dispatch("delete_topic", { node_to_delete: data })
+    // Note: The parent will handle removing this node and triggering save
   }
 
   function handleChildDeleteTopic(
@@ -204,6 +209,9 @@
 
     // Trigger reactivity
     data = data
+
+    // Trigger save to localStorage
+    triggerSave()
   }
 
   function delete_sample(sample_to_delete: SampleData) {
@@ -212,6 +220,9 @@
 
     // Trigger reactivity
     data = data
+
+    // Trigger save to localStorage
+    triggerSave()
   }
 
   $: is_empty = data.sub_topics.length == 0 && data.samples.length == 0
@@ -219,6 +230,9 @@
   function handleGenerateSamplesCompleted() {
     // Trigger reactivity
     data = data
+
+    // Trigger save to localStorage
+    triggerSave()
 
     // close all modals
     generate_samples_modal = false
@@ -328,6 +342,7 @@
         {project_id}
         {task_id}
         {human_guidance}
+        {triggerSave}
         bind:num_subtopics_to_generate
         bind:num_samples_to_generate
         on:delete_topic={handleChildDeleteTopic}
