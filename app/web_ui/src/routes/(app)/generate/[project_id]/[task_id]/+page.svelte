@@ -9,7 +9,6 @@
   import type { SampleDataNode } from "./gen_model"
   import GeneratedDataNode from "./generated_data_node.svelte"
   import AvailableModelsDropdown from "../../../run/available_models_dropdown.svelte"
-  import { beforeNavigate } from "$app/navigation"
   import { ui_state } from "$lib/stores"
   import PromptTypeSelector from "../../../run/prompt_type_selector.svelte"
   import FormContainer from "$lib/utils/form_container.svelte"
@@ -18,6 +17,7 @@
   import Warning from "$lib/ui/warning.svelte"
   import Dialog from "$lib/ui/dialog.svelte"
   import Splits from "$lib/ui/splits.svelte"
+  import { localStorageStore } from "$lib/stores"
 
   let session_id = Math.floor(Math.random() * 1000000000000).toString()
 
@@ -63,20 +63,19 @@
     },
   ]
 
-  let root_node: SampleDataNode = {
+  let root_node = localStorageStore("root_node", {
     topic: "",
     samples: [],
     sub_topics: [],
-  }
+  })
 
   onMount(() => {
     get_task()
 
-    // Handle browser reload/close: warn if there are unsaved changes
-    window.addEventListener("beforeunload", handleBeforeUnload)
-    return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload)
-    }
+    setInterval(() => {
+      console.log("saving root_node")
+      root_node.update((n) => n)
+    }, 1000)
   })
 
   async function get_task() {
@@ -118,56 +117,6 @@
     }
   }
 
-  function has_unsaved_changes(): boolean {
-    if (save_all_completed && save_all_sub_errors.length > 0) {
-      return true
-    }
-    update_data_for_save()
-    if (samples_to_save.length > 0) {
-      return true
-    }
-    return false
-  }
-
-  // Handle browser reload/close: warn if there are unsaved changes
-  function handleBeforeUnload(event: BeforeUnloadEvent) {
-    if (has_unsaved_changes()) {
-      event.preventDefault()
-    }
-  }
-
-  // Handle Svelte navigation: warn if there are unsaved changes
-  beforeNavigate((navigation) => {
-    if (save_all_running) {
-      if (
-        !confirm(
-          "Content generation is currently running. If you leave, it will be stopped and your changes will be lost.\n\n" +
-            "Press Cancel to stay, OK to leave.",
-        )
-      ) {
-        navigation.cancel()
-      }
-    } else if (has_unsaved_changes()) {
-      if (
-        !confirm(
-          "You have unsaved changes which will be lost if you leave.\n\n" +
-            "Press Cancel to stay, OK to leave.",
-        )
-      ) {
-        navigation.cancel()
-      }
-    } else if (root_node.sub_topics.length > 0) {
-      if (
-        !confirm(
-          "Your topic tree will be lost if you leave.\n\n" +
-            "Press Cancel to stay, OK to leave.",
-        )
-      ) {
-        navigation.cancel()
-      }
-    }
-  })
-
   function show_save_all_modal() {
     // Reset the modal state unless it was already running
     if (!save_all_running) {
@@ -204,7 +153,7 @@
     saved_count = 0
     already_saved_count = 0
     samples_to_save = []
-    visit_node_for_collection(root_node, [])
+    visit_node_for_collection($root_node, [])
   }
 
   let save_all_running = false
@@ -360,7 +309,7 @@
     {:else if task}
       <div class="flex flex-col">
         <GeneratedDataNode
-          data={root_node}
+          data={$root_node}
           path={[]}
           {project_id}
           {task_id}
