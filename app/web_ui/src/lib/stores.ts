@@ -126,7 +126,17 @@ export function localStorageStore<T>(key: string, initialValue: T) {
 
   if (isBrowser) {
     // Subscribe to changes and update localStorage
-    store.subscribe((value) => localStorage.setItem(key, JSON.stringify(value)))
+    store.subscribe((value) => {
+      const stringified = JSON.stringify(value)
+      // 10MB is a reasonable limit. Most browsers have a 20MB limit for localStorage.
+      if (stringified.length > 10 * 1024 * 1024) {
+        console.warn(
+          "Skipping localStorage save for " + key + " as it's too large",
+        )
+      } else {
+        localStorage.setItem(key, stringified)
+      }
+    })
   }
 
   return store
