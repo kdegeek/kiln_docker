@@ -17,7 +17,8 @@
   import Warning from "$lib/ui/warning.svelte"
   import Dialog from "$lib/ui/dialog.svelte"
   import Splits from "$lib/ui/splits.svelte"
-  import { localStorageStore } from "$lib/stores"
+  import { indexedDBStore } from "$lib/stores/index_db_store"
+  import { writable, type Writable } from "svelte/store"
 
   let session_id = Math.floor(Math.random() * 1000000000000).toString()
 
@@ -71,7 +72,8 @@
     },
   ]
 
-  let root_node = localStorageStore("root_node", {
+  // Empty to start but will be populated from IndexedDB after task is loaded
+  let root_node: Writable<SampleDataNode> = writable({
     topic: "",
     samples: [],
     sub_topics: [],
@@ -92,6 +94,16 @@
 
   onMount(() => {
     get_task()
+
+    if (project_id && task_id) {
+      // Setup the root node store
+      const synth_data_key = `synth_data_${project_id}_${task_id}`
+      root_node = indexedDBStore(synth_data_key, {
+        topic: "",
+        samples: [],
+        sub_topics: [],
+      })
+    }
   })
 
   async function get_task() {
