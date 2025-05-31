@@ -52,10 +52,14 @@
 
   let human_guidance_dialog: Dialog | null = null
   $: action_buttons = [
-    {
-      label: "Clear All",
-      handler: clear_all,
-    },
+    ...($root_node.sub_topics.length > 0 || $root_node.samples.length > 0
+      ? [
+          {
+            label: "Clear All",
+            handler: clear_all,
+          },
+        ]
+      : []),
     {
       label: human_guidance.length > 0 ? "Edit Guidance" : "Add Guidance",
       notice: human_guidance.length > 0,
