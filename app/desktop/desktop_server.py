@@ -1,4 +1,6 @@
+import asyncio
 import contextlib
+import os
 import threading
 import time
 from contextlib import asynccontextmanager
@@ -21,6 +23,12 @@ from app.desktop.studio_server.webhost import connect_webhost
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # debug event loop, warning on hangs
+    should_debug = os.environ.get("DEBUG_EVENT_LOOP", "false") == "true"
+    if should_debug:
+        loop = asyncio.get_event_loop()
+        loop.set_debug(True)
+
     # Set datamodel strict mode on startup
     original_strict_mode = datamodel_strict_mode.strict_mode()
     datamodel_strict_mode.set_strict_mode(True)
