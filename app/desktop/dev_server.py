@@ -1,11 +1,9 @@
 # Run a desktop server for development:
 # - Auto-reload is enabled
 # - Extra logging (level+colors) is enabled
-import asyncio
 import os
 
 import uvicorn
-from uvicorn import Config, Server
 
 from app.desktop.desktop_server import make_app
 
