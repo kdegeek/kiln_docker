@@ -19,6 +19,7 @@
   import Splits from "$lib/ui/splits.svelte"
   import { indexedDBStore } from "$lib/stores/index_db_store"
   import { writable, type Writable } from "svelte/store"
+  import DataGenIntro from "./data_gen_intro.svelte"
 
   let session_id = Math.floor(Math.random() * 1000000000000).toString()
 
@@ -52,25 +53,6 @@
   }
 
   let human_guidance_dialog: Dialog | null = null
-  $: action_buttons = [
-    ...($root_node.sub_topics.length > 0 || $root_node.samples.length > 0
-      ? [
-          {
-            label: "Clear All",
-            handler: clear_all,
-          },
-        ]
-      : []),
-    {
-      label: human_guidance.length > 0 ? "Edit Guidance" : "Add Guidance",
-      notice: human_guidance.length > 0,
-      handler: show_human_guidance_dialog,
-    },
-    {
-      label: "Save All",
-      handler: show_save_all_modal,
-    },
-  ]
 
   // Empty to start but will be populated from IndexedDB after task is loaded
   let root_node: Writable<SampleDataNode> = writable({
@@ -80,11 +62,19 @@
   })
 
   function clear_all() {
-    root_node.set({
-      topic: "",
-      samples: [],
-      sub_topics: [],
-    })
+    let msg =
+      "Are you sure you want to clear all topics and data samples? This action cannot be undone."
+    if (human_guidance.length > 0) {
+      msg += " This will not remove your human guidance."
+    }
+
+    if (confirm(msg)) {
+      root_node.set({
+        topic: "",
+        samples: [],
+        sub_topics: [],
+      })
+    }
   }
 
   // Function to trigger save when data changes
@@ -320,6 +310,10 @@
     human_guidance = ""
     return true
   }
+
+  $: is_empty =
+    $root_node.samples.length == 0 && $root_node.sub_topics.length == 0
+  let root_node_component: GeneratedDataNode | null = null
 </script>
 
 <Splits bind:splits bind:subtitle={splits_subtitle} bind:this={split_object} />
@@ -329,13 +323,68 @@
     subtitle={splits_subtitle}
     sub_subtitle_link="https://docs.getkiln.ai/docs/synthetic-data-generation"
     sub_subtitle="Read the Docs"
-    {action_buttons}
+    no_y_padding
+    action_buttons={[
+      ...(is_empty
+        ? [
+            {
+              label:
+                human_guidance.length > 0 ? "Edit Guidance" : "Add Guidance",
+              notice: human_guidance.length > 0,
+              handler: show_human_guidance_dialog,
+            },
+          ]
+        : []),
+    ]}
   >
     {#if task_loading}
       <div class="w-full min-h-[50vh] flex justify-center items-center">
         <div class="loading loading-spinner loading-lg"></div>
       </div>
     {:else if task}
+      {#if is_empty}
+        <div
+          class="flex flex-col items-center justify-center min-h-[60vh] mt-12"
+        >
+          <DataGenIntro
+            generate_subtopics={() => {
+              root_node_component?.open_generate_subtopics_modal()
+            }}
+            generate_samples={() => {
+              root_node_component?.open_generate_samples_modal()
+            }}
+            {project_id}
+            {task_id}
+          />
+        </div>
+      {:else}
+        <div
+          class="flex flex-row py-1 mb-4 gap-2 justify-end sticky top-0 z-10 backdrop-blur"
+        >
+          <button class="btn btn-mid" on:click={clear_all}>
+            <img alt="Clear All" src="/images/delete.svg" class="w-4 h-4" />
+          </button>
+          <button class="btn btn-mid" on:click={show_human_guidance_dialog}>
+            {#if human_guidance.length > 0}
+              <span class="bg-primary rounded-full w-3 h-3 mr-1" />
+              Edit Guidance
+            {:else}
+              Add Guidance
+            {/if}
+          </button>
+          <button
+            class="btn btn-mid"
+            on:click={() => {
+              root_node_component?.open_generate_samples_modal(true)
+            }}
+          >
+            Add Data to All
+          </button>
+          <button class="btn btn-mid" on:click={show_save_all_modal}>
+            Save All
+          </button>
+        </div>
+      {/if}
       <div class="flex flex-col">
         <GeneratedDataNode
           data={$root_node}
@@ -346,8 +395,27 @@
           {triggerSave}
           bind:num_subtopics_to_generate
           bind:num_samples_to_generate
+          bind:this={root_node_component}
         />
       </div>
+      {#if !is_empty}
+        <div class="font-light my-6 text-center">
+          <button
+            class="link"
+            on:click={() =>
+              root_node_component?.open_generate_subtopics_modal()}
+          >
+            Add top level topics
+          </button>
+          or
+          <button
+            class="link"
+            on:click={() => root_node_component?.open_generate_samples_modal()}
+          >
+            add top level samples
+          </button>.
+        </div>
+      {/if}
     {:else if task_error}
       <div
         class="w-full min-h-[50vh] flex flex-col justify-center items-center gap-2"
