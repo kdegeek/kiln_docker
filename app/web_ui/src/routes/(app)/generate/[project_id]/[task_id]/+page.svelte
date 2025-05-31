@@ -53,6 +53,10 @@
   let human_guidance_dialog: Dialog | null = null
   $: action_buttons = [
     {
+      label: "Clear All",
+      handler: clear_all,
+    },
+    {
       label: human_guidance.length > 0 ? "Edit Guidance" : "Add Guidance",
       notice: human_guidance.length > 0,
       handler: show_human_guidance_dialog,
@@ -68,6 +72,14 @@
     samples: [],
     sub_topics: [],
   })
+
+  function clear_all() {
+    root_node.set({
+      topic: "",
+      samples: [],
+      sub_topics: [],
+    })
+  }
 
   // Function to trigger save when data changes
   function triggerSave() {
