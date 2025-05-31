@@ -8,7 +8,7 @@ import kiln_server.server as kiln_server
 import uvicorn
 from fastapi import FastAPI
 
-from app.desktop.log_config import log_config
+from app.desktop.log_config import log_config, setup_litellm_logging
 from app.desktop.studio_server.data_gen_api import connect_data_gen_api
 from app.desktop.studio_server.eval_api import connect_evals_api
 from app.desktop.studio_server.finetune_api import connect_fine_tune_api
@@ -30,6 +30,8 @@ async def lifespan(app: FastAPI):
 
 
 def make_app():
+    setup_litellm_logging()
+
     app = kiln_server.make_app(lifespan=lifespan)
     connect_provider_api(app)
     connect_prompt_api(app)
