@@ -207,6 +207,7 @@
       } else {
         sample.saved_id = result.saved_id
         saved_count++
+        triggerSave()
       }
     }
   }
