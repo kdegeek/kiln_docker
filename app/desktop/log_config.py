@@ -197,6 +197,12 @@ class CustomLiteLLMLogger(CustomLogger):
 
 
 def setup_litellm_logging():
+    # Check if we already have a custom litellm logger
+    for callback in litellm.callbacks or []:
+        if isinstance(callback, CustomLiteLLMLogger):
+            return  # We already have a custom litellm logger
+
+    # If we don't have a custom litellm logger, create one
     # Disable the default litellm logger except for errors. It's ugly, hard to use, and we don't want it to mix with kiln logs.
     litellm_logger = logging.getLogger("LiteLLM")
     litellm_logger.setLevel(logging.ERROR)
