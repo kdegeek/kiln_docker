@@ -264,7 +264,7 @@
         <div class="w-72 2xl:w-96 flex-none flex flex-col">
           <PropertyList
             properties={get_properties(run, $current_task_prompts, $model_info)}
-            title="Parameters"
+            title="Properties"
           />
         </div>
       </div>
