@@ -155,9 +155,9 @@
   function format_model_id(
     model_id: string | null | undefined,
     provider: string,
-  ): string {
+  ): string | null {
     if (!model_id) {
-      return "Not completed"
+      return null
     }
     if (provider === "fireworks_ai") {
       return model_id.split("/").pop() || model_id
@@ -171,6 +171,7 @@
     finetune_id &&
     project_id &&
     task_id &&
+    finetune?.finetune.fine_tune_model_id &&
     finetune?.status.status === "completed"
   function run_fine_tune() {
     const model_id = `kiln_fine_tune/${project_id}::${task_id}::${finetune_id}`
