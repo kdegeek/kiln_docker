@@ -10,6 +10,8 @@
   import InfoTooltip from "$lib/ui/info_tooltip.svelte"
   import Output from "../../../../../run/output.svelte"
   import EditDialog from "$lib/ui/edit_dialog.svelte"
+  import { ui_state } from "$lib/stores"
+  import { goto } from "$app/navigation"
 
   $: project_id = $page.params.project_id
   $: task_id = $page.params.task_id
@@ -164,6 +166,17 @@
   }
 
   let edit_dialog: EditDialog | null = null
+
+  $: show_run_fine_tune =
+    finetune_id &&
+    project_id &&
+    task_id &&
+    finetune?.status.status === "completed"
+  function run_fine_tune() {
+    const model_id = `kiln_fine_tune/${project_id}::${task_id}::${finetune_id}`
+    $ui_state.selected_model = model_id
+    goto("/run")
+  }
 </script>
 
 <div class="max-w-[1400px]">
@@ -171,18 +184,26 @@
     title="Fine Tune"
     subtitle={finetune_loading ? undefined : `Name: ${finetune?.finetune.name}`}
     action_buttons={[
-      {
-        label: "Edit",
-        handler: () => {
-          edit_dialog?.show()
-        },
-      },
-      {
-        label: "Reload Status",
-        handler: () => {
-          get_fine_tune()
-        },
-      },
+      ...(finetune
+        ? [
+            {
+              label: "Edit",
+              handler: () => {
+                edit_dialog?.show()
+              },
+            },
+          ]
+        : []),
+      ...(show_run_fine_tune
+        ? [
+            {
+              label: "Run Fine Tune",
+              handler: () => {
+                run_fine_tune()
+              },
+            },
+          ]
+        : []),
     ]}
   >
     {#if finetune_loading}
@@ -258,14 +279,9 @@
               {/if}
               {finetune.status.status.charAt(0).toUpperCase() +
                 finetune.status.status.slice(1)}
-              {#if running}
-                <button
-                  class="link ml-2 text-xs font-medium"
-                  on:click={get_fine_tune}
-                >
-                  Reload Status
-                </button>
-              {/if}
+              <button class="link ml-2 font-medium" on:click={get_fine_tune}>
+                Reload Status
+              </button>
             </div>
 
             {#if finetune.status.message}
