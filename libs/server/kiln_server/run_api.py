@@ -87,7 +87,8 @@ class RunSummary(BaseModel):
         if run.repair_instructions:
             return "Repaired"
         elif run.output and not run.output.rating:
-            return "Rating needed"
+            # A repair isn't requested until rated < 5 stars
+            return "NA"
         elif not run.output or not run.output.output:
             return "No output"
         elif (
