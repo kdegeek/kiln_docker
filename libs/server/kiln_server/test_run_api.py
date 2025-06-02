@@ -707,7 +707,7 @@ def test_run_summary_repair_status_display_name():
     run.repair_instructions = None
     run.output = MagicMock()
     run.output.rating = None
-    assert RunSummary.repair_status_display_name(run) == "Rating needed"
+    assert RunSummary.repair_status_display_name(run) == "NA"
 
     run.output.rating = TaskOutputRating(value=5.0, type=TaskOutputRatingType.five_star)
     assert RunSummary.repair_status_display_name(run) == "No repair needed"
