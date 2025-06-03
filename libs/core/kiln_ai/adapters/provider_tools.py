@@ -279,7 +279,6 @@ def finetune_provider_model(
         reasoning_capable=(
             fine_tune.data_strategy
             in [
-                FinetuneDataStrategy.final_and_intermediate,
                 FinetuneDataStrategy.final_and_intermediate_r1_compatible,
             ]
         ),
