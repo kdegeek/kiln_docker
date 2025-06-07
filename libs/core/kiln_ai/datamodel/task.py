@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, Dict, List, Union
 
-from pydantic import BaseModel, Field, ValidationInfo, model_validator
+from pydantic import BaseModel, Field, model_validator
 from typing_extensions import Self
 
 from kiln_ai.datamodel import Finetune
@@ -13,6 +13,7 @@ from kiln_ai.datamodel.basemodel import (
     KilnParentModel,
 )
 from kiln_ai.datamodel.datamodel_enums import (
+    ModelProviderName,
     Priority,
     StructuredOutputMode,
     TaskOutputRatingType,
@@ -52,7 +53,7 @@ class RunConfigProperties(BaseModel):
     """
 
     model_name: str = Field(description="The model to use for this run config.")
-    model_provider_name: str = Field(
+    model_provider_name: ModelProviderName = Field(
         description="The provider to use for this run config."
     )
     prompt_id: PromptId = Field(
