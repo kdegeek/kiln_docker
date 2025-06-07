@@ -138,7 +138,7 @@ async def test_model_provider_not_found(adapter):
 
         with pytest.raises(
             ValueError,
-            match="model_provider_name ModelProviderName.openai not found for",
+            match="not found for model test_model",
         ):
             await adapter.model_provider()
 
