@@ -40,9 +40,10 @@ class LiteLlmAdapter(BaseAdapter):
         self._litellm_model_id: str | None = None
 
         # Create a RunConfig, adding the task to the RunConfigProperties
+        run_config_properties = config.run_config_properties.model_dump()
+        run_config_properties["task"] = kiln_task
         run_config = RunConfig(
-            task=kiln_task,
-            **config.run_config_properties.model_dump(),
+            **run_config_properties,
         )
 
         super().__init__(

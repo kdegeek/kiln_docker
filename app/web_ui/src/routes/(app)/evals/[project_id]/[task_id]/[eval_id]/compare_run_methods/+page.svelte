@@ -32,6 +32,8 @@
   import { eval_config_to_ui_name } from "$lib/utils/formatters"
   import OutputTypeTablePreview from "../output_type_table_preview.svelte"
   import InfoTooltip from "$lib/ui/info_tooltip.svelte"
+  import Collapse from "$lib/ui/collapse.svelte"
+  import RunOptions from "$lib/ui/run_options.svelte"
 
   $: project_id = $page.params.project_id
   $: task_id = $page.params.task_id
@@ -346,6 +348,8 @@
   let task_run_config_provider_name = ""
   let task_run_config_prompt_method = "simple_prompt_builder"
   let task_run_config_long_prompt_name_provider = ""
+  let task_run_config_temperature: number
+  let task_run_config_top_p: number
 
   let add_task_config_dialog: Dialog | null = null
   let add_task_config_error: KilnError | null = null
@@ -374,6 +378,8 @@
             // @ts-expect-error not checking types here, server will check them
             model_provider_name: task_run_config_provider_name,
             prompt_id: task_run_config_prompt_method,
+            temperature: task_run_config_temperature,
+            top_p: task_run_config_top_p,
           },
         },
       )
@@ -756,6 +762,12 @@
       bind:prompt_method={task_run_config_prompt_method}
       bind:linked_model_selection={task_run_config_long_prompt_name_provider}
     />
+    <Collapse title="Advanced Options">
+      <RunOptions
+        bind:temperature={task_run_config_temperature}
+        bind:top_p={task_run_config_top_p}
+      />
+    </Collapse>
     {#if add_task_config_error}
       <div class="text-error text-sm">
         {add_task_config_error.getMessage() || "An unknown error occurred"}

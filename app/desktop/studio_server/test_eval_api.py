@@ -246,6 +246,8 @@ async def test_create_task_run_config_with_freezing(
                 "model_name": "gpt-4o",
                 "model_provider_name": "openai",
                 "prompt_id": "simple_chain_of_thought_prompt_builder",
+                "temperature": 0.5,
+                # top_p not included, should get default 1.0
             },
         )
 
@@ -259,6 +261,10 @@ async def test_create_task_run_config_with_freezing(
         result["run_config_properties"]["prompt_id"]
         == "task_run_config::project1::task1::" + result["id"]
     )
+    # Check temperature is set to custom value 0.5
+    assert result["run_config_properties"]["temperature"] == 0.5
+    # Check top_p gets default value 1.0 when not specified
+    assert result["run_config_properties"]["top_p"] == 1.0
     assert result["prompt"]["name"] == "Custom Name"
     assert (
         result["prompt"]["description"]
@@ -271,6 +277,9 @@ async def test_create_task_run_config_with_freezing(
     assert len(configs) == 1
     assert configs[0]["id"] == result["id"]
     assert configs[0]["name"] == result["name"]
+    # Verify temperature and top_p persist on disk
+    assert configs[0]["run_config_properties"]["temperature"] == 0.5
+    assert configs[0]["run_config_properties"]["top_p"] == 1.0
     assert configs[0]["prompt"]["name"] == "Custom Name"
     assert configs[0]["prompt"]["description"] == (
         "Frozen copy of prompt 'simple_chain_of_thought_prompt_builder', created for evaluations."
