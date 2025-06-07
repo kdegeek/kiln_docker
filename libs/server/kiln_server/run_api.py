@@ -55,6 +55,8 @@ def deep_update(
 class RunTaskRequest(BaseModel):
     model_name: str
     provider: str
+    temperature: float | None = None
+    top_p: float | None = None
     plaintext_input: str | None = None
     structured_input: Dict[str, Any] | None = None
     ui_prompt_method: PromptId | None = None
@@ -217,9 +219,14 @@ def connect_run_api(app: FastAPI):
 
         run_config_properties = RunConfigProperties(
             model_name=request.model_name,
-            model_provider_name=model_provider_from_string(request.provider),
+            model_provider_name=provider_name,
             prompt_id=request.ui_prompt_method or "simple_prompt_builder",
         )
+        if request.temperature is not None:
+            run_config_properties.temperature = request.temperature
+        if request.top_p is not None:
+            run_config_properties.top_p = request.top_p
+
         adapter = adapter_for_task(
             task,
             run_config_properties=run_config_properties,

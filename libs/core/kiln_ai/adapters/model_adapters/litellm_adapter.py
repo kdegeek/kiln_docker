@@ -385,6 +385,8 @@ class LiteLlmAdapter(BaseAdapter):
             "messages": messages,
             "api_base": self._api_base,
             "headers": self._headers,
+            "temperature": self.run_config.temperature,
+            "top_p": self.run_config.top_p,
             **extra_body,
             **self._additional_body_options,
         }

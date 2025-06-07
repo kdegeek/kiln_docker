@@ -360,6 +360,30 @@ def test_litellm_model_id_unknown_provider(config, mock_task):
 
 
 @pytest.mark.asyncio
+async def test_build_completion_kwargs_custom_temperature_top_p(config, mock_task):
+    """Test build_completion_kwargs with custom temperature and top_p values"""
+    # Create config with custom temperature and top_p
+    config.run_config_properties.temperature = 0.7
+    config.run_config_properties.top_p = 0.9
+
+    adapter = LiteLlmAdapter(config=config, kiln_task=mock_task)
+    mock_provider = Mock()
+    messages = [{"role": "user", "content": "Hello"}]
+
+    with (
+        patch.object(adapter, "model_provider", return_value=mock_provider),
+        patch.object(adapter, "litellm_model_id", return_value="openai/test-model"),
+        patch.object(adapter, "build_extra_body", return_value={}),
+        patch.object(adapter, "response_format_options", return_value={}),
+    ):
+        kwargs = await adapter.build_completion_kwargs(mock_provider, messages, None)
+
+    # Verify custom temperature and top_p are passed through
+    assert kwargs["temperature"] == 0.7
+    assert kwargs["top_p"] == 0.9
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "top_logprobs,response_format,extra_body",
     [
@@ -399,6 +423,10 @@ async def test_build_completion_kwargs(
     assert kwargs["model"] == "openai/test-model"
     assert kwargs["messages"] == messages
     assert kwargs["api_base"] == config.base_url
+
+    # Verify temperature and top_p are included with default values
+    assert kwargs["temperature"] == 1.0  # Default from RunConfigProperties
+    assert kwargs["top_p"] == 1.0  # Default from RunConfigProperties
 
     # Verify optional parameters
     if top_logprobs is not None:
