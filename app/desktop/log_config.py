@@ -165,9 +165,11 @@ class CustomLiteLLMLogger(CustomLogger):
         )
 
     def log_failure_event(self, kwargs, response_obj, start_time, end_time):
+        # This logging method is supposed to be called by Litellm in synchronous error cases (Kiln should use async calls instead)
+        # but it appears to also be getting called in async calls that fail early (e.g. UnsupportedParamsError).
         litellm_logger = logging.getLogger("LiteLLM")
         litellm_logger.error(
-            "Used a sync call in Litellm. Kiln should use async calls."
+            "LiteLLM logged a synchronous failure event. This may result from a sync call, or from an async call failing early (e.g. invalid parameters). Make sure you are using async calls.",
         )
 
     #### ASYNC #### - for acompletion/aembeddings

@@ -2,8 +2,6 @@ import json
 from abc import abstractmethod
 from typing import Dict
 
-import jsonschema
-
 from kiln_ai.adapters.adapter_registry import adapter_for_task
 from kiln_ai.adapters.ml_model_list import ModelProviderName
 from kiln_ai.adapters.model_adapters.base_adapter import AdapterConfig
