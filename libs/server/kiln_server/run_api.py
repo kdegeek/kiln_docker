@@ -217,15 +217,21 @@ def connect_run_api(app: FastAPI):
         task = task_from_id(project_id, task_id)
         provider_name = model_provider_from_string(request.provider)
 
-        run_config_properties = RunConfigProperties(
-            model_name=request.model_name,
-            model_provider_name=provider_name,
-            prompt_id=request.ui_prompt_method or "simple_prompt_builder",
-        )
-        if request.temperature is not None:
-            run_config_properties.temperature = request.temperature
-        if request.top_p is not None:
-            run_config_properties.top_p = request.top_p
+        try:
+            run_config_properties = RunConfigProperties(
+                model_name=request.model_name,
+                model_provider_name=provider_name,
+                prompt_id=request.ui_prompt_method or "simple_prompt_builder",
+            )
+            if request.temperature is not None:
+                run_config_properties.temperature = request.temperature
+            if request.top_p is not None:
+                run_config_properties.top_p = request.top_p
+        except ValueError as e:
+            raise HTTPException(
+                status_code=422,
+                detail=str(e),
+            )
 
         adapter = adapter_for_task(
             task,
