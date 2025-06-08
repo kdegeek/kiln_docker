@@ -123,6 +123,8 @@ class CreateTaskRunConfigRequest(BaseModel):
     model_name: str
     model_provider_name: ModelProviderName
     prompt_id: PromptId
+    temperature: float | None = None
+    top_p: float | None = None
 
 
 class RunEvalConfigRequest(BaseModel):
@@ -378,17 +380,29 @@ def connect_evals_api(app: FastAPI):
                 chain_of_thought_instructions=prompt_builder.chain_of_thought_prompt(),
             )
 
-        task_run_config = TaskRunConfig(
-            parent=task,
-            name=name,
-            description=request.description,
-            run_config_properties=RunConfigProperties(
+        try:
+            run_config_properties = RunConfigProperties(
                 model_name=request.model_name,
                 model_provider_name=request.model_provider_name,
                 prompt_id=request.prompt_id,
-            ),
-            prompt=frozen_prompt,
-        )
+            )
+            if request.temperature is not None:
+                run_config_properties.temperature = request.temperature
+            if request.top_p is not None:
+                run_config_properties.top_p = request.top_p
+
+            task_run_config = TaskRunConfig(
+                parent=task,
+                name=name,
+                run_config_properties=run_config_properties,
+                description=request.description,
+                prompt=frozen_prompt,
+            )
+        except ValueError as e:
+            raise HTTPException(
+                status_code=422,
+                detail=str(e),
+            )
         if frozen_prompt is not None:
             # Set after, because the ID isn't known until the TaskRunConfig is created
             task_run_config.run_config_properties.prompt_id = (

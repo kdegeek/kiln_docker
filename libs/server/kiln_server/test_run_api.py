@@ -1228,6 +1228,128 @@ def test_model_provider_from_string():
         model_provider_from_string("unknown")
 
 
+@pytest.mark.asyncio
+async def test_run_task_invalid_temperature_values(client, task_run_setup):
+    """Test that invalid temperature values return 422 errors."""
+    project = task_run_setup["project"]
+    task = task_run_setup["task"]
+
+    with patch("kiln_server.run_api.task_from_id") as mock_task_from_id:
+        mock_task_from_id.return_value = task
+
+        # Test temperature below 0
+        response = client.post(
+            f"/api/projects/{project.id}/tasks/{task.id}/run",
+            json={
+                "model_name": "gpt-4o",
+                "provider": "openai",
+                "plaintext_input": "Test input",
+                "temperature": -0.1,
+            },
+        )
+        assert response.status_code == 422
+        error_detail = response.json()["message"]
+        assert "temperature must be between 0 and 2" in str(error_detail)
+
+        # Test temperature above 2
+        response = client.post(
+            f"/api/projects/{project.id}/tasks/{task.id}/run",
+            json={
+                "model_name": "gpt-4o",
+                "provider": "openai",
+                "plaintext_input": "Test input",
+                "temperature": 2.1,
+            },
+        )
+        assert response.status_code == 422
+        error_detail = response.json()["message"]
+        assert "temperature must be between 0 and 2" in str(error_detail)
+
+
+@pytest.mark.asyncio
+async def test_run_task_invalid_top_p_values(client, task_run_setup):
+    """Test that invalid top_p values return 422 errors."""
+    project = task_run_setup["project"]
+    task = task_run_setup["task"]
+
+    with patch("kiln_server.run_api.task_from_id") as mock_task_from_id:
+        mock_task_from_id.return_value = task
+
+        # Test top_p below 0
+        response = client.post(
+            f"/api/projects/{project.id}/tasks/{task.id}/run",
+            json={
+                "model_name": "gpt-4o",
+                "provider": "openai",
+                "plaintext_input": "Test input",
+                "top_p": -0.1,
+            },
+        )
+        assert response.status_code == 422
+        error_detail = response.json()["message"]
+        assert "top_p must be between 0 and 1" in str(error_detail)
+
+        # Test top_p above 1
+        response = client.post(
+            f"/api/projects/{project.id}/tasks/{task.id}/run",
+            json={
+                "model_name": "gpt-4o",
+                "provider": "openai",
+                "plaintext_input": "Test input",
+                "top_p": 1.1,
+            },
+        )
+        assert response.status_code == 422
+        error_detail = response.json()["message"]
+        assert "top_p must be between 0 and 1" in str(error_detail)
+
+
+@pytest.mark.asyncio
+async def test_run_task_valid_boundary_values(client, task_run_setup):
+    """Test that valid boundary values for temperature and top_p work correctly."""
+    project = task_run_setup["project"]
+    task = task_run_setup["task"]
+    task_run = task_run_setup["task_run"]
+
+    with (
+        patch("kiln_server.run_api.task_from_id") as mock_task_from_id,
+        patch.object(LiteLlmAdapter, "invoke", new_callable=AsyncMock) as mock_invoke,
+        patch("kiln_ai.utils.config.Config.shared") as MockConfig,
+    ):
+        mock_task_from_id.return_value = task
+        mock_invoke.return_value = task_run
+
+        # Mock the Config class
+        mock_config_instance = MockConfig.return_value
+        mock_config_instance.open_ai_api_key = "test_key"
+
+        # Test valid boundary values - temperature = 0, top_p = 0
+        response = client.post(
+            f"/api/projects/{project.id}/tasks/{task.id}/run",
+            json={
+                "model_name": "gpt-4o",
+                "provider": "openai",
+                "plaintext_input": "Test input",
+                "temperature": 0.0,
+                "top_p": 0.0,
+            },
+        )
+        assert response.status_code == 200
+
+        # Test valid boundary values - temperature = 2, top_p = 1
+        response = client.post(
+            f"/api/projects/{project.id}/tasks/{task.id}/run",
+            json={
+                "model_name": "gpt-4o",
+                "provider": "openai",
+                "plaintext_input": "Test input",
+                "temperature": 2.0,
+                "top_p": 1.0,
+            },
+        )
+        assert response.status_code == 200
+
+
 @pytest.mark.parametrize(
     "input_str,expected",
     [

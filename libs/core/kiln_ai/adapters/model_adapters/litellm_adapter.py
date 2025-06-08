@@ -19,8 +19,7 @@ from kiln_ai.adapters.model_adapters.base_adapter import (
     Usage,
 )
 from kiln_ai.adapters.model_adapters.litellm_config import LiteLlmConfig
-from kiln_ai.datamodel import PromptGenerators, PromptId
-from kiln_ai.datamodel.task import RunConfig
+from kiln_ai.datamodel.task import run_config_from_run_config_properties
 from kiln_ai.utils.exhaustive_error import raise_exhaustive_enum_error
 
 logger = logging.getLogger(__name__)
@@ -31,7 +30,6 @@ class LiteLlmAdapter(BaseAdapter):
         self,
         config: LiteLlmConfig,
         kiln_task: datamodel.Task,
-        prompt_id: PromptId,
         base_adapter_config: AdapterConfig | None = None,
     ):
         self.config = config
@@ -40,11 +38,10 @@ class LiteLlmAdapter(BaseAdapter):
         self._headers = config.default_headers
         self._litellm_model_id: str | None = None
 
-        run_config = RunConfig(
+        # Create a RunConfig, adding the task to the RunConfigProperties
+        run_config = run_config_from_run_config_properties(
             task=kiln_task,
-            model_name=config.model_name,
-            model_provider_name=config.provider_name,
-            prompt_id=prompt_id,
+            run_config_properties=config.run_config_properties,
         )
 
         super().__init__(
@@ -387,6 +384,8 @@ class LiteLlmAdapter(BaseAdapter):
             "messages": messages,
             "api_base": self._api_base,
             "headers": self._headers,
+            "temperature": self.run_config.temperature,
+            "top_p": self.run_config.top_p,
             **extra_body,
             **self._additional_body_options,
         }

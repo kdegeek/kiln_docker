@@ -10,6 +10,8 @@
   import type { TaskRun } from "$lib/types"
   import AvailableModelsDropdown from "./available_models_dropdown.svelte"
   import RunInputForm from "./run_input_form.svelte"
+  import RunOptions from "$lib/ui/run_options.svelte"
+  import Collapse from "$lib/ui/collapse.svelte"
 
   // TODO: implement checking input content
   // let warn_before_unload
@@ -22,6 +24,8 @@
 
   let prompt_method = "simple_prompt_builder"
   let model: string = $ui_state.selected_model
+  let temperature: number
+  let top_p: number
 
   $: model_name = model ? model.split("/").slice(1).join("/") : ""
   $: provider = model ? model.split("/")[0] : ""
@@ -64,6 +68,8 @@
           // @ts-expect-error openapi-fetch generates the wrong type for this: Record<string, never>
           structured_input: input_form.get_structured_input_data(),
           ui_prompt_method: prompt_method,
+          temperature: temperature,
+          top_p: top_p,
           tags: ["manual_run"],
         },
       })
@@ -127,6 +133,9 @@
           bind:error_message={model_dropdown_error_message}
           bind:this={model_dropdown}
         />
+        <Collapse title="Advanced Options">
+          <RunOptions bind:temperature bind:top_p />
+        </Collapse>
       </div>
     </div>
     {#if $current_task && !submitting && response != null && $current_project?.id}
