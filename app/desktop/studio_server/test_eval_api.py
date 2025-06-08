@@ -1580,3 +1580,121 @@ def test_human_score_from_task_run(
 
     # Verify the result
     assert result == expected_score
+
+
+@pytest.mark.asyncio
+async def test_create_task_run_config_invalid_temperature_values(
+    client, mock_task_from_id, mock_task
+):
+    """Test that invalid temperature values return 422 errors."""
+    mock_task_from_id.return_value = mock_task
+
+    # Test temperature below 0
+    response = client.post(
+        "/api/projects/project1/tasks/task1/task_run_config",
+        json={
+            "name": "Test Task Run Config",
+            "model_name": "gpt-4o",
+            "model_provider_name": "openai",
+            "prompt_id": "simple_chain_of_thought_prompt_builder",
+            "temperature": -0.1,
+        },
+    )
+    assert response.status_code == 422
+    error_detail = response.json()["detail"]
+    assert "temperature must be between 0 and 2" in str(error_detail)
+
+    # Test temperature above 2
+    response = client.post(
+        "/api/projects/project1/tasks/task1/task_run_config",
+        json={
+            "name": "Test Task Run Config",
+            "model_name": "gpt-4o",
+            "model_provider_name": "openai",
+            "prompt_id": "simple_chain_of_thought_prompt_builder",
+            "temperature": 2.1,
+        },
+    )
+    assert response.status_code == 422
+    error_detail = response.json()["detail"]
+    assert "temperature must be between 0 and 2" in str(error_detail)
+
+
+@pytest.mark.asyncio
+async def test_create_task_run_config_invalid_top_p_values(
+    client, mock_task_from_id, mock_task
+):
+    """Test that invalid top_p values return 422 errors."""
+    mock_task_from_id.return_value = mock_task
+
+    # Test top_p below 0
+    response = client.post(
+        "/api/projects/project1/tasks/task1/task_run_config",
+        json={
+            "name": "Test Task Run Config",
+            "model_name": "gpt-4o",
+            "model_provider_name": "openai",
+            "prompt_id": "simple_chain_of_thought_prompt_builder",
+            "top_p": -0.1,
+        },
+    )
+    assert response.status_code == 422
+    error_detail = response.json()["detail"]
+    assert "top_p must be between 0 and 1" in str(error_detail)
+
+    # Test top_p above 1
+    response = client.post(
+        "/api/projects/project1/tasks/task1/task_run_config",
+        json={
+            "name": "Test Task Run Config",
+            "model_name": "gpt-4o",
+            "model_provider_name": "openai",
+            "prompt_id": "simple_chain_of_thought_prompt_builder",
+            "top_p": 1.1,
+        },
+    )
+    assert response.status_code == 422
+    error_detail = response.json()["detail"]
+    assert "top_p must be between 0 and 1" in str(error_detail)
+
+
+@pytest.mark.asyncio
+async def test_create_task_run_config_valid_boundary_values(
+    client, mock_task_from_id, mock_task
+):
+    """Test that valid boundary values for temperature and top_p work correctly."""
+    mock_task_from_id.return_value = mock_task
+
+    # Test valid boundary values - temperature = 0, top_p = 0
+    response = client.post(
+        "/api/projects/project1/tasks/task1/task_run_config",
+        json={
+            "name": "Test Task Run Config Min",
+            "model_name": "gpt-4o",
+            "model_provider_name": "openai",
+            "prompt_id": "simple_chain_of_thought_prompt_builder",
+            "temperature": 0.0,
+            "top_p": 0.0,
+        },
+    )
+    assert response.status_code == 200
+    result = response.json()
+    assert result["run_config_properties"]["temperature"] == 0.0
+    assert result["run_config_properties"]["top_p"] == 0.0
+
+    # Test valid boundary values - temperature = 2, top_p = 1
+    response = client.post(
+        "/api/projects/project1/tasks/task1/task_run_config",
+        json={
+            "name": "Test Task Run Config Max",
+            "model_name": "gpt-4o",
+            "model_provider_name": "openai",
+            "prompt_id": "simple_chain_of_thought_prompt_builder",
+            "temperature": 2.0,
+            "top_p": 1.0,
+        },
+    )
+    assert response.status_code == 200
+    result = response.json()
+    assert result["run_config_properties"]["temperature"] == 2.0
+    assert result["run_config_properties"]["top_p"] == 1.0
