@@ -19,8 +19,7 @@ from kiln_ai.adapters.model_adapters.base_adapter import (
     Usage,
 )
 from kiln_ai.adapters.model_adapters.litellm_config import LiteLlmConfig
-from kiln_ai.datamodel import PromptGenerators, PromptId
-from kiln_ai.datamodel.task import RunConfig
+from kiln_ai.datamodel.task import run_config_from_run_config_properties
 from kiln_ai.utils.exhaustive_error import raise_exhaustive_enum_error
 
 logger = logging.getLogger(__name__)
@@ -40,10 +39,9 @@ class LiteLlmAdapter(BaseAdapter):
         self._litellm_model_id: str | None = None
 
         # Create a RunConfig, adding the task to the RunConfigProperties
-        run_config_properties = config.run_config_properties.model_dump()
-        run_config_properties["task"] = kiln_task
-        run_config = RunConfig(
-            **run_config_properties,
+        run_config = run_config_from_run_config_properties(
+            task=kiln_task,
+            run_config_properties=config.run_config_properties,
         )
 
         super().__init__(

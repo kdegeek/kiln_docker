@@ -61,15 +61,15 @@ class RunConfigProperties(BaseModel):
     )
     top_p: float = Field(
         default=1.0,
-        description="The top-p value to use for this run config. Defaults to 1.0, which means the model will use its default top-p value.",
+        description="The top-p value to use for this run config. Defaults to 1.0.",
     )
     temperature: float = Field(
         default=1.0,
-        description="The temperature to use for this run config. Defaults to 1.0, which means the model will use its default temperature value.",
+        description="The temperature to use for this run config. Defaults to 1.0.",
     )
     structured_output_mode: StructuredOutputMode = Field(
         default=StructuredOutputMode.default,
-        description="The structured output mode to use for this run config. Defaults to default, which means the model will use its default structured output mode.",
+        description="The structured output mode to use for this run config. Defaults to 'default', which means the model will use its default structured output mode.",
     )
 
     @model_validator(mode="after")
@@ -129,15 +129,25 @@ class TaskRunConfig(KilnParentedModel):
         parent_task = self.parent_task()
         if parent_task is None:
             raise ValueError("Run config must be parented to a task")
-        return RunConfig(
+        return run_config_from_run_config_properties(
             task=parent_task,
-            model_name=self.run_config_properties.model_name,
-            model_provider_name=self.run_config_properties.model_provider_name,
-            prompt_id=self.run_config_properties.prompt_id,
-            top_p=self.run_config_properties.top_p,
-            temperature=self.run_config_properties.temperature,
-            structured_output_mode=self.run_config_properties.structured_output_mode,
+            run_config_properties=self.run_config_properties,
         )
+
+
+def run_config_from_run_config_properties(
+    task: "Task",
+    run_config_properties: RunConfigProperties,
+) -> RunConfig:
+    return RunConfig(
+        task=task,
+        model_name=run_config_properties.model_name,
+        model_provider_name=run_config_properties.model_provider_name,
+        prompt_id=run_config_properties.prompt_id,
+        top_p=run_config_properties.top_p,
+        temperature=run_config_properties.temperature,
+        structured_output_mode=run_config_properties.structured_output_mode,
+    )
 
 
 class Task(
