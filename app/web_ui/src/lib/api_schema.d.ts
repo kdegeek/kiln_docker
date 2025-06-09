@@ -558,6 +558,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/open_logs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Open Logs */
+        post: operations["open_logs_api_open_logs_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/projects/{project_id}/tasks/{task_id}/generate_categories": {
         parameters: {
             query?: never;
@@ -1222,11 +1239,7 @@ export interface components {
             name?: string | null;
             /** Description */
             description?: string | null;
-            /** Model Name */
-            model_name: string;
-            model_provider_name: components["schemas"]["ModelProviderName"];
-            /** Prompt Id */
-            prompt_id: string;
+            run_config_properties: components["schemas"]["RunConfigProperties"];
         };
         /** DataGenCategoriesApiInput */
         DataGenCategoriesApiInput: {
@@ -2022,6 +2035,8 @@ export interface components {
             supports_logprobs: boolean;
             /** Suggested For Evals */
             suggested_for_evals: boolean;
+            /** Structured Output Mode */
+            structured_output_mode: components["schemas"]["StructuredOutputMode"];
             /**
              * Untested Model
              * @default false
@@ -2036,7 +2051,7 @@ export interface components {
          *     Where models have instruct and raw versions, instruct is default and raw is specified.
          * @enum {string}
          */
-        ModelName: "llama_3_1_8b" | "llama_3_1_70b" | "llama_3_1_405b" | "llama_3_2_1b" | "llama_3_2_3b" | "llama_3_2_11b" | "llama_3_2_90b" | "llama_3_3_70b" | "gpt_4o_mini" | "gpt_4o" | "gpt_4_1" | "gpt_4_1_mini" | "gpt_4_1_nano" | "gpt_o3_low" | "gpt_o3_medium" | "gpt_o3_high" | "gpt_o1_low" | "gpt_o1_medium" | "gpt_o1_high" | "gpt_o4_mini_low" | "gpt_o4_mini_medium" | "gpt_o4_mini_high" | "gpt_o3_mini_low" | "gpt_o3_mini_medium" | "gpt_o3_mini_high" | "phi_3_5" | "phi_4" | "phi_4_5p6b" | "phi_4_mini" | "mistral_large" | "mistral_nemo" | "gemma_2_2b" | "gemma_2_9b" | "gemma_2_27b" | "gemma_3_1b" | "gemma_3_4b" | "gemma_3_12b" | "gemma_3_27b" | "claude_3_5_haiku" | "claude_3_5_sonnet" | "claude_3_7_sonnet" | "claude_3_7_sonnet_thinking" | "gemini_1_5_flash" | "gemini_1_5_flash_8b" | "gemini_1_5_pro" | "gemini_2_0_flash" | "gemini_2_0_flash_lite" | "gemini_2_5_pro" | "gemini_2_5_flash" | "nemotron_70b" | "mixtral_8x7b" | "qwen_2p5_7b" | "qwen_2p5_14b" | "qwen_2p5_72b" | "qwq_32b" | "deepseek_3" | "deepseek_r1" | "mistral_small_3" | "deepseek_r1_distill_qwen_32b" | "deepseek_r1_distill_llama_70b" | "deepseek_r1_distill_qwen_14b" | "deepseek_r1_distill_qwen_1p5b" | "deepseek_r1_distill_qwen_7b" | "deepseek_r1_distill_llama_8b" | "dolphin_2_9_8x22b" | "grok_2";
+        ModelName: "llama_3_1_8b" | "llama_3_1_70b" | "llama_3_1_405b" | "llama_3_2_1b" | "llama_3_2_3b" | "llama_3_2_11b" | "llama_3_2_90b" | "llama_3_3_70b" | "gpt_4o_mini" | "gpt_4o" | "gpt_4_1" | "gpt_4_1_mini" | "gpt_4_1_nano" | "gpt_o3_low" | "gpt_o3_medium" | "gpt_o3_high" | "gpt_o1_low" | "gpt_o1_medium" | "gpt_o1_high" | "gpt_o4_mini_low" | "gpt_o4_mini_medium" | "gpt_o4_mini_high" | "gpt_o3_mini_low" | "gpt_o3_mini_medium" | "gpt_o3_mini_high" | "phi_3_5" | "phi_4" | "phi_4_5p6b" | "phi_4_mini" | "mistral_large" | "mistral_nemo" | "gemma_2_2b" | "gemma_2_9b" | "gemma_2_27b" | "gemma_3_1b" | "gemma_3_4b" | "gemma_3_12b" | "gemma_3_27b" | "claude_3_5_haiku" | "claude_3_5_sonnet" | "claude_3_7_sonnet" | "claude_3_7_sonnet_thinking" | "claude_sonnet_4" | "claude_opus_4" | "gemini_1_5_flash" | "gemini_1_5_flash_8b" | "gemini_1_5_pro" | "gemini_2_0_flash" | "gemini_2_0_flash_lite" | "gemini_2_5_pro" | "gemini_2_5_flash" | "nemotron_70b" | "mixtral_8x7b" | "qwen_2p5_7b" | "qwen_2p5_14b" | "qwen_2p5_72b" | "qwq_32b" | "deepseek_3" | "deepseek_r1" | "mistral_small_3" | "deepseek_r1_distill_qwen_32b" | "deepseek_r1_distill_llama_70b" | "deepseek_r1_distill_qwen_14b" | "deepseek_r1_distill_qwen_1p5b" | "deepseek_r1_distill_qwen_7b" | "deepseek_r1_distill_llama_8b" | "dolphin_2_9_8x22b" | "grok_2" | "qwen_3_0p6b" | "qwen_3_0p6b_no_thinking" | "qwen_3_1p7b" | "qwen_3_1p7b_no_thinking" | "qwen_3_4b" | "qwen_3_4b_no_thinking" | "qwen_3_8b" | "qwen_3_8b_no_thinking" | "qwen_3_14b" | "qwen_3_14b_no_thinking" | "qwen_3_30b_a3b" | "qwen_3_30b_a3b_no_thinking" | "qwen_3_32b" | "qwen_3_32b_no_thinking" | "qwen_3_235b_a22b" | "qwen_3_235b_a22b_no_thinking";
         /**
          * ModelProviderName
          * @description Enumeration of supported AI model providers.
@@ -2302,16 +2317,30 @@ export interface components {
              * @description The model to use for this run config.
              */
             model_name: string;
-            /**
-             * Model Provider Name
-             * @description The provider to use for this run config.
-             */
-            model_provider_name: string;
+            /** @description The provider to use for this run config. */
+            model_provider_name: components["schemas"]["ModelProviderName"];
             /**
              * Prompt Id
              * @description The prompt to use for this run config. Defaults to building a simple prompt from the task if not provided.
              */
             prompt_id: string;
+            /**
+             * Top P
+             * @description The top-p value to use for this run config. Defaults to 1.0.
+             * @default 1
+             */
+            top_p: number;
+            /**
+             * Temperature
+             * @description The temperature to use for this run config. Defaults to 1.0.
+             * @default 1
+             */
+            temperature: number;
+            /**
+             * @description The structured output mode to use for this run config. Defaults to 'default', which means the model will use its default structured output mode.
+             * @default default
+             */
+            structured_output_mode: components["schemas"]["StructuredOutputMode"];
         };
         /** RunSummary */
         RunSummary: {
@@ -2336,18 +2365,16 @@ export interface components {
             /** Tags */
             tags?: string[] | null;
         };
-        /** RunTaskRequest */
+        /**
+         * RunTaskRequest
+         * @description Request model for running a task.
+         */
         RunTaskRequest: {
-            /** Model Name */
-            model_name: string;
-            /** Provider */
-            provider: string;
+            run_config_properties: components["schemas"]["RunConfigProperties"];
             /** Plaintext Input */
             plaintext_input?: string | null;
             /** Structured Input */
             structured_input?: Record<string, never> | null;
-            /** Ui Prompt Method */
-            ui_prompt_method?: string | null;
             /** Tags */
             tags?: string[] | null;
         };
@@ -4074,6 +4101,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    open_logs_api_open_logs_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
         };

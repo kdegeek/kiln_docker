@@ -54,7 +54,7 @@ Please ensure any new code has test coverage, and that all code is formatted and
 To confirm everything works locally, run:
 
 ```bash
-./checks.sh
+uv run ./checks.sh
 ```
 
 ## Optional Setup
