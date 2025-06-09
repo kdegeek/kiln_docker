@@ -2,6 +2,18 @@
   import AppPage from "../app_page.svelte"
   import { ui_state } from "$lib/stores"
 
+  async function view_logs() {
+    try {
+      const res = await fetch("/api/open_logs", { method: "POST" })
+      if (!res.ok) {
+        const msg = await res.text()
+        alert(`Failed to open logs: ${msg}`)
+      }
+    } catch (e) {
+      alert("Failed to open logs: " + e)
+    }
+  }
+
   let sections = [
     {
       name: "Edit Task",
@@ -28,6 +40,12 @@
       description: "Edit the currently selected project.",
       button_text: "Edit Current Project",
       href: "/settings/edit_project/" + $ui_state.current_project_id,
+    },
+    {
+      name: "View Logs",
+      description: "View logs of the LLM calls or the application logs.",
+      button_text: "View Logs",
+      on_click: view_logs,
     },
     {
       name: "App Updates",
@@ -59,14 +77,24 @@
           <h3 class="font-medium">{section.name}</h3>
           <p class="text-sm text-gray-500">{section.description}</p>
         </div>
-        <a
-          href={section.href}
-          class="btn"
-          style="min-width: 14rem"
-          target={section.is_external ? "_blank" : "_self"}
-        >
-          {section.button_text}
-        </a>
+        {#if section.href}
+          <a
+            href={section.href}
+            class="btn"
+            style="min-width: 14rem"
+            target={section.is_external ? "_blank" : "_self"}
+          >
+            {section.button_text}
+          </a>
+        {:else if section.on_click}
+          <button
+            class="btn"
+            style="min-width: 14rem"
+            on:click={section.on_click}
+          >
+            {section.button_text}
+          </button>
+        {/if}
       </div>
     {/each}
   </div>
