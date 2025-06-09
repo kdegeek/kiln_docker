@@ -62,14 +62,17 @@
           },
         },
         body: {
-          model_name: model_name,
-          provider: provider,
+          run_config_properties: {
+            model_name: model_name,
+            // @ts-expect-error server will catch if enum is not valid
+            model_provider_name: provider,
+            prompt_id: prompt_method,
+            temperature: temperature,
+            top_p: top_p,
+          },
           plaintext_input: input_form.get_plaintext_input_data(),
           // @ts-expect-error openapi-fetch generates the wrong type for this: Record<string, never>
           structured_input: input_form.get_structured_input_data(),
-          ui_prompt_method: prompt_method,
-          temperature: temperature,
-          top_p: top_p,
           tags: ["manual_run"],
         },
       })

@@ -1239,15 +1239,7 @@ export interface components {
             name?: string | null;
             /** Description */
             description?: string | null;
-            /** Model Name */
-            model_name: string;
-            model_provider_name: components["schemas"]["ModelProviderName"];
-            /** Prompt Id */
-            prompt_id: string;
-            /** Temperature */
-            temperature?: number | null;
-            /** Top P */
-            top_p?: number | null;
+            run_config_properties: components["schemas"]["RunConfigProperties"];
         };
         /** DataGenCategoriesApiInput */
         DataGenCategoriesApiInput: {
@@ -2371,22 +2363,16 @@ export interface components {
             /** Tags */
             tags?: string[] | null;
         };
-        /** RunTaskRequest */
+        /**
+         * RunTaskRequest
+         * @description Request model for running a task.
+         */
         RunTaskRequest: {
-            /** Model Name */
-            model_name: string;
-            /** Provider */
-            provider: string;
-            /** Temperature */
-            temperature?: number | null;
-            /** Top P */
-            top_p?: number | null;
+            run_config_properties: components["schemas"]["RunConfigProperties"];
             /** Plaintext Input */
             plaintext_input?: string | null;
             /** Structured Input */
             structured_input?: Record<string, never> | null;
-            /** Ui Prompt Method */
-            ui_prompt_method?: string | null;
             /** Tags */
             tags?: string[] | null;
         };
