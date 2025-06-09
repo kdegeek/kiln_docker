@@ -331,7 +331,11 @@ async def test_get_available_models(app, client):
             friendly_name="Model 1",
             family="",
             providers=[
-                KilnModelProvider(name=ModelProviderName.openai, model_id="oai1")
+                KilnModelProvider(
+                    name=ModelProviderName.openai,
+                    model_id="oai1",
+                    structured_output_mode="json_schema",
+                )
             ],
         ),
         KilnModel(
@@ -344,6 +348,7 @@ async def test_get_available_models(app, client):
                     model_id="bedrock1",
                     supports_structured_output=False,
                     supports_data_gen=False,
+                    structured_output_mode="json_instructions",
                 ),
                 KilnModelProvider(
                     name=ModelProviderName.ollama,
@@ -354,6 +359,7 @@ async def test_get_available_models(app, client):
                 KilnModelProvider(
                     name=ModelProviderName.together_ai,
                     provider_finetune_id="together_model2",
+                    structured_output_mode="json_instructions",
                 ),
             ],
         ),
@@ -398,7 +404,7 @@ async def test_get_available_models(app, client):
                     "suggested_for_data_gen": False,
                     "suggested_for_evals": False,
                     "supports_logprobs": False,
-                    "structured_output_mode": "default",
+                    "structured_output_mode": "json_schema",
                     "task_filter": None,
                     "untested_model": False,
                 }
@@ -414,7 +420,7 @@ async def test_get_available_models(app, client):
                     "supports_structured_output": True,
                     "supports_data_gen": True,
                     "supports_logprobs": False,
-                    "structured_output_mode": "default",
+                    "structured_output_mode": "json_schema",
                     "task_filter": None,
                     "untested_model": False,
                     "suggested_for_data_gen": False,
@@ -432,7 +438,7 @@ async def test_get_available_models(app, client):
                     "supports_structured_output": False,
                     "supports_data_gen": False,
                     "supports_logprobs": False,
-                    "structured_output_mode": "default",
+                    "structured_output_mode": "json_instructions",
                     "task_filter": None,
                     "untested_model": False,
                     "suggested_for_data_gen": False,
@@ -1252,6 +1258,7 @@ def test_openai_compatible_providers():
                             untested_model=True,
                             suggested_for_data_gen=False,
                             suggested_for_evals=False,
+                            structured_output_mode="json_instructions",
                         )
                     ],
                 ),
