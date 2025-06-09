@@ -10,6 +10,7 @@ from kiln_ai.adapters.ml_model_list import (
     KilnModelProvider,
     ModelProviderName,
     StructuredOutputMode,
+    default_structured_output_mode_for_model_provider,
 )
 from kiln_ai.adapters.model_adapters.base_adapter import (
     COT_FINAL_ANSWER_PROMPT,
@@ -184,6 +185,14 @@ class LiteLlmAdapter(BaseAdapter):
             return {}
 
         structured_output_mode = self.run_config.structured_output_mode
+
+        # Old datamodels didn't save the model. Look up our best guess.
+        if structured_output_mode == StructuredOutputMode.unknown:
+            structured_output_mode = default_structured_output_mode_for_model_provider(
+                self.run_config.model_name,
+                self.run_config.model_provider_name,
+            )
+
         match structured_output_mode:
             case StructuredOutputMode.json_mode:
                 return {"response_format": {"type": "json_object"}}
@@ -212,6 +221,9 @@ class LiteLlmAdapter(BaseAdapter):
                     # Strict isn't widely supported yet, so we don't use it by default unless it's OpenAI.
                     strict = provider.name == ModelProviderName.openai
                     return self.tool_call_params(strict=strict)
+            case StructuredOutputMode.unknown:
+                # See above, but this case should never happen.
+                raise ValueError("Structured output mode is unknown.")
             case _:
                 raise_exhaustive_enum_error(structured_output_mode)
 

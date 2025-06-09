@@ -26,6 +26,8 @@
     load_available_models,
     available_model_details,
     available_models,
+    current_task,
+    load_task,
   } from "$lib/stores"
   import Dialog from "$lib/ui/dialog.svelte"
   import AvailableModelsDropdown from "../../../../../run/available_models_dropdown.svelte"
@@ -77,6 +79,7 @@
       load_model_info(),
       load_available_prompts(),
       load_available_models(),
+      load_task(project_id, task_id),
     ])
     // Get the eval first (want it to set the current config id before the other two load)
     await get_eval()
@@ -791,7 +794,7 @@
         bind:temperature={task_run_config_temperature}
         bind:top_p={task_run_config_top_p}
         bind:structured_output_mode={task_run_config_structured_output_mode}
-        has_structured_output={true}
+        has_structured_output={!!$current_task?.output_json_schema}
       />
     </Collapse>
     {#if add_task_config_error}
