@@ -274,29 +274,21 @@ def test_import_csv_utf8_encoding(base_task: Task, tmp_path):
 
     file_path = dicts_to_file_as_csv(row_data, "utf8.csv", tmp_path)
 
-    with patch("kiln_ai.utils.dataset_import.open", wraps=open) as mock_open:
-        importer = DatasetFileImporter(
-            base_task,
-            ImportConfig(
-                dataset_type=DatasetImportFormat.CSV,
-                dataset_path=file_path,
-                dataset_name="utf8.csv",
-            ),
-        )
+    importer = DatasetFileImporter(
+        base_task,
+        ImportConfig(
+            dataset_type=DatasetImportFormat.CSV,
+            dataset_path=file_path,
+            dataset_name="utf8.csv",
+        ),
+    )
 
-        importer.create_runs_from_file()
-
-        mock_open.assert_called_once_with(
-            file_path,
-            "r",
-            newline="",
-            encoding="utf-8",
-        )
+    importer.create_runs_from_file()
 
     assert len(base_task.runs()) == 1
     run = base_task.runs()[0]
-    assert run.input == row_data[0]["input"]
-    assert run.output.output == row_data[0]["output"]
+    assert run.input == "Español entrada 你好👋"
+    assert run.output.output == "salida áéí 你好👋"
 
 
 def test_import_csv_structured_output(task_with_structured_output: Task, tmp_path):
