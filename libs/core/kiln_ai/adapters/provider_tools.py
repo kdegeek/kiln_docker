@@ -1,3 +1,4 @@
+import logging
 from dataclasses import dataclass
 from typing import Dict, List
 
@@ -21,6 +22,8 @@ from kiln_ai.datamodel.registry import project_from_id
 from kiln_ai.datamodel.task import RunConfigProperties
 from kiln_ai.utils.config import Config
 from kiln_ai.utils.exhaustive_error import raise_exhaustive_enum_error
+
+logger = logging.getLogger(__name__)
 
 
 async def provider_enabled(provider_name: ModelProviderName) -> bool:
@@ -161,12 +164,13 @@ def kiln_model_provider_from(
     if built_in_model:
         return built_in_model
 
-    structured_output_mode = StructuredOutputMode.default
     # For custom registry, get the provider name and model name from the model id
     if provider_name == ModelProviderName.kiln_custom_registry:
         provider_name, name = parse_custom_model_id(name)
-        # We don't know the structured output mode for custom models, so we default to json_instructions which is the only one that works everywhere.
-        structured_output_mode = StructuredOutputMode.json_instructions
+    else:
+        logger.warning(
+            f"Unexpected model/provider pair. Will treat as custom model but check your model settings. Provider: {provider_name}/{name}"
+        )
 
     # Custom/untested model. Set untested, and build a ModelProvider at runtime
     if provider_name is None:
@@ -181,7 +185,8 @@ def kiln_model_provider_from(
         supports_data_gen=False,
         untested_model=True,
         model_id=name,
-        structured_output_mode=structured_output_mode,
+        # We don't know the structured output mode for custom models, so we default to json_instructions which is the only one that works everywhere.
+        structured_output_mode=StructuredOutputMode.json_instructions,
     )
 
 

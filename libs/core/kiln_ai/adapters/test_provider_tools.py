@@ -358,7 +358,7 @@ async def test_kiln_model_provider_from_custom_model_valid(mock_config):
     assert provider.supports_data_gen is False
     assert provider.untested_model is True
     assert provider.model_id == "custom_model"
-    assert provider.structured_output_mode == StructuredOutputMode.default
+    assert provider.structured_output_mode == StructuredOutputMode.json_instructions
 
 
 @pytest.mark.asyncio
