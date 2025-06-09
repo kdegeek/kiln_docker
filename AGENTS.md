@@ -1,3 +1,7 @@
+## .cursorrules
+
+Read .cursorrules before starting.
+
 ## Python testing, formatting and linting
 
 If you've edited any python code, the following commands should run and not produce error codes. Fix any issues and re-run.
