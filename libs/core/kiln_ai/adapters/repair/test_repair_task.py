@@ -246,6 +246,9 @@ async def test_mocked_repair_task_run(sample_task, sample_task_run, sample_repai
         "model_name": "llama_3_1_8b",
         "model_provider": "ollama",
         "prompt_id": "simple_prompt_builder",
+        "structured_output_mode": "default",
+        "temperature": 1.0,
+        "top_p": 1.0,
     }
     assert run.input_source.type == DataSourceType.human
     assert "created_by" in run.input_source.properties

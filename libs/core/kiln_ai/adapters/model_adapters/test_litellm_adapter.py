@@ -105,14 +105,12 @@ async def test_response_format_options_unstructured(config, mock_task):
 )
 @pytest.mark.asyncio
 async def test_response_format_options_json_mode(config, mock_task, mode):
+    config.run_config_properties.structured_output_mode = mode
     adapter = LiteLlmAdapter(config=config, kiln_task=mock_task)
 
     with (
         patch.object(adapter, "has_structured_output", return_value=True),
-        patch.object(adapter, "model_provider") as mock_provider,
     ):
-        mock_provider.return_value.structured_output_mode = mode
-
         options = await adapter.response_format_options()
         assert options == {"response_format": {"type": "json_object"}}
 
@@ -126,14 +124,12 @@ async def test_response_format_options_json_mode(config, mock_task, mode):
 )
 @pytest.mark.asyncio
 async def test_response_format_options_function_calling(config, mock_task, mode):
+    config.run_config_properties.structured_output_mode = mode
     adapter = LiteLlmAdapter(config=config, kiln_task=mock_task)
 
     with (
         patch.object(adapter, "has_structured_output", return_value=True),
-        patch.object(adapter, "model_provider") as mock_provider,
     ):
-        mock_provider.return_value.structured_output_mode = mode
-
         options = await adapter.response_format_options()
         assert "tools" in options
         # full tool structure validated below
@@ -148,30 +144,26 @@ async def test_response_format_options_function_calling(config, mock_task, mode)
 )
 @pytest.mark.asyncio
 async def test_response_format_options_json_instructions(config, mock_task, mode):
+    config.run_config_properties.structured_output_mode = mode
     adapter = LiteLlmAdapter(config=config, kiln_task=mock_task)
 
     with (
         patch.object(adapter, "has_structured_output", return_value=True),
-        patch.object(adapter, "model_provider") as mock_provider,
     ):
-        mock_provider.return_value.structured_output_mode = (
-            StructuredOutputMode.json_instructions
-        )
         options = await adapter.response_format_options()
         assert options == {}
 
 
 @pytest.mark.asyncio
 async def test_response_format_options_json_schema(config, mock_task):
+    config.run_config_properties.structured_output_mode = (
+        StructuredOutputMode.json_schema
+    )
     adapter = LiteLlmAdapter(config=config, kiln_task=mock_task)
 
     with (
         patch.object(adapter, "has_structured_output", return_value=True),
-        patch.object(adapter, "model_provider") as mock_provider,
     ):
-        mock_provider.return_value.structured_output_mode = (
-            StructuredOutputMode.json_schema
-        )
         options = await adapter.response_format_options()
         assert options == {
             "response_format": {

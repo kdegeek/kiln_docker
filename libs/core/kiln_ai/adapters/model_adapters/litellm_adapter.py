@@ -183,8 +183,8 @@ class LiteLlmAdapter(BaseAdapter):
         if not self.has_structured_output():
             return {}
 
-        provider = self.model_provider()
-        match provider.structured_output_mode:
+        structured_output_mode = self.run_config.structured_output_mode
+        match structured_output_mode:
             case StructuredOutputMode.json_mode:
                 return {"response_format": {"type": "json_object"}}
             case StructuredOutputMode.json_schema:
@@ -203,6 +203,7 @@ class LiteLlmAdapter(BaseAdapter):
                 # We set response_format to json_object and also set json instructions in the prompt
                 return {"response_format": {"type": "json_object"}}
             case StructuredOutputMode.default:
+                provider = self.model_provider()
                 if provider.name == ModelProviderName.ollama:
                     # Ollama added json_schema to all models: https://ollama.com/blog/structured-outputs
                     return self.json_schema_response_format()
@@ -212,7 +213,7 @@ class LiteLlmAdapter(BaseAdapter):
                     strict = provider.name == ModelProviderName.openai
                     return self.tool_call_params(strict=strict)
             case _:
-                raise_exhaustive_enum_error(provider.structured_output_mode)
+                raise_exhaustive_enum_error(structured_output_mode)
 
     def json_schema_response_format(self) -> dict[str, Any]:
         output_schema = self.task().output_schema()

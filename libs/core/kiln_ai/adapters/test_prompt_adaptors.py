@@ -149,6 +149,9 @@ async def test_mock_returning_run(tmp_path):
         "model_name": "custom_model",
         "model_provider": "ollama",
         "prompt_id": "simple_prompt_builder",
+        "structured_output_mode": "default",
+        "temperature": 1.0,
+        "top_p": 1.0,
     }
 
 

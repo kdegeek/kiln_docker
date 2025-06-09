@@ -13,7 +13,11 @@
   import { KilnError } from "$lib/utils/error_handlers"
   import Run from "./run.svelte"
   import { client } from "$lib/api_client"
-  import type { TaskRun, StructuredOutputMode } from "$lib/types"
+  import type {
+    TaskRun,
+    StructuredOutputMode,
+    AvailableModels,
+  } from "$lib/types"
   import AvailableModelsDropdown from "./available_models_dropdown.svelte"
   import RunInputForm from "./run_input_form.svelte"
   import RunOptions from "$lib/ui/run_options.svelte"
@@ -48,9 +52,17 @@
 
   // Model defaults come from available_models store
 
-  $: structured_output_mode =
-    available_model_details(model_name, provider, $available_models)
-      ?.structured_output_mode || "default"
+  // Update structured_output_mode when model changes
+  $: update_structured_output_mode(model_name, provider, $available_models)
+  function update_structured_output_mode(
+    model_name: string,
+    provider: string,
+    available_models: AvailableModels[],
+  ) {
+    structured_output_mode =
+      available_model_details(model_name, provider, available_models)
+        ?.structured_output_mode || "default"
+  }
 
   async function run_task() {
     try {

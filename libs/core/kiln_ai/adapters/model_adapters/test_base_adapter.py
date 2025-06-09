@@ -168,11 +168,7 @@ async def test_prompt_builder_json_instructions(
     adapter.prompt_builder = mock_prompt_builder
     adapter.model_provider_name = "openai"
     adapter.has_structured_output = MagicMock(return_value=output_schema)
-
-    # provider mock
-    provider = MagicMock()
-    provider.structured_output_mode = structured_output_mode
-    adapter.model_provider = MagicMock(return_value=provider)
+    adapter.run_config.structured_output_mode = structured_output_mode
 
     # Test
     adapter.build_prompt()
