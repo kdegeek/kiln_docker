@@ -1079,6 +1079,7 @@ built_in_models: List[KilnModel] = [
                 supports_structured_output=False,
                 supports_data_gen=False,
                 model_id="llama3.2:1b",
+                structured_output_mode=StructuredOutputMode.json_schema,
             ),
             KilnModelProvider(
                 name=ModelProviderName.huggingface,
@@ -1110,6 +1111,7 @@ built_in_models: List[KilnModel] = [
                 name=ModelProviderName.ollama,
                 supports_data_gen=False,
                 model_id="llama3.2",
+                structured_output_mode=StructuredOutputMode.json_schema,
             ),
             KilnModelProvider(
                 name=ModelProviderName.huggingface,
@@ -1317,6 +1319,7 @@ built_in_models: List[KilnModel] = [
             KilnModelProvider(
                 name=ModelProviderName.ollama,
                 model_id="phi4-mini",
+                structured_output_mode=StructuredOutputMode.json_schema,
             ),
         ],
     ),
@@ -1330,6 +1333,7 @@ built_in_models: List[KilnModel] = [
                 name=ModelProviderName.ollama,
                 supports_data_gen=False,
                 model_id="gemma2:2b",
+                structured_output_mode=StructuredOutputMode.json_schema,
             ),
         ],
     ),
@@ -1343,6 +1347,7 @@ built_in_models: List[KilnModel] = [
                 name=ModelProviderName.ollama,
                 supports_data_gen=False,
                 model_id="gemma2:9b",
+                structured_output_mode=StructuredOutputMode.json_schema,
             ),
             KilnModelProvider(
                 name=ModelProviderName.openrouter,
@@ -1365,6 +1370,7 @@ built_in_models: List[KilnModel] = [
                 name=ModelProviderName.ollama,
                 supports_data_gen=False,
                 model_id="gemma2:27b",
+                structured_output_mode=StructuredOutputMode.json_schema,
             ),
             KilnModelProvider(
                 name=ModelProviderName.openrouter,
@@ -1385,6 +1391,7 @@ built_in_models: List[KilnModel] = [
                 model_id="gemma3:1b",
                 supports_structured_output=False,
                 supports_data_gen=False,
+                structured_output_mode=StructuredOutputMode.json_schema,
             ),
             KilnModelProvider(
                 name=ModelProviderName.openrouter,
@@ -1405,6 +1412,7 @@ built_in_models: List[KilnModel] = [
                 name=ModelProviderName.ollama,
                 model_id="gemma3:4b",
                 ollama_model_aliases=["gemma3"],
+                structured_output_mode=StructuredOutputMode.json_schema,
             ),
             KilnModelProvider(
                 name=ModelProviderName.openrouter,
@@ -1423,6 +1431,7 @@ built_in_models: List[KilnModel] = [
             KilnModelProvider(
                 name=ModelProviderName.ollama,
                 model_id="gemma3:12b",
+                structured_output_mode=StructuredOutputMode.json_schema,
             ),
             KilnModelProvider(
                 name=ModelProviderName.openrouter,
@@ -1441,6 +1450,7 @@ built_in_models: List[KilnModel] = [
             KilnModelProvider(
                 name=ModelProviderName.ollama,
                 model_id="gemma3:27b",
+                structured_output_mode=StructuredOutputMode.json_schema,
             ),
             KilnModelProvider(
                 name=ModelProviderName.openrouter,
@@ -1469,6 +1479,7 @@ built_in_models: List[KilnModel] = [
             KilnModelProvider(
                 name=ModelProviderName.ollama,
                 model_id="mixtral",
+                structured_output_mode=StructuredOutputMode.json_schema,
             ),
         ],
     ),
@@ -1531,6 +1542,7 @@ built_in_models: List[KilnModel] = [
             KilnModelProvider(
                 name=ModelProviderName.ollama,
                 model_id="qwen2.5",
+                structured_output_mode=StructuredOutputMode.json_schema,
             ),
         ],
     ),
@@ -1548,6 +1560,7 @@ built_in_models: List[KilnModel] = [
                 name=ModelProviderName.ollama,
                 model_id="qwen2.5:14b",
                 supports_data_gen=False,
+                structured_output_mode=StructuredOutputMode.json_schema,
             ),
         ],
     ),
@@ -1568,6 +1581,7 @@ built_in_models: List[KilnModel] = [
             KilnModelProvider(
                 name=ModelProviderName.ollama,
                 model_id="qwen2.5:72b",
+                structured_output_mode=StructuredOutputMode.json_schema,
             ),
             KilnModelProvider(
                 name=ModelProviderName.fireworks_ai,
@@ -1595,6 +1609,7 @@ built_in_models: List[KilnModel] = [
             KilnModelProvider(
                 name=ModelProviderName.ollama,
                 model_id="mistral-small:24b",
+                structured_output_mode=StructuredOutputMode.json_schema,
             ),
         ],
     ),
