@@ -11,7 +11,6 @@ from kiln_ai.adapters.adapter_registry import adapter_for_task
 from kiln_ai.adapters.ml_model_list import ModelProviderName
 from kiln_ai.adapters.model_adapters.base_adapter import AdapterConfig
 from kiln_ai.datamodel import (
-    PromptId,
     Task,
     TaskOutputRating,
     TaskOutputRatingType,
@@ -53,13 +52,11 @@ def deep_update(
 
 
 class RunTaskRequest(BaseModel):
-    model_name: str
-    provider: str
-    temperature: float | None = None
-    top_p: float | None = None
+    """Request model for running a task."""
+
+    run_config_properties: RunConfigProperties
     plaintext_input: str | None = None
     structured_input: Dict[str, Any] | None = None
-    ui_prompt_method: PromptId | None = None
     tags: list[str] | None = None
 
     # Allows use of the model_name field (usually pydantic will reserve model_*)
@@ -215,23 +212,8 @@ def connect_run_api(app: FastAPI):
         project_id: str, task_id: str, request: RunTaskRequest
     ) -> TaskRun:
         task = task_from_id(project_id, task_id)
-        provider_name = model_provider_from_string(request.provider)
 
-        try:
-            run_config_properties = RunConfigProperties(
-                model_name=request.model_name,
-                model_provider_name=provider_name,
-                prompt_id=request.ui_prompt_method or "simple_prompt_builder",
-            )
-            if request.temperature is not None:
-                run_config_properties.temperature = request.temperature
-            if request.top_p is not None:
-                run_config_properties.top_p = request.top_p
-        except ValueError as e:
-            raise HTTPException(
-                status_code=422,
-                detail=str(e),
-            )
+        run_config_properties = request.run_config_properties
 
         adapter = adapter_for_task(
             task,

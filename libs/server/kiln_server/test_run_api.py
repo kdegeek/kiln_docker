@@ -66,8 +66,11 @@ def task_run_setup(tmp_path):
     task.save_to_file()
 
     run_task_request = {
-        "model_name": "gpt_4o",
-        "provider": "ollama",
+        "run_config_properties": {
+            "model_name": "gpt_4o",
+            "model_provider_name": "ollama",
+            "prompt_id": "simple_prompt_builder",
+        },
         "plaintext_input": "Test input",
     }
 
@@ -164,8 +167,14 @@ async def test_run_task_structured_output(client, task_run_setup):
 async def test_run_task_no_input(client, task_run_setup, mock_config):
     task = task_run_setup["task"]
 
-    # Misisng input
-    run_task_request = {"model_name": "gpt_4o", "provider": "openai"}
+    # Missing input
+    run_task_request = {
+        "run_config_properties": {
+            "model_name": "gpt_4o",
+            "model_provider_name": "openai",
+            "prompt_id": "simple_prompt_builder",
+        }
+    }
 
     with patch("kiln_server.run_api.task_from_id") as mock_task_from_id:
         mock_task_from_id.return_value = task
@@ -190,8 +199,11 @@ async def test_run_task_structured_input(client, task_run_setup):
         },
     ):
         run_task_request = {
-            "model_name": "gpt_4o",
-            "provider": "ollama",
+            "run_config_properties": {
+                "model_name": "gpt_4o",
+                "model_provider_name": "ollama",
+                "prompt_id": "simple_prompt_builder",
+            },
             "structured_input": {"key": "value"},
         }
 
@@ -1241,10 +1253,13 @@ async def test_run_task_invalid_temperature_values(client, task_run_setup):
         response = client.post(
             f"/api/projects/{project.id}/tasks/{task.id}/run",
             json={
-                "model_name": "gpt-4o",
-                "provider": "openai",
+                "run_config_properties": {
+                    "model_name": "gpt-4o",
+                    "model_provider_name": "openai",
+                    "prompt_id": "simple_prompt_builder",
+                    "temperature": -0.1,
+                },
                 "plaintext_input": "Test input",
-                "temperature": -0.1,
             },
         )
         assert response.status_code == 422
@@ -1255,10 +1270,13 @@ async def test_run_task_invalid_temperature_values(client, task_run_setup):
         response = client.post(
             f"/api/projects/{project.id}/tasks/{task.id}/run",
             json={
-                "model_name": "gpt-4o",
-                "provider": "openai",
+                "run_config_properties": {
+                    "model_name": "gpt-4o",
+                    "model_provider_name": "openai",
+                    "prompt_id": "simple_prompt_builder",
+                    "temperature": 2.1,
+                },
                 "plaintext_input": "Test input",
-                "temperature": 2.1,
             },
         )
         assert response.status_code == 422
@@ -1279,10 +1297,13 @@ async def test_run_task_invalid_top_p_values(client, task_run_setup):
         response = client.post(
             f"/api/projects/{project.id}/tasks/{task.id}/run",
             json={
-                "model_name": "gpt-4o",
-                "provider": "openai",
+                "run_config_properties": {
+                    "model_name": "gpt-4o",
+                    "model_provider_name": "openai",
+                    "prompt_id": "simple_prompt_builder",
+                    "top_p": -0.1,
+                },
                 "plaintext_input": "Test input",
-                "top_p": -0.1,
             },
         )
         assert response.status_code == 422
@@ -1293,10 +1314,13 @@ async def test_run_task_invalid_top_p_values(client, task_run_setup):
         response = client.post(
             f"/api/projects/{project.id}/tasks/{task.id}/run",
             json={
-                "model_name": "gpt-4o",
-                "provider": "openai",
+                "run_config_properties": {
+                    "model_name": "gpt-4o",
+                    "model_provider_name": "openai",
+                    "prompt_id": "simple_prompt_builder",
+                    "top_p": 1.1,
+                },
                 "plaintext_input": "Test input",
-                "top_p": 1.1,
             },
         )
         assert response.status_code == 422
@@ -1327,11 +1351,14 @@ async def test_run_task_valid_boundary_values(client, task_run_setup):
         response = client.post(
             f"/api/projects/{project.id}/tasks/{task.id}/run",
             json={
-                "model_name": "gpt-4o",
-                "provider": "openai",
+                "run_config_properties": {
+                    "model_name": "gpt-4o",
+                    "model_provider_name": "openai",
+                    "prompt_id": "simple_prompt_builder",
+                    "temperature": 0.0,
+                    "top_p": 0.0,
+                },
                 "plaintext_input": "Test input",
-                "temperature": 0.0,
-                "top_p": 0.0,
             },
         )
         assert response.status_code == 200
@@ -1340,11 +1367,14 @@ async def test_run_task_valid_boundary_values(client, task_run_setup):
         response = client.post(
             f"/api/projects/{project.id}/tasks/{task.id}/run",
             json={
-                "model_name": "gpt-4o",
-                "provider": "openai",
+                "run_config_properties": {
+                    "model_name": "gpt-4o",
+                    "model_provider_name": "openai",
+                    "prompt_id": "simple_prompt_builder",
+                    "temperature": 2.0,
+                    "top_p": 1.0,
+                },
                 "plaintext_input": "Test input",
-                "temperature": 2.0,
-                "top_p": 1.0,
             },
         )
         assert response.status_code == 200

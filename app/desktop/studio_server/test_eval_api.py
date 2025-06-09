@@ -243,10 +243,12 @@ async def test_create_task_run_config_with_freezing(
             json={
                 "name": "Test Task Run Config",
                 "description": "Test Description",
-                "model_name": "gpt-4o",
-                "model_provider_name": "openai",
-                "prompt_id": "simple_chain_of_thought_prompt_builder",
-                "temperature": 0.5,
+                "run_config_properties": {
+                    "model_name": "gpt-4o",
+                    "model_provider_name": "openai",
+                    "prompt_id": "simple_chain_of_thought_prompt_builder",
+                    "temperature": 0.5,
+                },
                 # top_p not included, should get default 1.0
             },
         )
@@ -307,9 +309,11 @@ async def test_create_task_run_config_without_freezing(
             json={
                 "name": "Test Task Run Config",
                 "description": "Test Description",
-                "model_name": "gpt-4o",
-                "model_provider_name": "openai",
-                "prompt_id": "id::prompt_123",
+                "run_config_properties": {
+                    "model_name": "gpt-4o",
+                    "model_provider_name": "openai",
+                    "prompt_id": "id::prompt_123",
+                },
             },
         )
 
@@ -1594,10 +1598,12 @@ async def test_create_task_run_config_invalid_temperature_values(
         "/api/projects/project1/tasks/task1/task_run_config",
         json={
             "name": "Test Task Run Config",
-            "model_name": "gpt-4o",
-            "model_provider_name": "openai",
-            "prompt_id": "simple_chain_of_thought_prompt_builder",
-            "temperature": -0.1,
+            "run_config_properties": {
+                "model_name": "gpt-4o",
+                "model_provider_name": "openai",
+                "prompt_id": "simple_chain_of_thought_prompt_builder",
+                "temperature": -0.1,
+            },
         },
     )
     assert response.status_code == 422
@@ -1609,10 +1615,12 @@ async def test_create_task_run_config_invalid_temperature_values(
         "/api/projects/project1/tasks/task1/task_run_config",
         json={
             "name": "Test Task Run Config",
-            "model_name": "gpt-4o",
-            "model_provider_name": "openai",
-            "prompt_id": "simple_chain_of_thought_prompt_builder",
-            "temperature": 2.1,
+            "run_config_properties": {
+                "model_name": "gpt-4o",
+                "model_provider_name": "openai",
+                "prompt_id": "simple_chain_of_thought_prompt_builder",
+                "temperature": 2.1,
+            },
         },
     )
     assert response.status_code == 422
@@ -1632,10 +1640,12 @@ async def test_create_task_run_config_invalid_top_p_values(
         "/api/projects/project1/tasks/task1/task_run_config",
         json={
             "name": "Test Task Run Config",
-            "model_name": "gpt-4o",
-            "model_provider_name": "openai",
-            "prompt_id": "simple_chain_of_thought_prompt_builder",
-            "top_p": -0.1,
+            "run_config_properties": {
+                "model_name": "gpt-4o",
+                "model_provider_name": "openai",
+                "prompt_id": "simple_chain_of_thought_prompt_builder",
+                "top_p": -0.1,
+            },
         },
     )
     assert response.status_code == 422
@@ -1647,10 +1657,12 @@ async def test_create_task_run_config_invalid_top_p_values(
         "/api/projects/project1/tasks/task1/task_run_config",
         json={
             "name": "Test Task Run Config",
-            "model_name": "gpt-4o",
-            "model_provider_name": "openai",
-            "prompt_id": "simple_chain_of_thought_prompt_builder",
-            "top_p": 1.1,
+            "run_config_properties": {
+                "model_name": "gpt-4o",
+                "model_provider_name": "openai",
+                "prompt_id": "simple_chain_of_thought_prompt_builder",
+                "top_p": 1.1,
+            },
         },
     )
     assert response.status_code == 422
@@ -1670,11 +1682,13 @@ async def test_create_task_run_config_valid_boundary_values(
         "/api/projects/project1/tasks/task1/task_run_config",
         json={
             "name": "Test Task Run Config Min",
-            "model_name": "gpt-4o",
-            "model_provider_name": "openai",
-            "prompt_id": "simple_chain_of_thought_prompt_builder",
-            "temperature": 0.0,
-            "top_p": 0.0,
+            "run_config_properties": {
+                "model_name": "gpt-4o",
+                "model_provider_name": "openai",
+                "prompt_id": "simple_chain_of_thought_prompt_builder",
+                "temperature": 0.0,
+                "top_p": 0.0,
+            },
         },
     )
     assert response.status_code == 200
@@ -1687,11 +1701,13 @@ async def test_create_task_run_config_valid_boundary_values(
         "/api/projects/project1/tasks/task1/task_run_config",
         json={
             "name": "Test Task Run Config Max",
-            "model_name": "gpt-4o",
-            "model_provider_name": "openai",
-            "prompt_id": "simple_chain_of_thought_prompt_builder",
-            "temperature": 2.0,
-            "top_p": 1.0,
+            "run_config_properties": {
+                "model_name": "gpt-4o",
+                "model_provider_name": "openai",
+                "prompt_id": "simple_chain_of_thought_prompt_builder",
+                "temperature": 2.0,
+                "top_p": 1.0,
+            },
         },
     )
     assert response.status_code == 200

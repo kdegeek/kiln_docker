@@ -374,12 +374,14 @@
             },
           },
           body: {
-            model_name: task_run_config_model_name,
-            // @ts-expect-error not checking types here, server will check them
-            model_provider_name: task_run_config_provider_name,
-            prompt_id: task_run_config_prompt_method,
-            temperature: task_run_config_temperature,
-            top_p: task_run_config_top_p,
+            run_config_properties: {
+              model_name: task_run_config_model_name,
+              // @ts-expect-error not checking types here, server will check them
+              model_provider_name: task_run_config_provider_name,
+              prompt_id: task_run_config_prompt_method,
+              temperature: task_run_config_temperature,
+              top_p: task_run_config_top_p,
+            },
           },
         },
       )
