@@ -6,7 +6,7 @@ from kiln_ai.adapters.ml_model_list import KilnModelProvider, StructuredOutputMo
 from kiln_ai.adapters.model_adapters.base_adapter import BaseAdapter, RunOutput
 from kiln_ai.adapters.parsers.request_formatters import request_formatter_from_id
 from kiln_ai.datamodel import Task
-from kiln_ai.datamodel.task import RunConfig
+from kiln_ai.datamodel.task import RunConfig, RunConfigProperties
 
 
 class MockAdapter(BaseAdapter):
@@ -265,3 +265,87 @@ async def test_input_formatting(
         # Verify original input was preserved in the run
         if formatter_id:
             mock_formatter.format_input.assert_called_once_with(original_input)
+
+
+async def test_properties_for_task_output_includes_all_run_config_properties(adapter):
+    """Test that all properties from RunConfigProperties are saved in task output properties"""
+    # Get all field names from RunConfigProperties
+    run_config_properties_fields = set(RunConfigProperties.model_fields.keys())
+
+    # Get the properties saved by the adapter
+    saved_properties = adapter._properties_for_task_output()
+    saved_property_keys = set(saved_properties.keys())
+
+    # Check which RunConfigProperties fields are missing from saved properties
+    # Note: model_provider_name becomes model_provider in saved properties
+    expected_mappings = {
+        "model_name": "model_name",
+        "model_provider_name": "model_provider",
+        "prompt_id": "prompt_id",
+        "temperature": "temperature",
+        "top_p": "top_p",
+        "structured_output_mode": "structured_output_mode",
+    }
+
+    missing_properties = []
+    for field_name in run_config_properties_fields:
+        expected_key = expected_mappings.get(field_name, field_name)
+        if expected_key not in saved_property_keys:
+            missing_properties.append(
+                f"RunConfigProperties.{field_name} -> {expected_key}"
+            )
+
+    assert not missing_properties, (
+        f"The following RunConfigProperties fields are not saved by _properties_for_task_output: {missing_properties}. Please update the method to include them."
+    )
+
+
+async def test_properties_for_task_output_catches_missing_new_property(adapter):
+    """Test that demonstrates our test will catch when new properties are added to RunConfigProperties but not to _properties_for_task_output"""
+    # Simulate what happens if a new property was added to RunConfigProperties
+    # We'll mock the model_fields to include a fake new property
+    original_fields = RunConfigProperties.model_fields.copy()
+
+    # Create a mock field to simulate a new property being added
+    from pydantic.fields import FieldInfo
+
+    mock_field = FieldInfo(annotation=str, default="default_value")
+
+    try:
+        # Add a fake new field to simulate someone adding a property
+        RunConfigProperties.model_fields["new_fake_property"] = mock_field
+
+        # Get all field names from RunConfigProperties (now includes our fake property)
+        run_config_properties_fields = set(RunConfigProperties.model_fields.keys())
+
+        # Get the properties saved by the adapter (won't include our fake property)
+        saved_properties = adapter._properties_for_task_output()
+        saved_property_keys = set(saved_properties.keys())
+
+        # The mappings don't include our fake property
+        expected_mappings = {
+            "model_name": "model_name",
+            "model_provider_name": "model_provider",
+            "prompt_id": "prompt_id",
+            "temperature": "temperature",
+            "top_p": "top_p",
+            "structured_output_mode": "structured_output_mode",
+        }
+
+        missing_properties = []
+        for field_name in run_config_properties_fields:
+            expected_key = expected_mappings.get(field_name, field_name)
+            if expected_key not in saved_property_keys:
+                missing_properties.append(
+                    f"RunConfigProperties.{field_name} -> {expected_key}"
+                )
+
+        # This should find our missing fake property
+        assert missing_properties == [
+            "RunConfigProperties.new_fake_property -> new_fake_property"
+        ], f"Expected to find missing fake property, but got: {missing_properties}"
+
+    finally:
+        # Restore the original fields
+        RunConfigProperties.model_fields.clear()
+        RunConfigProperties.model_fields.update(original_fields)
