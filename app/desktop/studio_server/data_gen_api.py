@@ -7,6 +7,9 @@ from kiln_ai.adapters.data_gen.data_gen_task import (
     DataGenSampleTaskInput,
     wrap_task_with_guidance,
 )
+from kiln_ai.adapters.ml_model_list import (
+    default_structured_output_mode_for_model_provider,
+)
 from kiln_ai.adapters.model_adapters.base_adapter import AdapterConfig
 from kiln_ai.datamodel import DataSource, DataSourceType, PromptId, TaskRun
 from kiln_ai.datamodel.prompt_id import PromptGenerators
@@ -98,6 +101,10 @@ def connect_data_gen_api(app: FastAPI):
                 model_name=input.model_name,
                 model_provider_name=model_provider_from_string(input.provider),
                 prompt_id=PromptGenerators.SIMPLE,
+                # We don't expose setting this manually in the UI, so pull a recommended mode from ml_model_list
+                structured_output_mode=default_structured_output_mode_for_model_provider(
+                    input.model_name, model_provider_from_string(input.provider)
+                ),
             ),
         )
 
@@ -124,6 +131,10 @@ def connect_data_gen_api(app: FastAPI):
                 model_name=input.model_name,
                 model_provider_name=model_provider_from_string(input.provider),
                 prompt_id=PromptGenerators.SIMPLE,
+                # We don't expose setting this manually in the UI, so pull a recommended mode from ml_model_list
+                structured_output_mode=default_structured_output_mode_for_model_provider(
+                    input.model_name, model_provider_from_string(input.provider)
+                ),
             ),
         )
 
@@ -151,6 +162,11 @@ def connect_data_gen_api(app: FastAPI):
                 model_name=sample.output_model_name,
                 model_provider_name=model_provider_from_string(sample.output_provider),
                 prompt_id=sample.prompt_method,
+                # We don't expose setting this manually in the UI, so pull a recommended mode from ml_model_list
+                structured_output_mode=default_structured_output_mode_for_model_provider(
+                    sample.output_model_name,
+                    model_provider_from_string(sample.output_provider),
+                ),
             ),
         )
 

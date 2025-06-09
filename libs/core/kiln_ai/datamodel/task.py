@@ -68,8 +68,7 @@ class RunConfigProperties(BaseModel):
         description="The temperature to use for this run config. Defaults to 1.0.",
     )
     structured_output_mode: StructuredOutputMode = Field(
-        default=StructuredOutputMode.default,
-        description="The structured output mode to use for this run config. Defaults to 'default', which means the model will use its default structured output mode.",
+        description="The structured output mode to use for this run config.",
     )
 
     @model_validator(mode="after")

@@ -46,6 +46,7 @@ def config():
             model_name="test-model",
             model_provider_name="openrouter",
             prompt_id="simple_prompt_builder",
+            structured_output_mode="json_schema",
         ),
         default_headers={"X-Test": "test"},
         additional_body_options={"api_key": "test_key"},

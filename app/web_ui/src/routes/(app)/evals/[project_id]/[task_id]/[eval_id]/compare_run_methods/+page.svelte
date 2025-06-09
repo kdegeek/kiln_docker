@@ -12,6 +12,7 @@
     TaskRunConfig,
     EvalResultSummary,
     StructuredOutputMode,
+    AvailableModels,
   } from "$lib/types"
   import { goto } from "$app/navigation"
   import {
@@ -355,12 +356,21 @@
   let task_run_config_top_p: number
   let task_run_config_structured_output_mode: StructuredOutputMode
 
-  $: task_run_config_structured_output_mode =
-    available_model_details(
-      task_run_config_model_name,
-      task_run_config_provider_name,
-      $available_models,
-    )?.structured_output_mode || "default"
+  // Update structured_output_mode when model changes
+  $: update_structured_output_mode(
+    task_run_config_model_name,
+    task_run_config_provider_name,
+    $available_models,
+  )
+  function update_structured_output_mode(
+    model_name: string,
+    provider: string,
+    available_models: AvailableModels[],
+  ) {
+    task_run_config_structured_output_mode =
+      available_model_details(model_name, provider, available_models)
+        ?.structured_output_mode || "default"
+  }
 
   let add_task_config_dialog: Dialog | null = null
   let add_task_config_error: KilnError | null = null

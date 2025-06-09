@@ -39,6 +39,7 @@ def adapter(base_task):
             model_name="test_model",
             model_provider_name="openai",
             prompt_id="simple_prompt_builder",
+            structured_output_mode="json_schema",
         ),
     )
 
@@ -120,6 +121,7 @@ async def test_model_provider_missing_model_names(base_task):
             model_name="",
             model_provider_name="openai",
             prompt_id="simple_prompt_builder",
+            structured_output_mode="json_schema",
         ),
     )
     with pytest.raises(

@@ -46,6 +46,7 @@ def adapter(test_task):
             model_name="phi_3_5",
             model_provider_name="ollama",
             prompt_id="simple_chain_of_thought_prompt_builder",
+            structured_output_mode="json_schema",
         ),
     )
 
@@ -102,7 +103,7 @@ def test_save_run_isolation(test_task, adapter):
         reloaded_output.source.properties["prompt_id"]
         == "simple_chain_of_thought_prompt_builder"
     )
-    assert reloaded_output.source.properties["structured_output_mode"] == "default"
+    assert reloaded_output.source.properties["structured_output_mode"] == "json_schema"
     assert reloaded_output.source.properties["temperature"] == 1.0
     assert reloaded_output.source.properties["top_p"] == 1.0
     # Run again, with same input and different output. Should create a new TaskRun.
@@ -231,7 +232,7 @@ async def test_autosave_true(test_task, adapter):
             output.source.properties["prompt_id"]
             == "simple_chain_of_thought_prompt_builder"
         )
-        assert output.source.properties["structured_output_mode"] == "default"
+        assert output.source.properties["structured_output_mode"] == "json_schema"
         assert output.source.properties["temperature"] == 1.0
         assert output.source.properties["top_p"] == 1.0
 

@@ -2035,7 +2035,6 @@ export interface components {
             supports_logprobs: boolean;
             /** Suggested For Evals */
             suggested_for_evals: boolean;
-            /** Structured Output Mode */
             structured_output_mode: components["schemas"]["StructuredOutputMode"];
             /**
              * Untested Model
@@ -2281,16 +2280,6 @@ export interface components {
              * @description Feedback from an evaluator on how to repair the task run.
              */
             evaluator_feedback: string;
-            /**
-             * Model Name
-             * @description The name of the model to use for the repair task. Optional, if not specified, the model of the original task will be used.
-             */
-            model_name?: string | null;
-            /**
-             * Provider
-             * @description The provider of the model to use for the repair task. Optional, if not specified, the provider of the original task will be used.
-             */
-            provider?: string | null;
         };
         /**
          * RequirementRating
@@ -2336,10 +2325,7 @@ export interface components {
              * @default 1
              */
             temperature: number;
-            /**
-             * @description The structured output mode to use for this run config. Defaults to 'default', which means the model will use its default structured output mode.
-             * @default default
-             */
+            /** @description The structured output mode to use for this run config. */
             structured_output_mode: components["schemas"]["StructuredOutputMode"];
         };
         /** RunSummary */

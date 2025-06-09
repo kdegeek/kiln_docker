@@ -45,6 +45,7 @@ def test_openai_adapter_creation(mock_config, basic_task):
             model_name="gpt-4",
             model_provider_name=ModelProviderName.openai,
             prompt_id="simple_prompt_builder",
+            structured_output_mode="json_schema",
         ),
     )
 
@@ -66,6 +67,7 @@ def test_openrouter_adapter_creation(mock_config, basic_task):
             model_name="anthropic/claude-3-opus",
             model_provider_name=ModelProviderName.openrouter,
             prompt_id="simple_prompt_builder",
+            structured_output_mode="json_schema",
         ),
     )
 
@@ -98,6 +100,7 @@ def test_openai_compatible_adapter_creation(mock_config, basic_task, provider):
             model_name="test-model",
             model_provider_name=provider,
             prompt_id="simple_prompt_builder",
+            structured_output_mode="json_schema",
         ),
     )
 
@@ -113,6 +116,7 @@ def test_custom_prompt_builder(mock_config, basic_task):
             model_name="gpt-4",
             model_provider_name=ModelProviderName.openai,
             prompt_id="simple_chain_of_thought_prompt_builder",
+            structured_output_mode="json_schema",
         ),
     )
 
@@ -128,6 +132,7 @@ def test_tags_passed_through(mock_config, basic_task):
             model_name="gpt-4",
             model_provider_name=ModelProviderName.openai,
             prompt_id="simple_prompt_builder",
+            structured_output_mode="json_schema",
         ),
         base_adapter_config=AdapterConfig(
             default_tags=tags,
@@ -145,6 +150,7 @@ def test_invalid_provider(mock_config, basic_task):
                 model_name="test-model",
                 model_provider_name="invalid",
                 prompt_id="simple_prompt_builder",
+                structured_output_mode="json_schema",
             ),
         )
 
@@ -161,6 +167,7 @@ def test_openai_compatible_adapter(mock_compatible_config, mock_config, basic_ta
         model_name="provider::test-model",
         model_provider_name=ModelProviderName.openai_compatible,
         prompt_id="simple_prompt_builder",
+        structured_output_mode="json_schema",
     )
 
     adapter = adapter_for_task(
@@ -169,6 +176,7 @@ def test_openai_compatible_adapter(mock_compatible_config, mock_config, basic_ta
             model_name="provider::test-model",
             model_provider_name=ModelProviderName.openai_compatible,
             prompt_id="simple_prompt_builder",
+            structured_output_mode="json_schema",
         ),
     )
 
@@ -184,6 +192,7 @@ def test_custom_openai_compatible_provider(mock_config, basic_task):
             model_name="openai::test-model",
             model_provider_name=ModelProviderName.kiln_custom_registry,
             prompt_id="simple_prompt_builder",
+            structured_output_mode="json_schema",
         ),
     )
 
@@ -204,6 +213,7 @@ async def test_fine_tune_provider(mock_config, basic_task, mock_finetune_from_id
             model_name="proj::task::tune",
             model_provider_name=ModelProviderName.kiln_fine_tune,
             prompt_id="simple_prompt_builder",
+            structured_output_mode="json_schema",
         ),
     )
 

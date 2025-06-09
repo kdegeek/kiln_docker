@@ -133,6 +133,7 @@ def mock_run_config(mock_task):
             model_name="gpt-4",
             model_provider_name="openai",
             prompt_id="simple_chain_of_thought_prompt_builder",
+            structured_output_mode="json_schema",
         ),
     )
     run_config.save_to_file()
@@ -248,6 +249,7 @@ async def test_create_task_run_config_with_freezing(
                     "model_provider_name": "openai",
                     "prompt_id": "simple_chain_of_thought_prompt_builder",
                     "temperature": 0.5,
+                    "structured_output_mode": "json_schema",
                 },
                 # top_p not included, should get default 1.0
             },
@@ -313,6 +315,7 @@ async def test_create_task_run_config_without_freezing(
                     "model_name": "gpt-4o",
                     "model_provider_name": "openai",
                     "prompt_id": "id::prompt_123",
+                    "structured_output_mode": "json_schema",
                 },
             },
         )
@@ -1603,6 +1606,7 @@ async def test_create_task_run_config_invalid_temperature_values(
                 "model_provider_name": "openai",
                 "prompt_id": "simple_chain_of_thought_prompt_builder",
                 "temperature": -0.1,
+                "structured_output_mode": "json_schema",
             },
         },
     )
@@ -1620,6 +1624,7 @@ async def test_create_task_run_config_invalid_temperature_values(
                 "model_provider_name": "openai",
                 "prompt_id": "simple_chain_of_thought_prompt_builder",
                 "temperature": 2.1,
+                "structured_output_mode": "json_schema",
             },
         },
     )
@@ -1645,6 +1650,7 @@ async def test_create_task_run_config_invalid_top_p_values(
                 "model_provider_name": "openai",
                 "prompt_id": "simple_chain_of_thought_prompt_builder",
                 "top_p": -0.1,
+                "structured_output_mode": "json_schema",
             },
         },
     )
@@ -1662,6 +1668,7 @@ async def test_create_task_run_config_invalid_top_p_values(
                 "model_provider_name": "openai",
                 "prompt_id": "simple_chain_of_thought_prompt_builder",
                 "top_p": 1.1,
+                "structured_output_mode": "json_schema",
             },
         },
     )
@@ -1688,6 +1695,7 @@ async def test_create_task_run_config_valid_boundary_values(
                 "prompt_id": "simple_chain_of_thought_prompt_builder",
                 "temperature": 0.0,
                 "top_p": 0.0,
+                "structured_output_mode": "json_schema",
             },
         },
     )
@@ -1707,6 +1715,7 @@ async def test_create_task_run_config_valid_boundary_values(
                 "prompt_id": "simple_chain_of_thought_prompt_builder",
                 "temperature": 2.0,
                 "top_p": 1.0,
+                "structured_output_mode": "json_schema",
             },
         },
     )

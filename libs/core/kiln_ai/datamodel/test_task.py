@@ -15,6 +15,7 @@ def test_runconfig_valid_creation():
         model_name="gpt-4",
         model_provider_name="openai",
         prompt_id=PromptGenerators.SIMPLE,
+        structured_output_mode="json_schema",
     )
 
     assert config.task == task
@@ -29,12 +30,13 @@ def test_runconfig_missing_required_fields():
 
     errors = exc_info.value.errors()
     assert (
-        len(errors) == 4
+        len(errors) == 5
     )  # task, model_name, model_provider_name, and prompt_id are required
     assert any(error["loc"][0] == "task" for error in errors)
     assert any(error["loc"][0] == "model_name" for error in errors)
     assert any(error["loc"][0] == "model_provider_name" for error in errors)
     assert any(error["loc"][0] == "prompt_id" for error in errors)
+    assert any(error["loc"][0] == "structured_output_mode" for error in errors)
 
 
 def test_runconfig_custom_prompt_id():
@@ -45,6 +47,7 @@ def test_runconfig_custom_prompt_id():
         model_name="gpt-4",
         model_provider_name="openai",
         prompt_id=PromptGenerators.SIMPLE_CHAIN_OF_THOUGHT,
+        structured_output_mode="json_schema",
     )
 
     assert config.prompt_id == PromptGenerators.SIMPLE_CHAIN_OF_THOUGHT
@@ -61,6 +64,7 @@ def sample_run_config_props(sample_task):
         model_name="gpt-4",
         model_provider_name="openai",
         prompt_id=PromptGenerators.SIMPLE,
+        structured_output_mode="json_schema",
     )
 
 
@@ -168,10 +172,10 @@ def test_run_config_defaults():
         model_name="gpt-4",
         model_provider_name="openai",
         prompt_id=PromptGenerators.SIMPLE,
+        structured_output_mode="json_schema",
     )
     assert config.top_p == 1.0
     assert config.temperature == 1.0
-    assert config.structured_output_mode == StructuredOutputMode.default
 
 
 def test_run_config_valid_ranges():
