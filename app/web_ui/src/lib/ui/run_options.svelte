@@ -64,44 +64,45 @@
       label: "Structured Output Mode",
       options: [
         {
-          value: "default",
-          label: "Default",
-          description: "Let the adapter decide the best mode",
-        },
-        {
           value: "json_schema",
           label: "JSON Schema",
-          description: "Use the provider's JSON schema mode",
-        },
-        {
-          value: "function_calling_weak",
-          label: "Function Calling (Weak)",
-          description: "Use function calling without strict validation",
+          description:
+            "Require the provider to provide the exact JSON schema expected.",
         },
         {
           value: "function_calling",
           label: "Function Calling",
-          description: "Use strict function calling",
+          description:
+            "Request structured output using function calling with strict validation.",
+        },
+        {
+          value: "function_calling_weak",
+          label: "Weak Function Calling",
+          description:
+            "Request structured output using function calling, without strict validation.",
         },
         {
           value: "json_mode",
           label: "JSON Mode",
-          description: "Use JSON mode (no schema)",
+          description:
+            "Require the model return JSON, but without specifying the schema.",
         },
         {
           value: "json_instructions",
           label: "JSON Instructions",
-          description: "Add instructions to return JSON",
+          description:
+            "Kiln will add instructions to the prompt requesting JSON matching your output schema.",
         },
         {
           value: "json_instruction_and_object",
-          label: "Instructions + JSON Mode",
-          description: "Combine instructions with JSON mode",
+          label: "JSON Instructions + Mode",
+          description: "Combine JSON instructions and JSON mode.",
         },
         {
           value: "json_custom_instructions",
-          label: "Custom Instructions",
-          description: "Prompt already includes JSON instructions",
+          label: "None",
+          description:
+            "Kiln will not add any instructions on how to structure the output. Your prompt should include custom instructions.",
         },
       ],
     },
@@ -133,6 +134,6 @@
     inputType="fancy_select"
     bind:value={structured_output_mode}
     fancy_select_options={structured_output_options}
-    info_description="Choose how the model should return structured data"
+    info_description="Choose how the model should return structured data. Defaults to a safe choice. Not all models/providers support all options so changing this may result in errors."
   />
 {/if}
