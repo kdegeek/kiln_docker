@@ -1,13 +1,18 @@
 <script lang="ts">
   import AppPage from "../app_page.svelte"
   import { ui_state } from "$lib/stores"
+  import { client } from "$lib/api_client"
 
   async function view_logs() {
     try {
-      const res = await fetch("/api/open_logs", { method: "POST" })
-      if (!res.ok) {
-        const msg = await res.text()
-        alert(`Failed to open logs: ${msg}`)
+      const { error } = await client.POST("/api/open_logs", {})
+      if (error) {
+        const errorMessage = (error as Record<string, unknown>)?.message
+        if (typeof errorMessage === "string") {
+          throw new Error(errorMessage)
+        } else {
+          throw new Error("Unknown error")
+        }
       }
     } catch (e) {
       alert("Failed to open logs: " + e)
