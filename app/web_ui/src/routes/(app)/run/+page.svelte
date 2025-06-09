@@ -64,6 +64,7 @@
         body: {
           run_config_properties: {
             model_name: model_name,
+            // @ts-expect-error server will catch if enum is not valid
             model_provider_name: provider,
             prompt_id: prompt_method,
             temperature: temperature,
