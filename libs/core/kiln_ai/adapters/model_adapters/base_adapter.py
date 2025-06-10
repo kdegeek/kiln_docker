@@ -188,10 +188,10 @@ class BaseAdapter(metaclass=ABCMeta):
 
     def build_prompt(self) -> str:
         # The prompt builder needs to know if we want to inject formatting instructions
-        provider = self.model_provider()
+        structured_output_mode = self.run_config.structured_output_mode
         add_json_instructions = self.has_structured_output() and (
-            provider.structured_output_mode == StructuredOutputMode.json_instructions
-            or provider.structured_output_mode
+            structured_output_mode == StructuredOutputMode.json_instructions
+            or structured_output_mode
             == StructuredOutputMode.json_instruction_and_object
         )
 
@@ -272,5 +272,8 @@ class BaseAdapter(metaclass=ABCMeta):
         props["model_name"] = self.run_config.model_name
         props["model_provider"] = self.run_config.model_provider_name
         props["prompt_id"] = self.run_config.prompt_id
+        props["structured_output_mode"] = self.run_config.structured_output_mode
+        props["temperature"] = self.run_config.temperature
+        props["top_p"] = self.run_config.top_p
 
         return props

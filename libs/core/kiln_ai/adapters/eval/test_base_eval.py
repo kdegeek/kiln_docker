@@ -364,6 +364,7 @@ async def test_run_task_and_eval():
             model_name="llama_3_1_8b",
             model_provider_name="groq",
             prompt_id="simple_prompt_builder",
+            structured_output_mode="json_schema",
         ),
         parent=task,
     )

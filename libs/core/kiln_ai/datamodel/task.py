@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, Dict, List, Union
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, ValidationInfo, model_validator
 from typing_extensions import Self
 
 from kiln_ai.datamodel import Finetune
@@ -68,8 +68,7 @@ class RunConfigProperties(BaseModel):
         description="The temperature to use for this run config. Defaults to 1.0.",
     )
     structured_output_mode: StructuredOutputMode = Field(
-        default=StructuredOutputMode.default,
-        description="The structured output mode to use for this run config. Defaults to 'default', which means the model will use its default structured output mode.",
+        description="The structured output mode to use for this run config.",
     )
 
     @model_validator(mode="after")
@@ -133,6 +132,25 @@ class TaskRunConfig(KilnParentedModel):
             task=parent_task,
             run_config_properties=self.run_config_properties,
         )
+
+    # Previously we didn't store structured_output_mode in the run_config_properties. Updgrade old models when loading from file.
+    @model_validator(mode="before")
+    def upgrade_old_entries(cls, data: dict, info: ValidationInfo) -> dict:
+        if not info.context or not info.context.get("loading_from_file", False):
+            # Not loading from file, so no need to upgrade
+            return data
+
+        if not isinstance(data, dict):
+            return data
+
+        structured_output_mode = data.get("structured_output_mode", None)
+        if structured_output_mode is None and "run_config_properties" in data:
+            # Default to unknown. Adapter will have to guess at runtime.
+            data["run_config_properties"]["structured_output_mode"] = (
+                StructuredOutputMode.unknown
+            )
+
+        return data
 
 
 def run_config_from_run_config_properties(

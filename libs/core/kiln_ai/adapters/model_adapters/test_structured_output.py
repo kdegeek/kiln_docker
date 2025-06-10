@@ -51,6 +51,7 @@ class MockAdapter(BaseAdapter):
                 model_name="phi_3_5",
                 model_provider_name="ollama",
                 prompt_id="simple_chain_of_thought_prompt_builder",
+                structured_output_mode="json_schema",
             ),
         )
         self.response = response

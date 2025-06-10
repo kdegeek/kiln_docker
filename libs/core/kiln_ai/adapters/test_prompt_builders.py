@@ -619,6 +619,7 @@ def test_task_run_config_prompt_builder(tmp_path):
             model_name="gpt-4",
             model_provider_name="openai",
             prompt_id="simple_prompt_builder",
+            structured_output_mode="json_schema",
         ),
         prompt=Prompt(
             name="test prompt name",

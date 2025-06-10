@@ -358,7 +358,7 @@ async def test_kiln_model_provider_from_custom_model_valid(mock_config):
     assert provider.supports_data_gen is False
     assert provider.untested_model is True
     assert provider.model_id == "custom_model"
-    assert provider.structured_output_mode == StructuredOutputMode.default
+    assert provider.structured_output_mode == StructuredOutputMode.json_instructions
 
 
 @pytest.mark.asyncio
@@ -604,6 +604,7 @@ def test_openai_compatible_provider_config(mock_shared_config):
             model_name=model_id,
             model_provider_name=ModelProviderName.openai_compatible,
             prompt_id="simple_prompt_builder",
+            structured_output_mode="json_schema",
         )
     )
 
@@ -638,6 +639,7 @@ def test_lite_llm_config_no_api_key(mock_shared_config):
             model_name=model_id,
             model_provider_name=ModelProviderName.openai,
             prompt_id="simple_prompt_builder",
+            structured_output_mode="json_schema",
         )
     )
 
@@ -658,6 +660,7 @@ def test_lite_llm_config_invalid_id():
                 model_name="invalid-id-format",
                 model_provider_name=ModelProviderName.openai_compatible,
                 prompt_id="simple_prompt_builder",
+                structured_output_mode="json_schema",
             )
         )
     assert (
@@ -675,6 +678,7 @@ def test_lite_llm_config_no_providers(mock_shared_config):
                 model_name="test_provider::gpt-4",
                 model_provider_name=ModelProviderName.openai_compatible,
                 prompt_id="simple_prompt_builder",
+                structured_output_mode="json_schema",
             )
         )
     assert str(exc_info.value) == "OpenAI compatible provider test_provider not found"
@@ -688,6 +692,7 @@ def test_lite_llm_config_provider_not_found(mock_shared_config):
                 model_name="unknown_provider::gpt-4",
                 model_provider_name=ModelProviderName.openai_compatible,
                 prompt_id="simple_prompt_builder",
+                structured_output_mode="json_schema",
             )
         )
     assert (
@@ -710,6 +715,7 @@ def test_lite_llm_config_no_base_url(mock_shared_config):
                 model_name="test_provider::gpt-4",
                 model_provider_name=ModelProviderName.openai_compatible,
                 prompt_id="simple_prompt_builder",
+                structured_output_mode="json_schema",
             )
         )
     assert (

@@ -10,6 +10,7 @@ from kiln_ai.adapters.ml_model_list import (
     KilnModelProvider,
     ModelProviderName,
     StructuredOutputMode,
+    default_structured_output_mode_for_model_provider,
 )
 from kiln_ai.adapters.model_adapters.base_adapter import (
     COT_FINAL_ANSWER_PROMPT,
@@ -183,8 +184,16 @@ class LiteLlmAdapter(BaseAdapter):
         if not self.has_structured_output():
             return {}
 
-        provider = self.model_provider()
-        match provider.structured_output_mode:
+        structured_output_mode = self.run_config.structured_output_mode
+
+        # Old datamodels didn't save the model. Look up our best guess.
+        if structured_output_mode == StructuredOutputMode.unknown:
+            structured_output_mode = default_structured_output_mode_for_model_provider(
+                self.run_config.model_name,
+                self.run_config.model_provider_name,
+            )
+
+        match structured_output_mode:
             case StructuredOutputMode.json_mode:
                 return {"response_format": {"type": "json_object"}}
             case StructuredOutputMode.json_schema:
@@ -203,16 +212,20 @@ class LiteLlmAdapter(BaseAdapter):
                 # We set response_format to json_object and also set json instructions in the prompt
                 return {"response_format": {"type": "json_object"}}
             case StructuredOutputMode.default:
-                if provider.name == ModelProviderName.ollama:
+                provider_name = self.run_config.model_provider_name
+                if provider_name == ModelProviderName.ollama:
                     # Ollama added json_schema to all models: https://ollama.com/blog/structured-outputs
                     return self.json_schema_response_format()
                 else:
                     # Default to function calling -- it's older than the other modes. Higher compatibility.
                     # Strict isn't widely supported yet, so we don't use it by default unless it's OpenAI.
-                    strict = provider.name == ModelProviderName.openai
+                    strict = provider_name == ModelProviderName.openai
                     return self.tool_call_params(strict=strict)
+            case StructuredOutputMode.unknown:
+                # See above, but this case should never happen.
+                raise ValueError("Structured output mode is unknown.")
             case _:
-                raise_exhaustive_enum_error(provider.structured_output_mode)
+                raise_exhaustive_enum_error(structured_output_mode)
 
     def json_schema_response_format(self) -> dict[str, Any]:
         output_schema = self.task().output_schema()

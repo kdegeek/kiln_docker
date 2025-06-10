@@ -957,8 +957,7 @@ built_in_models: List[KilnModel] = [
             KilnModelProvider(
                 name=ModelProviderName.openrouter,
                 supports_data_gen=False,
-                # Need to not pass "strict=True" to the function call to get this to work with logprobs for some reason. Openrouter issue.
-                structured_output_mode=StructuredOutputMode.function_calling_weak,
+                structured_output_mode=StructuredOutputMode.json_schema,
                 model_id="meta-llama/llama-3.1-70b-instruct",
                 supports_logprobs=True,
                 logprobs_openrouter_options=True,
@@ -2307,3 +2306,31 @@ def get_model_by_name(name: ModelName) -> KilnModel:
         if model.name == name:
             return model
     raise ValueError(f"Model {name} not found in the list of built-in models")
+
+
+def default_structured_output_mode_for_model_provider(
+    model_name: str,
+    provider: ModelProviderName,
+    default: StructuredOutputMode = StructuredOutputMode.default,
+    disallowed_modes: List[StructuredOutputMode] = [],
+) -> StructuredOutputMode:
+    """
+    We don't expose setting this manually in the UI, so pull a recommended mode from ml_model_list
+    """
+    try:
+        # Convert string to ModelName enum
+        model_name_enum = ModelName(model_name)
+        model = get_model_by_name(model_name_enum)
+    except (ValueError, KeyError):
+        # If model not found, return default
+        return default
+
+    # Find the provider within the model's providers
+    for model_provider in model.providers:
+        if model_provider.name == provider:
+            mode = model_provider.structured_output_mode
+            if mode not in disallowed_modes:
+                return mode
+
+    # If provider not found, return default
+    return default

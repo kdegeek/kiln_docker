@@ -129,6 +129,7 @@ async def test_mock_returning_run(tmp_path):
                     model_name="custom_model",
                     model_provider_name="ollama",
                     prompt_id="simple_prompt_builder",
+                    structured_output_mode="json_schema",
                 ),
                 base_url="http://localhost:11434",
                 additional_body_options={"api_key": "test_key"},
@@ -149,6 +150,9 @@ async def test_mock_returning_run(tmp_path):
         "model_name": "custom_model",
         "model_provider": "ollama",
         "prompt_id": "simple_prompt_builder",
+        "structured_output_mode": "json_schema",
+        "temperature": 1.0,
+        "top_p": 1.0,
     }
 
 
@@ -217,9 +221,12 @@ async def run_simple_task(
 ) -> datamodel.TaskRun:
     adapter = adapter_for_task(
         task,
-        model_name=model_name,
-        provider=provider,
-        prompt_id=prompt_id or "simple_prompt_builder",
+        RunConfigProperties(
+            structured_output_mode="json_schema",
+            model_name=model_name,
+            model_provider_name=provider,
+            prompt_id=prompt_id or "simple_prompt_builder",
+        ),
     )
 
     run = await adapter.invoke(

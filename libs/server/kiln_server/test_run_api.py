@@ -70,6 +70,7 @@ def task_run_setup(tmp_path):
             "model_name": "gpt_4o",
             "model_provider_name": "ollama",
             "prompt_id": "simple_prompt_builder",
+            "structured_output_mode": "json_schema",
         },
         "plaintext_input": "Test input",
     }
@@ -173,6 +174,7 @@ async def test_run_task_no_input(client, task_run_setup, mock_config):
             "model_name": "gpt_4o",
             "model_provider_name": "openai",
             "prompt_id": "simple_prompt_builder",
+            "structured_output_mode": "json_schema",
         }
     }
 
@@ -203,6 +205,7 @@ async def test_run_task_structured_input(client, task_run_setup):
                 "model_name": "gpt_4o",
                 "model_provider_name": "ollama",
                 "prompt_id": "simple_prompt_builder",
+                "structured_output_mode": "json_schema",
             },
             "structured_input": {"key": "value"},
         }
@@ -1258,6 +1261,7 @@ async def test_run_task_invalid_temperature_values(client, task_run_setup):
                     "model_provider_name": "openai",
                     "prompt_id": "simple_prompt_builder",
                     "temperature": -0.1,
+                    "structured_output_mode": "json_schema",
                 },
                 "plaintext_input": "Test input",
             },
@@ -1275,6 +1279,7 @@ async def test_run_task_invalid_temperature_values(client, task_run_setup):
                     "model_provider_name": "openai",
                     "prompt_id": "simple_prompt_builder",
                     "temperature": 2.1,
+                    "structured_output_mode": "json_schema",
                 },
                 "plaintext_input": "Test input",
             },
@@ -1302,6 +1307,7 @@ async def test_run_task_invalid_top_p_values(client, task_run_setup):
                     "model_provider_name": "openai",
                     "prompt_id": "simple_prompt_builder",
                     "top_p": -0.1,
+                    "structured_output_mode": "json_schema",
                 },
                 "plaintext_input": "Test input",
             },
@@ -1319,6 +1325,7 @@ async def test_run_task_invalid_top_p_values(client, task_run_setup):
                     "model_provider_name": "openai",
                     "prompt_id": "simple_prompt_builder",
                     "top_p": 1.1,
+                    "structured_output_mode": "json_schema",
                 },
                 "plaintext_input": "Test input",
             },
@@ -1357,6 +1364,7 @@ async def test_run_task_valid_boundary_values(client, task_run_setup):
                     "prompt_id": "simple_prompt_builder",
                     "temperature": 0.0,
                     "top_p": 0.0,
+                    "structured_output_mode": "json_schema",
                 },
                 "plaintext_input": "Test input",
             },
@@ -1373,6 +1381,7 @@ async def test_run_task_valid_boundary_values(client, task_run_setup):
                     "prompt_id": "simple_prompt_builder",
                     "temperature": 2.0,
                     "top_p": 1.0,
+                    "structured_output_mode": "json_schema",
                 },
                 "plaintext_input": "Test input",
             },

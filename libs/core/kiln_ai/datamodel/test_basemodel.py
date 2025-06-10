@@ -502,6 +502,7 @@ def adapter(base_task):
             model_name="test_model",
             model_provider_name="openai",
             prompt_id="simple_prompt_builder",
+            structured_output_mode="json_schema",
         ),
     )
 

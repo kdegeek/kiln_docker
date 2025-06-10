@@ -1,9 +1,13 @@
 <script lang="ts">
   import FormElement from "$lib/utils/form_element.svelte"
+  import type { OptionGroup } from "$lib/ui/fancy_select_types"
+  import type { StructuredOutputMode } from "$lib/types"
 
   // These defaults are used by every provider I checked (OpenRouter, Fireworks, Together, etc)
   export let temperature: number = 1.0
   export let top_p: number = 1.0
+  export let structured_output_mode: StructuredOutputMode = "default"
+  export let has_structured_output: boolean = false
 
   export let validate_temperature: (value: unknown) => string | null = (
     value: unknown,
@@ -54,6 +58,55 @@
 
     return null
   }
+
+  const structured_output_options: OptionGroup[] = [
+    {
+      label: "Structured Output Mode",
+      options: [
+        {
+          value: "json_schema",
+          label: "JSON Schema",
+          description:
+            "Require the provider to provide the exact JSON schema expected.",
+        },
+        {
+          value: "function_calling",
+          label: "Function Calling",
+          description:
+            "Request structured output using function calling with strict validation.",
+        },
+        {
+          value: "function_calling_weak",
+          label: "Weak Function Calling",
+          description:
+            "Request structured output using function calling, without strict validation.",
+        },
+        {
+          value: "json_mode",
+          label: "JSON Mode",
+          description:
+            "Require the model return JSON, but without specifying the schema.",
+        },
+        {
+          value: "json_instructions",
+          label: "JSON Instructions",
+          description:
+            "Kiln will add instructions to the prompt requesting JSON matching your output schema.",
+        },
+        {
+          value: "json_instruction_and_object",
+          label: "JSON Instructions + Mode",
+          description: "Combine JSON instructions and JSON mode.",
+        },
+        {
+          value: "json_custom_instructions",
+          label: "None",
+          description:
+            "Kiln will not add any instructions on how to structure the output. Your prompt should include custom instructions.",
+        },
+      ],
+    },
+  ]
 </script>
 
 <FormElement
@@ -73,3 +126,14 @@
   bind:value={top_p}
   validator={validate_top_p}
 />
+
+{#if has_structured_output}
+  <FormElement
+    id="structured_output_mode"
+    label="Structured Output"
+    inputType="fancy_select"
+    bind:value={structured_output_mode}
+    fancy_select_options={structured_output_options}
+    info_description="Choose how the model should return structured data. Defaults to a safe choice. Not all models/providers support all options so changing this may result in errors."
+  />
+{/if}
