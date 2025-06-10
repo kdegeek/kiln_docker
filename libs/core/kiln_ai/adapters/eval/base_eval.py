@@ -69,7 +69,7 @@ class BaseEval:
 
         # Parse structured input if needed
         parsed_input = input
-        if self.target_task.output_json_schema is not None:
+        if self.target_task.input_json_schema is not None:
             parsed_input = json.loads(input)
 
         # we don't save by default here. We'll save manually after validating the output
