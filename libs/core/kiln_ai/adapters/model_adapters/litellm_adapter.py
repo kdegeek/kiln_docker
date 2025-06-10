@@ -212,14 +212,14 @@ class LiteLlmAdapter(BaseAdapter):
                 # We set response_format to json_object and also set json instructions in the prompt
                 return {"response_format": {"type": "json_object"}}
             case StructuredOutputMode.default:
-                provider = self.model_provider()
-                if provider.name == ModelProviderName.ollama:
+                provider_name = self.run_config.model_provider_name
+                if provider_name == ModelProviderName.ollama:
                     # Ollama added json_schema to all models: https://ollama.com/blog/structured-outputs
                     return self.json_schema_response_format()
                 else:
                     # Default to function calling -- it's older than the other modes. Higher compatibility.
                     # Strict isn't widely supported yet, so we don't use it by default unless it's OpenAI.
-                    strict = provider.name == ModelProviderName.openai
+                    strict = provider_name == ModelProviderName.openai
                     return self.tool_call_params(strict=strict)
             case StructuredOutputMode.unknown:
                 # See above, but this case should never happen.
