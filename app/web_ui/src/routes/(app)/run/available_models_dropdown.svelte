@@ -7,8 +7,22 @@
   } from "$lib/stores"
   import type { AvailableModels } from "$lib/types"
   import { onMount } from "svelte"
+  import { get } from "svelte/store"
   import FormElement from "$lib/utils/form_element.svelte"
   import Warning from "$lib/ui/warning.svelte"
+
+  const UNTESTED_WARNING =
+    "This model has not been tested with Kiln. It may not work as expected."
+  const DATA_GEN_WARNING =
+    "This model is not recommended for use with data generation. It's known to generate incorrect data."
+  const LOGPROBS_WARNING =
+    "This model does not support logprobs. It will likely fail when running a G-eval or other logprob queries."
+  const STRUCTURED_WARNING =
+    "This model is not recommended for use with tasks requiring structured output. It fails to consistently return structured data."
+  const DATA_GEN_SUGGESTION =
+    "For data gen we suggest using a high quality model such as GPT 4.1, Sonnet, Gemini Pro or R1."
+  const EVALS_SUGGESTION =
+    "For evals we suggest using a high quality model such as GPT 4.1, Sonnet, Gemini Pro or R1."
 
   export let model: string = $ui_state.selected_model
   export let requires_structured_output: boolean = false
@@ -42,6 +56,54 @@
 
   let unsupported_models: [string, string][] = []
   let untested_models: [string, string][] = []
+  let previous_model: string = model
+
+  function get_model_warning(selected: string): string | null {
+    if (untested_models.find((m) => m[0] === selected)) {
+      return UNTESTED_WARNING
+    }
+    if (unsupported_models.find((m) => m[0] === selected)) {
+      if (requires_data_gen) {
+        return DATA_GEN_WARNING
+      }
+      if (requires_logprobs) {
+        return LOGPROBS_WARNING
+      }
+      if (requires_structured_output) {
+        return STRUCTURED_WARNING
+      }
+    }
+
+    const [provider_id, ...model_parts] = selected.split("/")
+    const model_id = model_parts.join("/")
+    const details = available_model_details(
+      model_id,
+      provider_id,
+      get(available_models),
+    )
+
+    if (suggested_mode === "data_gen" && !details?.suggested_for_data_gen) {
+      return DATA_GEN_SUGGESTION
+    }
+
+    if (suggested_mode === "evals" && !details?.suggested_for_evals) {
+      return EVALS_SUGGESTION
+    }
+
+    return null
+  }
+
+  function confirm_model_select(event: Event) {
+    const select = event.target as HTMLSelectElement
+    const selected = select.value
+    const warning = get_model_warning(selected)
+    if (warning && !confirm(warning)) {
+      select.value = previous_model
+      model = previous_model
+      return
+    }
+    previous_model = selected
+  }
   function format_model_options(
     providers: AvailableModels[],
     structured_output: boolean,
@@ -144,27 +206,20 @@
     bind:value={model}
     id="model"
     inputType="select"
+    on_select={confirm_model_select}
     bind:error_message
     select_options_grouped={model_options}
   />
 
   {#if selected_model_untested}
-    <Warning
-      warning_message="This model has not been tested with Kiln. It may not work as expected."
-    />
+    <Warning warning_message={UNTESTED_WARNING} />
   {:else if selected_model_unsupported}
     {#if requires_data_gen}
-      <Warning
-        warning_message="This model is not recommended for use with data generation. It's known to generate incorrect data."
-      />
+      <Warning warning_message={DATA_GEN_WARNING} />
     {:else if requires_logprobs}
-      <Warning
-        warning_message="This model does not support logprobs. It will likely fail when running a G-eval or other logprob queries."
-      />
+      <Warning warning_message={LOGPROBS_WARNING} />
     {:else if requires_structured_output}
-      <Warning
-        warning_message="This model is not recommended for use with tasks requiring structured output. It fails to consistently return structured data."
-      />
+      <Warning warning_message={STRUCTURED_WARNING} />
     {/if}
   {:else if suggested_mode === "data_gen"}
     <Warning
@@ -178,7 +233,7 @@
         : selected_model_suggested_data_gen
           ? "success"
           : "warning"}
-      warning_message="For data gen we suggest using a high quality model such as GPT 4.1, Sonnet, Gemini Pro or R1."
+      warning_message={DATA_GEN_SUGGESTION}
     />
   {:else if suggested_mode === "evals"}
     <Warning
@@ -192,7 +247,7 @@
         : selected_model_suggested_evals
           ? "success"
           : "warning"}
-      warning_message="For evals we suggest using a high quality model such as GPT 4.1, Sonnet, Gemini Pro or R1."
+      warning_message={EVALS_SUGGESTION}
     />
   {/if}
 </div>
