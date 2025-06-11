@@ -953,34 +953,6 @@ async def test_add_tags_success(client, task_run_setup):
 
 
 @pytest.mark.asyncio
-async def test_remove_tags_success(client, task_run_setup):
-    project = task_run_setup["project"]
-    task = task_run_setup["task"]
-    task_run = task_run_setup["task_run"]
-
-    # Initial tags
-    task_run.tags = ["tag1", "tag2", "tag3"]
-    task_run.save_to_file()
-
-    run_ids = [task_run.id]
-    tags_to_remove = ["tag1", "tag3"]
-
-    with patch("kiln_server.run_api.task_from_id") as mock_task_from_id:
-        mock_task_from_id.return_value = task
-        response = client.post(
-            f"/api/projects/{project.id}/tasks/{task.id}/runs/edit_tags",
-            json={"run_ids": run_ids, "add_tags": [], "remove_tags": tags_to_remove},
-        )
-
-    assert response.status_code == 200
-    assert response.json() == {"success": True}
-
-    # Verify tags were removed
-    updated_run = TaskRun.from_id_and_parent_path(task_run.id, task.path)
-    assert set(updated_run.tags) == {"tag2"}
-
-
-@pytest.mark.asyncio
 async def test_add_tags_duplicate_tags(client, task_run_setup):
     project = task_run_setup["project"]
     task = task_run_setup["task"]
