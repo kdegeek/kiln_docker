@@ -212,14 +212,14 @@
   />
 
   {#if selected_model_untested}
-    <Warning warning_message={UNTESTED_WARNING} />
+    <Warning large_icon warning_message={UNTESTED_WARNING} />
   {:else if selected_model_unsupported}
     {#if requires_data_gen}
-      <Warning warning_message={DATA_GEN_WARNING} />
+      <Warning large_icon warning_message={DATA_GEN_WARNING} />
     {:else if requires_logprobs}
-      <Warning warning_message={LOGPROBS_WARNING} />
+      <Warning large_icon warning_message={LOGPROBS_WARNING} />
     {:else if requires_structured_output}
-      <Warning warning_message={STRUCTURED_WARNING} />
+      <Warning large_icon warning_message={STRUCTURED_WARNING} />
     {/if}
   {:else if suggested_mode === "data_gen"}
     <Warning
