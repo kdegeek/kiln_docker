@@ -5,6 +5,11 @@ from typing import Dict, Literal, Tuple
 
 import jsonschema
 
+from kiln_ai.adapters.chat.chat_formatter import (
+    ChatFormatter,
+    ChatStrategy,
+    get_chat_formatter,
+)
 from kiln_ai.adapters.ml_model_list import KilnModelProvider, StructuredOutputMode
 from kiln_ai.adapters.parsers.json_parser import parse_json_string
 from kiln_ai.adapters.parsers.parser_registry import model_parser_from_id
@@ -36,9 +41,6 @@ class AdapterConfig:
     allow_saving: bool = True
     top_logprobs: int | None = None
     default_tags: list[str] | None = None
-
-
-COT_FINAL_ANSWER_PROMPT = "Considering the above, return a final result."
 
 
 class BaseAdapter(metaclass=ABCMeta):
@@ -199,26 +201,40 @@ class BaseAdapter(metaclass=ABCMeta):
             include_json_instructions=add_json_instructions
         )
 
-    def run_strategy(
-        self,
-    ) -> Tuple[Literal["cot_as_message", "cot_two_call", "basic"], str | None]:
+    def build_chat_formatter(self, input: Dict | str) -> ChatFormatter:
         # Determine the run strategy for COT prompting. 3 options:
         # 1. "Thinking" LLM designed to output thinking in a structured format plus a COT prompt: we make 1 call to the LLM, which outputs thinking in a structured format. We include the thinking instuctions as a message.
         # 2. Normal LLM with COT prompt: we make 2 calls to the LLM - one for thinking and one for the final response. This helps us use the LLM's structured output modes (json_schema, tools, etc), which can't be used in a single call. It also separates the thinking from the final response.
         # 3. Non chain of thought: we make 1 call to the LLM, with no COT prompt.
         cot_prompt = self.prompt_builder.chain_of_thought_prompt()
         reasoning_capable = self.model_provider().reasoning_capable
+        system_message = self.build_prompt()
 
         if cot_prompt and reasoning_capable:
             # 1: "Thinking" LLM designed to output thinking in a structured format
             # A simple message with the COT prompt appended to the message list is sufficient
-            return "cot_as_message", cot_prompt
+            return get_chat_formatter(
+                strategy=ChatStrategy.single_turn_thinking,
+                system_message=system_message,
+                user_input=input,
+                thinking_instructions=cot_prompt,
+            )
         elif cot_prompt:
             # 2: Unstructured output with COT
             # Two calls to separate the thinking from the final response
-            return "cot_two_call", cot_prompt
+            # TODO non legacy mode
+            return get_chat_formatter(
+                strategy=ChatStrategy.two_message_cot_legacy,
+                system_message=system_message,
+                user_input=input,
+                thinking_instructions=cot_prompt,
+            )
         else:
-            return "basic", None
+            return get_chat_formatter(
+                strategy=ChatStrategy.single_turn,
+                system_message=system_message,
+                user_input=input,
+            )
 
     # create a run and task output
     def generate_run(

@@ -6,7 +6,8 @@ from pathlib import Path
 from typing import Any, Dict, Protocol
 from uuid import uuid4
 
-from kiln_ai.adapters.model_adapters.base_adapter import COT_FINAL_ANSWER_PROMPT
+# TODO remove
+from kiln_ai.adapters.chat.chat_formatter import COT_FINAL_ANSWER_PROMPT
 from kiln_ai.datamodel import DatasetSplit, FinetuneDataStrategy, TaskRun
 from kiln_ai.datamodel.datamodel_enums import THINKING_DATA_STRATEGIES
 

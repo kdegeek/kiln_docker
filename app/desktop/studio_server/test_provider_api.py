@@ -306,8 +306,8 @@ async def test_connect_bedrock_invalid_credentials(
 async def test_connect_bedrock_unknown_error(mock_litellm_acompletion, mock_environ):
     mock_litellm_acompletion.side_effect = Exception("Some unexpected error")
 
-    with pytest.raises(Exception) as e:
-        result = await connect_bedrock(
+    with pytest.raises(Exception):
+        await connect_bedrock(
             {"Access Key": "test_access_key", "Secret Key": "test_secret_key"}
         )
 

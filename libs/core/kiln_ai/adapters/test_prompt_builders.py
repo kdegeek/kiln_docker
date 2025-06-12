@@ -54,9 +54,6 @@ def test_simple_prompt_builder(tmp_path):
     assert "1) " + task.requirements[0].instruction in prompt
     assert "2) " + task.requirements[1].instruction in prompt
     assert "3) " + task.requirements[2].instruction in prompt
-
-    user_msg = builder.build_user_message(input)
-    assert input in user_msg
     assert input not in prompt
 
 
@@ -93,18 +90,7 @@ def test_simple_prompt_builder_structured_output(tmp_path):
     input = "Cows"
     prompt = builder.build_prompt(include_json_instructions=False)
     assert "You are an assistant which tells a joke, given a subject." in prompt
-
-    user_msg = builder.build_user_message(input)
-    assert input in user_msg
     assert input not in prompt
-
-
-def test_simple_prompt_builder_structured_input_non_ascii(tmp_path):
-    task = build_structured_output_test_task(tmp_path)
-    builder = SimplePromptBuilder(task=task)
-    input = {"key": "你好👋"}
-    user_msg = builder.build_user_message(input)
-    assert "你好👋" in user_msg
 
 
 @pytest.fixture

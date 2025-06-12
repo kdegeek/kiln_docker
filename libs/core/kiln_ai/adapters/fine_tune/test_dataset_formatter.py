@@ -7,6 +7,8 @@ from unittest.mock import Mock
 
 import pytest
 
+# TODO remove
+from kiln_ai.adapters.chat.chat_formatter import COT_FINAL_ANSWER_PROMPT
 from kiln_ai.adapters.fine_tune.dataset_formatter import (
     DatasetFormat,
     DatasetFormatter,
@@ -19,7 +21,6 @@ from kiln_ai.adapters.fine_tune.dataset_formatter import (
     generate_vertex_gemini,
     serialize_r1_style_message,
 )
-from kiln_ai.adapters.model_adapters.base_adapter import COT_FINAL_ANSWER_PROMPT
 from kiln_ai.datamodel import (
     DatasetSplit,
     DataSource,

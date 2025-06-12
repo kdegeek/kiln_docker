@@ -266,3 +266,60 @@ def test_run_config_invalid_temperature(temperature):
             temperature=temperature,
             structured_output_mode=StructuredOutputMode.json_schema,
         )
+
+
+def test_run_config_upgrade_old_entries():
+    """Test that TaskRunConfig parses old entries correctly with nested objects, filling in defaults where needed."""
+
+    data = {
+        "v": 1,
+        "name": "test name",
+        "created_at": "2025-06-09T13:33:35.276927",
+        "created_by": "scosman",
+        "run_config_properties": {
+            "model_name": "gpt_4_1_nano",
+            "model_provider_name": "openai",
+            "prompt_id": "task_run_config::189194447826::228174773209::244130257039",
+            "top_p": 0.77,
+            "temperature": 0.77,
+            "structured_output_mode": "json_instruction_and_object",
+        },
+        "prompt": {
+            "name": "Dazzling Unicorn",
+            "description": "Frozen copy of prompt 'simple_prompt_builder', created for evaluations.",
+            "generator_id": "simple_prompt_builder",
+            "prompt": "Generate a joke, given a theme. The theme will be provided as a word or phrase as the input to the model. The assistant should output a joke that is funny and relevant to the theme. If a style is provided, the joke should be in that style. The output should include a setup and punchline.\n\nYour response should respect the following requirements:\n1) Keep the joke on topic. If the user specifies a theme, the joke must be related to that theme.\n2) Avoid any jokes that are offensive or inappropriate. Keep the joke clean and appropriate for all audiences.\n3) Make the joke funny and engaging. It should be something that someone would want to tell to their friends. Something clever, not just a simple pun.\n",
+            "chain_of_thought_instructions": None,
+        },
+        "model_type": "task_run_config",
+    }
+
+    # Parse the data - this should be TaskRunConfig, not RunConfig
+    parsed = TaskRunConfig.model_validate(data)
+    assert parsed.name == "test name"
+    assert parsed.created_by == "scosman"
+    assert (
+        parsed.run_config_properties.structured_output_mode
+        == "json_instruction_and_object"
+    )
+
+    # should still work if loading from file
+    parsed = TaskRunConfig.model_validate(data, context={"loading_from_file": True})
+    assert parsed.name == "test name"
+    assert parsed.created_by == "scosman"
+    assert (
+        parsed.run_config_properties.structured_output_mode
+        == "json_instruction_and_object"
+    )
+
+    # Remove structured_output_mode from run_config_properties and parse again
+    del data["run_config_properties"]["structured_output_mode"]
+
+    with pytest.raises(ValidationError):
+        # should error if not loading from file
+        parsed = TaskRunConfig.model_validate(data)
+
+    parsed = TaskRunConfig.model_validate(data, context={"loading_from_file": True})
+    assert parsed.name == "test name"
+    assert parsed.created_by == "scosman"
+    assert parsed.run_config_properties.structured_output_mode == "unknown"
