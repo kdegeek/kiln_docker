@@ -210,7 +210,7 @@
   }
   function get_custom_thinking_instructions_param(): string | undefined {
     return system_prompt_method === "custom" &&
-      data_strategy === "final_and_intermediate"
+      data_strategy === "two_message_cot"
       ? finetune_custom_thinking_instructions
       : undefined
   }
@@ -366,7 +366,7 @@
     is_download: boolean,
     available_models: FinetuneProvider[] | null,
   ) {
-    if (!model_provider || !base_model_id) {
+    if (!model_provider || (!base_model_id && !is_download)) {
       return
     }
 
@@ -375,7 +375,7 @@
       final_only: "Disabled - (Recommended)",
       two_message_cot: "Thinking - Learn both thinking and final response",
       final_and_intermediate:
-        "Thinking - Learn both thinking and final response",
+        "Thinking - Learn both thinking and final response (Legacy Format)",
       final_and_intermediate_r1_compatible: is_download
         ? "Thinking (R1 compatible) - Learn both thinking and final response"
         : "Thinking - Learn both thinking and final response",
@@ -391,13 +391,13 @@
       "download_vertex_gemini",
     ]
     if (r1_disabled_for_downloads.includes(model_provider)) {
-      return ["final_only", "final_and_intermediate"]
+      return ["final_only", "two_message_cot"]
     }
 
     const compatible_data_strategies: ChatStrategy[] = is_download
       ? [
           "final_only",
-          "final_and_intermediate",
+          "two_message_cot",
           "final_and_intermediate_r1_compatible",
         ]
       : available_models
@@ -530,7 +530,7 @@
                 id="finetune_custom_system_prompt"
                 bind:value={finetune_custom_system_prompt}
               />
-              {#if data_strategy === "final_and_intermediate"}
+              {#if data_strategy === "two_message_cot"}
                 <div class="mt-4"></div>
                 <FormElement
                   label="Custom Thinking Instructions"
@@ -553,7 +553,7 @@
               select_options={data_strategy_select_options}
               bind:value={data_strategy}
             />
-            {#if data_strategy === "final_and_intermediate" && !selecting_thinking_dataset}
+            {#if data_strategy === "two_message_cot" && !selecting_thinking_dataset}
               <Warning
                 warning_message="You are training a model for inference-time thinking, but are not using a dataset filtered to samples with reasoning or chain-of-thought training data. This is not recommended, as it may lead to poor performance. We suggest creating a new dataset with a thinking filter."
                 large_icon={true}
