@@ -25,11 +25,11 @@ from kiln_ai.datamodel import (
     DatasetSplit,
     DataSource,
     DataSourceType,
-    FinetuneDataStrategy,
     Task,
     TaskOutput,
     TaskRun,
 )
+from kiln_ai.datamodel.datamodel_enums import ChatStrategy
 
 logger = logging.getLogger(__name__)
 
@@ -276,9 +276,7 @@ def test_dataset_formatter_dump_invalid_format(mock_dataset):
     formatter = DatasetFormatter(mock_dataset, "system message")
 
     with pytest.raises(ValueError, match="Unsupported format"):
-        formatter.dump_to_file(
-            "train", "invalid_format", FinetuneDataStrategy.final_only
-        )  # type: ignore
+        formatter.dump_to_file("train", "invalid_format", ChatStrategy.single_turn)  # type: ignore
 
 
 def test_dataset_formatter_dump_invalid_split(mock_dataset):
@@ -288,7 +286,7 @@ def test_dataset_formatter_dump_invalid_split(mock_dataset):
         formatter.dump_to_file(
             "invalid_split",
             DatasetFormat.OPENAI_CHAT_JSONL,
-            FinetuneDataStrategy.final_only,
+            ChatStrategy.single_turn,
         )
 
 
@@ -300,7 +298,7 @@ def test_dataset_formatter_dump_to_file(mock_dataset, tmp_path):
         "train",
         DatasetFormat.OPENAI_CHAT_JSONL,
         path=output_path,
-        data_strategy=FinetuneDataStrategy.final_only,
+        data_strategy=ChatStrategy.single_turn,
     )
 
     assert result_path == output_path
@@ -326,7 +324,7 @@ def test_dataset_formatter_dump_to_temp_file(mock_dataset):
     result_path = formatter.dump_to_file(
         "train",
         DatasetFormat.OPENAI_CHAT_JSONL,
-        data_strategy=FinetuneDataStrategy.final_only,
+        data_strategy=ChatStrategy.single_turn,
     )
 
     assert result_path.exists()
@@ -357,7 +355,7 @@ def test_dataset_formatter_dump_to_file_tool_format(mock_dataset, tmp_path):
         "train",
         DatasetFormat.OPENAI_CHAT_TOOLCALL_JSONL,
         path=output_path,
-        data_strategy=FinetuneDataStrategy.final_only,
+        data_strategy=ChatStrategy.single_turn,
     )
 
     assert result_path == output_path
@@ -397,7 +395,7 @@ def test_dataset_formatter_dump_with_intermediate_data(
     result_path = formatter.dump_to_file(
         "train",
         DatasetFormat.OPENAI_CHAT_JSONL,
-        data_strategy=FinetuneDataStrategy.final_and_intermediate,
+        data_strategy=ChatStrategy.two_message_cot_legacy,
     )
 
     assert result_path.exists()
@@ -428,7 +426,7 @@ def test_dataset_formatter_dump_with_intermediate_data_r1_style(
     result_path = formatter.dump_to_file(
         "train",
         DatasetFormat.OPENAI_CHAT_JSONL,
-        data_strategy=FinetuneDataStrategy.final_and_intermediate_r1_compatible,
+        data_strategy=ChatStrategy.single_turn_r1_thinking,
     )
 
     assert result_path.exists()
@@ -457,7 +455,7 @@ def test_dataset_formatter_dump_with_intermediate_data_custom_instructions(
     result_path = formatter.dump_to_file(
         "train",
         DatasetFormat.OPENAI_CHAT_JSONL,
-        data_strategy=FinetuneDataStrategy.final_and_intermediate,
+        data_strategy=ChatStrategy.two_message_cot_legacy,
     )
 
     assert result_path.exists()
@@ -712,7 +710,7 @@ def test_build_training_data(mock_task):
     training_data_output = build_training_data(
         mock_task_run,
         "system message",
-        data_strategy=FinetuneDataStrategy.final_only,
+        data_strategy=ChatStrategy.single_turn,
     )
     assert training_data_output.final_output == '{"test":   "output 你好"}'
     assert training_data_output.thinking is None
@@ -733,7 +731,7 @@ def test_build_training_data_with_COT(mock_task):
     training_data_output = build_training_data(
         mock_task_run,
         "system message",
-        data_strategy=FinetuneDataStrategy.final_and_intermediate,
+        data_strategy=ChatStrategy.two_message_cot_legacy,
         thinking_instructions="thinking instructions",
     )
     assert training_data_output.final_output == '{"test":   "output 你好"}'
@@ -783,7 +781,7 @@ def test_build_training_data_with_COT_r1_style(mock_task):
     training_data_output = build_training_data(
         mock_task_run,
         "system message",
-        data_strategy=FinetuneDataStrategy.final_and_intermediate_r1_compatible,
+        data_strategy=ChatStrategy.single_turn_r1_thinking,
         thinking_instructions=None,
     )
     assert training_data_output.final_output == '{"test":   "output 你好"}'
@@ -811,7 +809,7 @@ def test_build_training_data_with_thinking(mock_task):
     training_data_output = build_training_data(
         mock_task_run,
         "system message",
-        FinetuneDataStrategy.final_and_intermediate,
+        ChatStrategy.two_message_cot_legacy,
         thinking_instructions="thinking instructions",
     )
     assert training_data_output.final_output == '{"test":   "output 你好"}'
@@ -840,7 +838,7 @@ def test_build_training_data_with_thinking_r1_style(mock_task):
     training_data_output = build_training_data(
         mock_task_run,
         "system message",
-        FinetuneDataStrategy.final_and_intermediate_r1_compatible,
+        ChatStrategy.single_turn_r1_thinking,
         thinking_instructions=None,
     )
     assert training_data_output.final_output == '{"test":   "output 你好"}'
@@ -867,7 +865,7 @@ def test_build_training_data_with_repaired_output(mock_task):
     training_data_output = build_training_data(
         mock_task_run,
         "system message",
-        data_strategy=FinetuneDataStrategy.final_only,
+        data_strategy=ChatStrategy.single_turn,
     )
     assert training_data_output.final_output == '{"test": "repaired output"}'
     assert training_data_output.thinking is None
@@ -885,7 +883,7 @@ def test_dataset_formatter_dump_to_file_json_schema_format(mock_dataset, tmp_pat
         "train",
         DatasetFormat.OPENAI_CHAT_JSON_SCHEMA_JSONL,
         path=output_path,
-        data_strategy=FinetuneDataStrategy.final_only,
+        data_strategy=ChatStrategy.single_turn,
     )
 
     assert result_path == output_path

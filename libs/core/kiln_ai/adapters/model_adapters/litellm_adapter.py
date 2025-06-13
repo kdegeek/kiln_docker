@@ -6,14 +6,6 @@ from litellm.types.utils import ChoiceLogprobs, Choices, ModelResponse
 from litellm.types.utils import Usage as LiteLlmUsage
 
 import kiln_ai.datamodel as datamodel
-
-# TODO remove
-from kiln_ai.adapters.chat.chat_formatter import (
-    COT_FINAL_ANSWER_PROMPT,
-    ChatStrategy,
-    format_user_message,
-    get_chat_formatter,
-)
 from kiln_ai.adapters.ml_model_list import (
     KilnModelProvider,
     ModelProviderName,
@@ -27,6 +19,7 @@ from kiln_ai.adapters.model_adapters.base_adapter import (
     Usage,
 )
 from kiln_ai.adapters.model_adapters.litellm_config import LiteLlmConfig
+from kiln_ai.datamodel.datamodel_enums import ChatStrategy
 from kiln_ai.datamodel.task import run_config_from_run_config_properties
 from kiln_ai.utils.exhaustive_error import raise_exhaustive_enum_error
 

@@ -6,22 +6,10 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Dict, List, Literal, Optional
 
+from kiln_ai.datamodel.datamodel_enums import ChatStrategy
 from kiln_ai.utils.exhaustive_error import raise_exhaustive_enum_error
 
 COT_FINAL_ANSWER_PROMPT = "Considering the above, return a final result."
-
-
-class ChatStrategy(str, Enum):
-    """Strategy for how a chat is structured."""
-
-    # Single turn, immediately return the answer
-    single_turn = "final_only"
-    # Two turn, first turn is the thinking, second turn is the answer. Legacy format - used for old fine tunes but not new trains.
-    two_message_cot_legacy = "final_and_intermediate"
-    # Two turn, first turn is the thinking, second turn is the answer. New format - used for new trains.
-    two_message_cot = "two_message_cot"
-    # Single turn, with both the thinking and the answer in the same message (like R1)
-    single_turn_thinking = "final_and_intermediate_r1_compatible"
 
 
 @dataclass
@@ -187,7 +175,7 @@ class TwoMessageCotFormatter(ChatFormatter):
         return None
 
 
-class SingleTurnThinkingFormatter(ChatFormatter):
+class SingleTurnR1ThinkingFormatter(ChatFormatter):
     def next_turn(self, previous_output: str | None = None) -> Optional[ChatTurn]:
         if self._state == "start":
             msgs = [
@@ -225,8 +213,8 @@ def get_chat_formatter(
             return TwoMessageCotFormatter(
                 system_message, user_input, thinking_instructions
             )
-        case ChatStrategy.single_turn_thinking:
-            return SingleTurnThinkingFormatter(system_message, user_input)
+        case ChatStrategy.single_turn_r1_thinking:
+            return SingleTurnR1ThinkingFormatter(system_message, user_input)
         case _:
             raise_exhaustive_enum_error(strategy)
 

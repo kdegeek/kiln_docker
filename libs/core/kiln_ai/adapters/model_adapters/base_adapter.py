@@ -1,13 +1,10 @@
 import json
 from abc import ABCMeta, abstractmethod
 from dataclasses import dataclass
-from typing import Dict, Literal, Tuple
-
-import jsonschema
+from typing import Dict, Tuple
 
 from kiln_ai.adapters.chat.chat_formatter import (
     ChatFormatter,
-    ChatStrategy,
     get_chat_formatter,
 )
 from kiln_ai.adapters.ml_model_list import KilnModelProvider, StructuredOutputMode
@@ -25,6 +22,7 @@ from kiln_ai.datamodel import (
     TaskRun,
     Usage,
 )
+from kiln_ai.datamodel.datamodel_enums import ChatStrategy
 from kiln_ai.datamodel.json_schema import validate_schema_with_value_error
 from kiln_ai.datamodel.task import RunConfig
 from kiln_ai.utils.config import Config
@@ -214,7 +212,7 @@ class BaseAdapter(metaclass=ABCMeta):
             # 1: "Thinking" LLM designed to output thinking in a structured format
             # A simple message with the COT prompt appended to the message list is sufficient
             return get_chat_formatter(
-                strategy=ChatStrategy.single_turn_thinking,
+                strategy=ChatStrategy.single_turn_r1_thinking,
                 system_message=system_message,
                 user_input=input,
                 thinking_instructions=cot_prompt,

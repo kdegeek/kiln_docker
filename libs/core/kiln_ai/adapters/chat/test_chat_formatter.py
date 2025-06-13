@@ -101,7 +101,7 @@ def test_chat_formatter_r1_style():
     ]
 
     formatter = get_chat_formatter(
-        strategy=ChatStrategy.single_turn_thinking,
+        strategy=ChatStrategy.single_turn_r1_thinking,
         system_message="system message",
         user_input="test input",
     )

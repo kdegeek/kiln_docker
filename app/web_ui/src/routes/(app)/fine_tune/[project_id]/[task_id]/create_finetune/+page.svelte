@@ -6,7 +6,7 @@
   import { client, base_url } from "$lib/api_client"
   import { KilnError, createKilnError } from "$lib/utils/error_handlers"
   import { onMount } from "svelte"
-  import type { FinetuneDataStrategy } from "$lib/types"
+  import type { ChatStrategy } from "$lib/types"
   import Warning from "$lib/ui/warning.svelte"
   import Completed from "$lib/ui/completed.svelte"
   import PromptTypeSelector from "../../../../run/prompt_type_selector.svelte"
@@ -32,7 +32,7 @@
   let finetune_description = ""
   let finetune_name = ""
   const disabled_header = "disabled_header"
-  let data_strategy: FinetuneDataStrategy = "final_only"
+  let data_strategy: ChatStrategy = "final_only"
   let finetune_custom_system_prompt = ""
   let finetune_custom_thinking_instructions =
     "Think step by step, explaining your reasoning."
@@ -358,7 +358,7 @@
     window.open(base_url + "/api/download_dataset_jsonl?" + query_string)
   }
 
-  let data_strategy_select_options: [FinetuneDataStrategy, string][] = []
+  let data_strategy_select_options: [ChatStrategy, string][] = []
 
   function update_data_strategies_supported(
     model_provider: string | null,
@@ -370,8 +370,10 @@
       return
     }
 
-    const data_strategies_labels: Record<FinetuneDataStrategy, string> = {
+    // TODO
+    const data_strategies_labels: Record<ChatStrategy, string> = {
       final_only: "Disabled - (Recommended)",
+      two_message_cot: "Thinking - Learn both thinking and final response",
       final_and_intermediate:
         "Thinking - Learn both thinking and final response",
       final_and_intermediate_r1_compatible: is_download
@@ -392,7 +394,7 @@
       return ["final_only", "final_and_intermediate"]
     }
 
-    const compatible_data_strategies: FinetuneDataStrategy[] = is_download
+    const compatible_data_strategies: ChatStrategy[] = is_download
       ? [
           "final_only",
           "final_and_intermediate",
@@ -406,7 +408,7 @@
 
     data_strategy_select_options = compatible_data_strategies.map(
       (strategy) => [strategy, data_strategies_labels[strategy]],
-    ) as [FinetuneDataStrategy, string][]
+    ) as [ChatStrategy, string][]
 
     data_strategy = compatible_data_strategies[0]
   }

@@ -1147,6 +1147,12 @@ export interface components {
             /** Imported Count */
             imported_count: number;
         };
+        /**
+         * ChatStrategy
+         * @description Strategy for how a chat is structured.
+         * @enum {string}
+         */
+        ChatStrategy: "final_only" | "final_and_intermediate" | "two_message_cot" | "final_and_intermediate_r1_compatible";
         /** CorrelationResult */
         CorrelationResult: {
             /** Mean Absolute Error */
@@ -1231,7 +1237,7 @@ export interface components {
             custom_system_message?: string | null;
             /** Custom Thinking Instructions */
             custom_thinking_instructions?: string | null;
-            data_strategy: components["schemas"]["FinetuneDataStrategy"];
+            data_strategy: components["schemas"]["ChatStrategy"];
         };
         /** CreateTaskRunConfigRequest */
         CreateTaskRunConfigRequest: {
@@ -1882,16 +1888,10 @@ export interface components {
              * @description The strategy to use for training the model. 'final_only' will only train on the final response. 'final_and_intermediate' will train on the final response and intermediate outputs (chain of thought or reasoning).
              * @default final_only
              */
-            data_strategy: components["schemas"]["FinetuneDataStrategy"];
+            data_strategy: components["schemas"]["ChatStrategy"];
             /** Model Type */
             readonly model_type: string;
         };
-        /**
-         * FinetuneDataStrategy
-         * @description Strategy for what data to include when fine-tuning a model.
-         * @enum {string}
-         */
-        FinetuneDataStrategy: "final_only" | "final_and_intermediate" | "final_and_intermediate_r1_compatible";
         /**
          * FinetuneDatasetInfo
          * @description Finetune dataset info
@@ -1944,7 +1944,7 @@ export interface components {
             /** Id */
             id: string;
             /** Data Strategies Supported */
-            data_strategies_supported?: components["schemas"]["FinetuneDataStrategy"][];
+            data_strategies_supported?: components["schemas"]["ChatStrategy"][];
         };
         /**
          * FinetuneWithStatus
@@ -2373,16 +2373,17 @@ export interface components {
          * StructuredOutputMode
          * @description Enumeration of supported structured output modes.
          *
-         *     - default: let the adapter decide
          *     - json_schema: request json using API capabilities for json_schema
          *     - function_calling: request json using API capabilities for function calling
          *     - json_mode: request json using API's JSON mode, which should return valid JSON, but isn't checking/passing the schema
          *     - json_instructions: append instructions to the prompt to request json matching the schema. No API capabilities are used. You should have a custom parser on these models as they will be returning strings.
          *     - json_instruction_and_object: append instructions to the prompt to request json matching the schema. Also request the response as json_mode via API capabilities (returning dictionaries).
          *     - json_custom_instructions: The model should output JSON, but custom instructions are already included in the system prompt. Don't append additional JSON instructions.
+         *     - default: let the adapter decide (legacy, do not use for new use cases)
+         *     - unknown: used for cases where the structured output mode is not known (on old models where it wasn't saved). Should lookup best option at runtime.
          * @enum {string}
          */
-        StructuredOutputMode: "default" | "json_schema" | "function_calling_weak" | "function_calling" | "json_mode" | "json_instructions" | "json_instruction_and_object" | "json_custom_instructions";
+        StructuredOutputMode: "default" | "json_schema" | "function_calling_weak" | "function_calling" | "json_mode" | "json_instructions" | "json_instruction_and_object" | "json_custom_instructions" | "unknown";
         /**
          * Task
          * @description Represents a specific task to be performed, with associated requirements and validation rules.

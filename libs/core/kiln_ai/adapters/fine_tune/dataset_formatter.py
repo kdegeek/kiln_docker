@@ -8,8 +8,8 @@ from uuid import uuid4
 
 # TODO remove
 from kiln_ai.adapters.chat.chat_formatter import COT_FINAL_ANSWER_PROMPT
-from kiln_ai.datamodel import DatasetSplit, FinetuneDataStrategy, TaskRun
-from kiln_ai.datamodel.datamodel_enums import THINKING_DATA_STRATEGIES
+from kiln_ai.datamodel import DatasetSplit, TaskRun
+from kiln_ai.datamodel.datamodel_enums import THINKING_DATA_STRATEGIES, ChatStrategy
 
 
 class DatasetFormat(str, Enum):
@@ -70,7 +70,7 @@ class FormatGenerator(Protocol):
 def build_training_data(
     task_run: TaskRun,
     system_message: str,
-    data_strategy: FinetuneDataStrategy,
+    data_strategy: ChatStrategy,
     thinking_instructions: str | None = None,
 ) -> ModelTrainingData:
     """
@@ -93,7 +93,7 @@ def build_training_data(
         # Prefer reasoning to cot if both are present
         thinking = task_run.thinking_training_data()
 
-        if data_strategy == FinetuneDataStrategy.final_and_intermediate_r1_compatible:
+        if data_strategy == ChatStrategy.single_turn_r1_thinking:
             if not task_run.has_thinking_training_data() or not thinking:
                 raise ValueError(
                     "Thinking data is required when fine-tuning thinking models (R1, QwQ, etc). Please ensure your fine-tuning dataset contains reasoning or chain of thought output for every entry."
@@ -104,7 +104,8 @@ def build_training_data(
                 )
             thinking_r1_style = True
         elif (
-            data_strategy == FinetuneDataStrategy.final_and_intermediate
+            # TODO Logic for new one?
+            data_strategy == ChatStrategy.two_message_cot_legacy
             and task_run.has_thinking_training_data()
         ):
             if not parent_task:
@@ -463,7 +464,7 @@ class DatasetFormatter:
         self,
         split_name: str,
         format_type: DatasetFormat,
-        data_strategy: FinetuneDataStrategy,
+        data_strategy: ChatStrategy,
         path: Path | None = None,
     ) -> Path:
         """

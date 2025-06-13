@@ -27,7 +27,6 @@ from kiln_ai.datamodel import (
     DataSource,
     DataSourceType,
     Finetune,
-    FinetuneDataStrategy,
     Project,
     Prompt,
     Task,
@@ -36,6 +35,7 @@ from kiln_ai.datamodel import (
     TaskRun,
     Usage,
 )
+from kiln_ai.datamodel.datamodel_enums import ChatStrategy
 from kiln_ai.datamodel.task import RunConfigProperties, TaskRunConfig
 
 logger = logging.getLogger(__name__)
@@ -390,7 +390,7 @@ def test_prompt_builder_from_id(task_with_examples):
         base_model_id="test_base_model_id",
         dataset_split_id="asdf",
         provider="test_provider",
-        data_strategy=FinetuneDataStrategy.final_and_intermediate,
+        data_strategy=ChatStrategy.two_message_cot,
     )
     finetune.save_to_file()
     nested_fine_tune_id = (
