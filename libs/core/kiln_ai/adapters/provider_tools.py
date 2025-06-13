@@ -300,6 +300,7 @@ def finetune_provider_model(
                 ChatStrategy.single_turn_r1_thinking,
             ]
         ),
+        tuned_chat_strategy=fine_tune.data_strategy,
     )
 
     if provider == ModelProviderName.vertex and fine_tune.fine_tune_model_id:

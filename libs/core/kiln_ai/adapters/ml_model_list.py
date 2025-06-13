@@ -3,7 +3,11 @@ from typing import Dict, List, Literal
 
 from pydantic import BaseModel
 
-from kiln_ai.datamodel.datamodel_enums import ModelProviderName, StructuredOutputMode
+from kiln_ai.datamodel.datamodel_enums import (
+    ChatStrategy,
+    ModelProviderName,
+    StructuredOutputMode,
+)
 
 """
 Provides model configuration and management for various LLM providers and models.
@@ -154,6 +158,7 @@ class KilnModelProvider(BaseModel):
         structured_output_mode: The mode we should use to call the model for structured output, if it was trained with structured output.
         parser: A parser to use for the model, if applicable
         reasoning_capable: Whether the model is designed to output thinking in a structured format (eg <think></think>). If so we don't use COT across 2 calls, and ask for thinking and final response in the same call.
+        tuned_chat_strategy: Used when a model is finetuned with a specific chat strategy, and it's best to use it at call time.
     """
 
     name: ModelProviderName
@@ -169,6 +174,7 @@ class KilnModelProvider(BaseModel):
     reasoning_capable: bool = False
     supports_logprobs: bool = False
     suggested_for_evals: bool = False
+    tuned_chat_strategy: ChatStrategy | None = None
 
     # TODO P1: Need a more generalized way to handle custom provider parameters.
     # Making them quite declarative here for now, isolating provider specific logic
