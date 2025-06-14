@@ -559,8 +559,8 @@ def test_build_training_chat(mock_task):
     assert user_msg.content == '{"test": "input 你好"}'
 
     final_msg = messages[2]
-    final_msg.role == "assistant"
-    final_msg.content = '{"test":   "output 你好"}'
+    assert final_msg.role == "assistant"
+    assert final_msg.content == '{"test":   "output 你好"}'
 
 
 def test_build_training_data_with_COT(mock_task):
@@ -598,8 +598,8 @@ def test_build_training_data_with_COT(mock_task):
     assert final_answer_prompt_msg.content == COT_FINAL_ANSWER_PROMPT
 
     final_msg = messages[4]
-    final_msg.role == "assistant"
-    final_msg.content = '{"test":   "output 你好"}'
+    assert final_msg.role == "assistant"
+    assert final_msg.content == '{"test":   "output 你好"}'
 
 
 def test_build_training_data_with_COT_legacy(mock_task):
@@ -638,8 +638,8 @@ def test_build_training_data_with_COT_legacy(mock_task):
     assert final_answer_prompt_msg.content == COT_FINAL_ANSWER_PROMPT
 
     final_msg = messages[5]
-    final_msg.role == "assistant"
-    final_msg.content = '{"test":   "output 你好"}'
+    assert final_msg.role == "assistant"
+    assert final_msg.content == '{"test":   "output 你好"}'
 
 
 def test_build_training_data_with_COT_r1_style(mock_task):
@@ -666,8 +666,11 @@ def test_build_training_data_with_COT_r1_style(mock_task):
     assert user_msg.content == '{"test": "input 你好"}'
 
     final_msg = messages[2]
-    final_msg.role == "assistant"
-    final_msg.content = '<think>\ncot output\n</think>\n\n{"test":   "output 你好"}'
+    assert final_msg.role == "assistant"
+    assert (
+        final_msg.content
+        == '<think>\ncot output\n</think>\n\n{"test":   "output 你好"}'
+    )
 
 
 def test_build_training_data_with_thinking(mock_task):
@@ -711,8 +714,8 @@ def test_build_training_data_with_thinking(mock_task):
     assert final_answer_prompt_msg.content == COT_FINAL_ANSWER_PROMPT
 
     final_msg = messages[4]
-    final_msg.role == "assistant"
-    final_msg.content = '{"test":   "output 你好"}'
+    assert final_msg.role == "assistant"
+    assert final_msg.content == '{"test":   "output 你好"}'
 
 
 def test_build_training_data_with_thinking_r1_style(mock_task):
@@ -746,9 +749,10 @@ def test_build_training_data_with_thinking_r1_style(mock_task):
     assert user_msg.content == '{"test": "input 你好"}'
 
     final_msg = messages[2]
-    final_msg.role == "assistant"
-    final_msg.content = (
-        '<think>\nthinking output\n</think>\n\n{"test":   "output 你好"}'
+    assert final_msg.role == "assistant"
+    assert (
+        final_msg.content
+        == '<think>\nthinking output\n</think>\n\n{"test":   "output 你好"}'
     )
 
 
@@ -780,8 +784,9 @@ def test_build_training_data_with_repaired_output(mock_task):
     assert user_msg.content == '{"test": "input 你好"}'
 
     final_msg = messages[2]
-    final_msg.role == "assistant"
-    final_msg.content = '{"test":   "repaired output"}'
+    assert final_msg.role == "assistant"
+    # Note we re-format the json
+    assert final_msg.content == '{"test": "repaired output"}'
 
 
 def test_dataset_formatter_dump_to_file_json_schema_format(mock_dataset, tmp_path):
