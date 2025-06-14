@@ -89,13 +89,6 @@ class LiteLlmAdapter(BaseAdapter):
             if not prior_output:
                 raise RuntimeError("No output returned from model")
 
-        # Maybe remove this? There is no error attribute on the response object.
-        # # Keeping in typesafe way as we added it for a reason, but should investigate what that was and if it still applies.
-        # if hasattr(response, "error") and response.__getattribute__("error"):
-        #    raise RuntimeError(
-        #        f"LLM API returned an error: {response.__getattribute__('error')}"
-        #    )
-
         if response is None or prior_message is None:
             raise RuntimeError("No response returned from model")
 

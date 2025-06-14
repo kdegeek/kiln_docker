@@ -6,6 +6,7 @@ from kiln_ai.adapters.ml_model_list import KilnModelProvider, StructuredOutputMo
 from kiln_ai.adapters.model_adapters.base_adapter import BaseAdapter, RunOutput
 from kiln_ai.adapters.parsers.request_formatters import request_formatter_from_id
 from kiln_ai.datamodel import Task
+from kiln_ai.datamodel.datamodel_enums import ChatStrategy
 from kiln_ai.datamodel.task import RunConfig, RunConfigProperties
 
 
@@ -316,3 +317,79 @@ async def test_properties_for_task_output_catches_missing_new_property(adapter):
         # Restore the original fields
         RunConfigProperties.model_fields.clear()
         RunConfigProperties.model_fields.update(original_fields)
+
+
+@pytest.mark.parametrize(
+    "cot_prompt,tuned_strategy,reasoning_capable,expected_formatter_class",
+    [
+        # No COT prompt -> always single turn
+        (None, None, False, "SingleTurnFormatter"),
+        (None, ChatStrategy.two_message_cot, False, "SingleTurnFormatter"),
+        (None, ChatStrategy.single_turn_r1_thinking, True, "SingleTurnFormatter"),
+        # With COT prompt:
+        # - Tuned strategy takes precedence (except single turn)
+        (
+            "think step by step",
+            ChatStrategy.two_message_cot,
+            False,
+            "TwoMessageCotFormatter",
+        ),
+        (
+            "think step by step",
+            ChatStrategy.single_turn_r1_thinking,
+            False,
+            "SingleTurnR1ThinkingFormatter",
+        ),
+        # - Tuned single turn is ignored when COT exists
+        (
+            "think step by step",
+            ChatStrategy.single_turn,
+            True,
+            "SingleTurnR1ThinkingFormatter",
+        ),
+        # - Reasoning capable -> single turn R1 thinking
+        ("think step by step", None, True, "SingleTurnR1ThinkingFormatter"),
+        # - Not reasoning capable -> two message COT
+        ("think step by step", None, False, "TwoMessageCotFormatter"),
+    ],
+)
+def test_build_chat_formatter(
+    adapter,
+    cot_prompt,
+    tuned_strategy,
+    reasoning_capable,
+    expected_formatter_class,
+):
+    """Test chat formatter strategy selection based on COT prompt, tuned strategy, and model capabilities"""
+    # Mock the prompt builder
+    mock_prompt_builder = MagicMock()
+    mock_prompt_builder.chain_of_thought_prompt.return_value = cot_prompt
+    mock_prompt_builder.build_prompt.return_value = "system message"
+    adapter.prompt_builder = mock_prompt_builder
+
+    # Mock the model provider
+    mock_provider = MagicMock()
+    mock_provider.tuned_chat_strategy = tuned_strategy
+    mock_provider.reasoning_capable = reasoning_capable
+    adapter.model_provider = MagicMock(return_value=mock_provider)
+
+    # Get the formatter
+    formatter = adapter.build_chat_formatter("test input")
+
+    # Verify the formatter type
+    assert formatter.__class__.__name__ == expected_formatter_class
+
+    # Verify the formatter was created with correct parameters
+    assert formatter.system_message == "system message"
+    assert formatter.user_input == "test input"
+    # Only check thinking_instructions for formatters that use it
+    if expected_formatter_class == "TwoMessageCotFormatter":
+        if cot_prompt:
+            assert formatter.thinking_instructions == cot_prompt
+        else:
+            assert formatter.thinking_instructions is None
+    # For other formatters, don't assert thinking_instructions
+
+    # Verify prompt builder was called correctly
+    mock_prompt_builder.build_prompt.assert_called_once()
+    mock_prompt_builder.chain_of_thought_prompt.assert_called_once()
