@@ -555,8 +555,7 @@ async def test_status_updates_latest_status(openai_finetune, mock_response):
 @pytest.mark.parametrize(
     "data_strategy,thinking_instructions",
     [
-        # TODO
-        (ChatStrategy.two_message_cot_legacy, "Custom thinking instructions"),
+        (ChatStrategy.two_message_cot, "Custom thinking instructions"),
         (ChatStrategy.single_turn, None),
     ],
 )

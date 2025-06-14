@@ -232,8 +232,7 @@ def mock_task():
 @pytest.mark.parametrize(
     "data_strategy,thinking_instructions",
     [
-        # TODO
-        (ChatStrategy.two_message_cot_legacy, "thinking instructions"),
+        (ChatStrategy.two_message_cot, "thinking instructions"),
         (ChatStrategy.single_turn, None),
     ],
 )

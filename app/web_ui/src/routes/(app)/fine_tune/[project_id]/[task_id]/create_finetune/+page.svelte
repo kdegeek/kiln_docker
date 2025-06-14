@@ -370,7 +370,6 @@
       return
     }
 
-    // TODO
     const data_strategies_labels: Record<ChatStrategy, string> = {
       final_only: "Disabled - (Recommended)",
       two_message_cot: "Thinking - Learn both thinking and final response",
