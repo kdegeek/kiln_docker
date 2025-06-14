@@ -372,6 +372,9 @@ class LiteLlmAdapter(BaseAdapter):
             "headers": self._headers,
             "temperature": self.run_config.temperature,
             "top_p": self.run_config.top_p,
+            # Some models error if these aren't supported (o3 for example). Force allow. They won't have an effect, but model call won't fail.
+            # Look into get_supported_openai_params -- but wasn't working Jun 2025. Falsly says they are supported when will cause failure.
+            "allowed_openai_params": ["temperature", "top_p"],
             **extra_body,
             **self._additional_body_options,
         }

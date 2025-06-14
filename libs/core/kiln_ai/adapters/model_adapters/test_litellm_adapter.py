@@ -374,6 +374,8 @@ async def test_build_completion_kwargs_custom_temperature_top_p(config, mock_tas
     # Verify custom temperature and top_p are passed through
     assert kwargs["temperature"] == 0.7
     assert kwargs["top_p"] == 0.9
+    # Verify allowed_openai_params is set correctly
+    assert kwargs["allowed_openai_params"] == ["temperature", "top_p"]
 
 
 @pytest.mark.asyncio
@@ -420,6 +422,9 @@ async def test_build_completion_kwargs(
     # Verify temperature and top_p are included with default values
     assert kwargs["temperature"] == 1.0  # Default from RunConfigProperties
     assert kwargs["top_p"] == 1.0  # Default from RunConfigProperties
+
+    # Verify allowed_openai_params is set correctly
+    assert kwargs["allowed_openai_params"] == ["temperature", "top_p"]
 
     # Verify optional parameters
     if top_logprobs is not None:
