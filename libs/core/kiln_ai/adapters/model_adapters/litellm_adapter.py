@@ -86,6 +86,23 @@ class LiteLlmAdapter(BaseAdapter):
             prior_message = response.choices[0].message
             prior_output = prior_message.content
 
+            # Fallback: Use args of first tool call to task_response if it exists
+            if (
+                not prior_output
+                and hasattr(prior_message, "tool_calls")
+                and prior_message.tool_calls
+            ):
+                tool_call = next(
+                    (
+                        tool_call
+                        for tool_call in prior_message.tool_calls
+                        if tool_call.function.name == "task_response"
+                    ),
+                    None,
+                )
+                if tool_call:
+                    prior_output = tool_call.function.arguments
+
             if not prior_output:
                 raise RuntimeError("No output returned from model")
 
@@ -115,24 +132,7 @@ class LiteLlmAdapter(BaseAdapter):
             intermediate_outputs["reasoning"] = prior_message.reasoning_content.strip()
 
         # the string content of the response
-        response_content = prior_message.content
-
-        # Fallback: Use args of first tool call to task_response if it exists
-        if (
-            not response_content
-            and hasattr(prior_message, "tool_calls")
-            and prior_message.tool_calls
-        ):
-            tool_call = next(
-                (
-                    tool_call
-                    for tool_call in prior_message.tool_calls
-                    if tool_call.function.name == "task_response"
-                ),
-                None,
-            )
-            if tool_call:
-                response_content = tool_call.function.arguments
+        response_content = prior_output
 
         if not isinstance(response_content, str):
             raise RuntimeError(f"response is not a string: {response_content}")
