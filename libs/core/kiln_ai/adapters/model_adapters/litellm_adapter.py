@@ -19,7 +19,6 @@ from kiln_ai.adapters.model_adapters.base_adapter import (
     Usage,
 )
 from kiln_ai.adapters.model_adapters.litellm_config import LiteLlmConfig
-from kiln_ai.datamodel.datamodel_enums import ChatStrategy
 from kiln_ai.datamodel.task import run_config_from_run_config_properties
 from kiln_ai.utils.exhaustive_error import raise_exhaustive_enum_error
 
@@ -60,7 +59,14 @@ class LiteLlmAdapter(BaseAdapter):
         prior_output = None
         prior_message = None
         response = None
+        turns = 0
         while True:
+            turns += 1
+            if turns > 10:
+                raise RuntimeError(
+                    "Too many turns. Stopping iteration to avoid using too many tokens."
+                )
+
             turn = chat_formatter.next_turn(prior_output)
             if turn is None:
                 break
