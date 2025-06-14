@@ -9,8 +9,9 @@ import kiln_ai.datamodel.strict_mode as datamodel_strict_mode
 import kiln_server.server as kiln_server
 import uvicorn
 from fastapi import FastAPI
+from kiln_ai.utils.logging import setup_litellm_logging
 
-from app.desktop.log_config import log_config, setup_litellm_logging
+from app.desktop.log_config import log_config
 from app.desktop.studio_server.data_gen_api import connect_data_gen_api
 from app.desktop.studio_server.eval_api import connect_evals_api
 from app.desktop.studio_server.finetune_api import connect_fine_tune_api
