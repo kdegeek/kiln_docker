@@ -99,15 +99,13 @@ class Finetune(KilnParentedModel):
             and self.data_strategy not in DATA_STRATIGIES_REQUIRED_THINKING_INSTRUCTIONS
         ):
             raise ValueError(
-                "Thinking instructions can only be used when data_strategy is one of the following: "
-                + ", ".join(DATA_STRATIGIES_REQUIRED_THINKING_INSTRUCTIONS)
+                f"Thinking instructions can only be used when data_strategy is one of the following: {DATA_STRATIGIES_REQUIRED_THINKING_INSTRUCTIONS}"
             )
         if (
             self.thinking_instructions is None
             and self.data_strategy in DATA_STRATIGIES_REQUIRED_THINKING_INSTRUCTIONS
         ):
             raise ValueError(
-                "Thinking instructions are required when data_strategy is one of the following: "
-                + ", ".join(DATA_STRATIGIES_REQUIRED_THINKING_INSTRUCTIONS)
+                f"Thinking instructions are required when data_strategy is one of the following: {DATA_STRATIGIES_REQUIRED_THINKING_INSTRUCTIONS}"
             )
         return self
