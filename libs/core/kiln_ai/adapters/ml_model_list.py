@@ -1448,11 +1448,6 @@ built_in_models: List[KilnModel] = [
                 structured_output_mode=StructuredOutputMode.json_instruction_and_object,
                 model_id="google/gemma-3-27b-it",
             ),
-            KilnModelProvider(
-                name=ModelProviderName.huggingface,
-                model_id="google/gemma-3-27b-it",
-                structured_output_mode=StructuredOutputMode.json_instructions,
-            ),
         ],
     ),
     # Mixtral 8x7B
