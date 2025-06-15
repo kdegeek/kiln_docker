@@ -10,7 +10,6 @@ from kiln_ai.adapters.ml_model_list import (
     KilnModelProvider,
     ModelProviderName,
     StructuredOutputMode,
-    default_structured_output_mode_for_model_provider,
 )
 from kiln_ai.adapters.model_adapters.base_adapter import (
     AdapterConfig,
@@ -158,13 +157,6 @@ class LiteLlmAdapter(BaseAdapter):
             return {}
 
         structured_output_mode = self.run_config.structured_output_mode
-
-        # Old datamodels didn't save the model. Look up our best guess.
-        if structured_output_mode == StructuredOutputMode.unknown:
-            structured_output_mode = default_structured_output_mode_for_model_provider(
-                self.run_config.model_name,
-                self.run_config.model_provider_name,
-            )
 
         match structured_output_mode:
             case StructuredOutputMode.json_mode:

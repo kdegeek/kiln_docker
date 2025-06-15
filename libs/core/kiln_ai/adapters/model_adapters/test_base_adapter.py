@@ -393,3 +393,54 @@ def test_build_chat_formatter(
     # Verify prompt builder was called correctly
     mock_prompt_builder.build_prompt.assert_called_once()
     mock_prompt_builder.chain_of_thought_prompt.assert_called_once()
+
+
+@pytest.mark.parametrize(
+    "initial_mode,expected_mode",
+    [
+        (
+            StructuredOutputMode.json_schema,
+            StructuredOutputMode.json_schema,
+        ),  # Should not change
+        (
+            StructuredOutputMode.unknown,
+            StructuredOutputMode.json_mode,
+        ),  # Should update to default
+    ],
+)
+async def test_update_run_config_unknown_structured_output_mode(
+    base_task, initial_mode, expected_mode
+):
+    """Test that unknown structured output mode is updated to the default for the model provider"""
+    # Create a run config with the initial mode
+    run_config = RunConfig(
+        task=base_task,
+        model_name="test_model",
+        model_provider_name="openai",
+        prompt_id="simple_prompt_builder",
+        structured_output_mode=initial_mode,
+        temperature=0.7,  # Add some other properties to verify they're preserved
+        top_p=0.9,
+    )
+
+    # Mock the default mode lookup
+    with patch(
+        "kiln_ai.adapters.model_adapters.base_adapter.default_structured_output_mode_for_model_provider"
+    ) as mock_default:
+        mock_default.return_value = StructuredOutputMode.json_mode
+
+        # Create the adapter
+        adapter = MockAdapter(run_config=run_config)
+
+        # Verify the mode was updated correctly
+        assert adapter.run_config.structured_output_mode == expected_mode
+
+        # Verify other properties were preserved
+        assert adapter.run_config.temperature == 0.7
+        assert adapter.run_config.top_p == 0.9
+
+        # Verify the default mode lookup was only called when needed
+        if initial_mode == StructuredOutputMode.unknown:
+            mock_default.assert_called_once_with("test_model", "openai")
+        else:
+            mock_default.assert_not_called()
