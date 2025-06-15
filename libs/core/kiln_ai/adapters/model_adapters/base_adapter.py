@@ -7,7 +7,11 @@ from kiln_ai.adapters.chat.chat_formatter import (
     ChatFormatter,
     get_chat_formatter,
 )
-from kiln_ai.adapters.ml_model_list import KilnModelProvider, StructuredOutputMode
+from kiln_ai.adapters.ml_model_list import (
+    KilnModelProvider,
+    StructuredOutputMode,
+    default_structured_output_mode_for_model_provider,
+)
 from kiln_ai.adapters.parsers.json_parser import parse_json_string
 from kiln_ai.adapters.parsers.parser_registry import model_parser_from_id
 from kiln_ai.adapters.parsers.request_formatters import request_formatter_from_id
@@ -61,6 +65,7 @@ class BaseAdapter(metaclass=ABCMeta):
         config: AdapterConfig | None = None,
     ):
         self.run_config = run_config
+        self.update_run_config_unknown_structured_output_mode()
         self.prompt_builder = prompt_builder_from_id(
             run_config.prompt_id, run_config.task
         )
@@ -302,3 +307,17 @@ class BaseAdapter(metaclass=ABCMeta):
         props["top_p"] = self.run_config.top_p
 
         return props
+
+    def update_run_config_unknown_structured_output_mode(self) -> None:
+        structured_output_mode = self.run_config.structured_output_mode
+
+        # Old datamodels didn't save the structured output mode. Some clients (tests, end users) might not set it.
+        # Look up our recommended mode from ml_model_list if we have one
+        if structured_output_mode == StructuredOutputMode.unknown:
+            new_run_config = self.run_config.model_copy(deep=True)
+            structured_output_mode = default_structured_output_mode_for_model_provider(
+                self.run_config.model_name,
+                self.run_config.model_provider_name,
+            )
+            new_run_config.structured_output_mode = structured_output_mode
+            self.run_config = new_run_config
