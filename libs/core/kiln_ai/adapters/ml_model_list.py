@@ -73,6 +73,9 @@ class ModelName(str, Enum):
     phi_4_mini = "phi_4_mini"
     mistral_large = "mistral_large"
     mistral_nemo = "mistral_nemo"
+    mistral_small_3 = "mistral_small_3"
+    magistral_medium = "magistral_medium"
+    magistral_medium_thinking = "magistral_medium_thinking"
     gemma_2_2b = "gemma_2_2b"
     gemma_2_9b = "gemma_2_9b"
     gemma_2_27b = "gemma_2_27b"
@@ -102,7 +105,6 @@ class ModelName(str, Enum):
     qwq_32b = "qwq_32b"
     deepseek_3 = "deepseek_3"
     deepseek_r1 = "deepseek_r1"
-    mistral_small_3 = "mistral_small_3"
     deepseek_r1_distill_qwen_32b = "deepseek_r1_distill_qwen_32b"
     deepseek_r1_distill_llama_70b = "deepseek_r1_distill_llama_70b"
     deepseek_r1_distill_qwen_14b = "deepseek_r1_distill_qwen_14b"
@@ -1034,6 +1036,33 @@ built_in_models: List[KilnModel] = [
                 model_id="meta-llama/Meta-Llama-3.1-405B-Instruct-Turbo",
                 supports_data_gen=False,
                 structured_output_mode=StructuredOutputMode.function_calling_weak,
+            ),
+        ],
+    ),
+    # Magistral Medium (Thinking)
+    KilnModel(
+        family=ModelFamily.mistral,
+        name=ModelName.magistral_medium_thinking,
+        friendly_name="Magistral Medium (Thinking)",
+        providers=[
+            KilnModelProvider(
+                name=ModelProviderName.openrouter,
+                model_id="mistralai/magistral-medium-2506:thinking",
+                structured_output_mode=StructuredOutputMode.json_schema,
+                # Thinking tokens are hidden by Mistral so not "reasoning" from Kiln API POV
+            ),
+        ],
+    ),
+    # Magistral Medium (No Thinking)
+    KilnModel(
+        family=ModelFamily.mistral,
+        name=ModelName.magistral_medium,
+        friendly_name="Magistral Medium (No Thinking)",
+        providers=[
+            KilnModelProvider(
+                name=ModelProviderName.openrouter,
+                model_id="mistralai/magistral-medium-2506",
+                structured_output_mode=StructuredOutputMode.json_schema,
             ),
         ],
     ),
