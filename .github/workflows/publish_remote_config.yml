@@ -1,11 +1,10 @@
-name: Docs Build
+name: Publish Remote Config
 
 on:
   push:
     branches:
-      - docs
+      - main
 
-# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
   contents: read
   pages: write
@@ -13,9 +12,8 @@ permissions:
 
 jobs:
   build:
-    name: Build Docs
+    if: ${{ vars.KILN_CONFIG_REPO == 'true' }}
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
 
@@ -30,15 +28,11 @@ jobs:
       - name: Install the project
         run: uv sync --all-extras --dev
 
-      - name: Build Python Core Docs
-        working-directory: ./libs/core
-        run: uv run pdoc -o ./docs/kiln_core_docs kiln_ai --logo https://github.com/user-attachments/assets/046f44ae-28cf-4c78-85c3-c3e5ad744fd7 --logo-link https://getkiln.ai
+      - name: Make static dir
+        run: mkdir -p static
 
-      - name: Install Redoc CLI
-        run: npm install -g @redocly/cli
-
-      - name: Build OpenAPI Docs
-        run: uv run python -m libs.server.kiln_server.generate_openapi && mkdir ./libs/core/docs/kiln_server_openapi_docs && npx @redocly/cli build-docs openapi.json -o ./libs/core/docs/kiln_server_openapi_docs/index.html
+      - name: Generate Config
+        run: uv run python -m kiln_ai.adapters.remote_config static/kiln_config.json
 
       - name: Setup Pages
         id: pages
@@ -47,11 +41,10 @@ jobs:
       - name: Upload to Pages
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./libs/core/docs
+          path: ./static/
 
-  # Deployment job
   deploy:
-    if: ${{ vars.KILN_CONFIG_REPO != 'true' }}
+    if: ${{ vars.KILN_CONFIG_REPO == 'true' }}
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
