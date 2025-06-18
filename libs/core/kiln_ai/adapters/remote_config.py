@@ -12,7 +12,7 @@ from .ml_model_list import KilnModel, built_in_models
 
 def serialize_config(models: List[KilnModel], path: str | Path) -> None:
     data = {"model_list": [m.model_dump(mode="json") for m in models]}
-    Path(path).write_text(json.dumps(data))
+    Path(path).write_text(json.dumps(data, indent=2, sort_keys=True))
 
 
 def deserialize_config(path: str | Path) -> List[KilnModel]:
