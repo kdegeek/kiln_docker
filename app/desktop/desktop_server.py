@@ -22,7 +22,8 @@ from app.desktop.studio_server.repair_api import connect_repair_api
 from app.desktop.studio_server.settings_api import connect_settings
 from app.desktop.studio_server.webhost import connect_webhost
 
-REMOTE_MODEL_LIST_URL = "https://example.com/kiln_model_list.json"
+# CNAME to (w CF proxy for load): https://kiln-ai.github.io/remote_config/kiln_config.json
+REMOTE_MODEL_LIST_URL = "https://remote_config.getkiln.ai/kiln_config.json"
 
 
 @asynccontextmanager
