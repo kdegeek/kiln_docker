@@ -1,0 +1,61 @@
+import argparse
+import asyncio
+import json
+import os
+from pathlib import Path
+from typing import List
+
+import requests
+
+from .ml_model_list import KilnModel, built_in_models
+
+
+def serialize_config(models: List[KilnModel], path: str | Path) -> None:
+    data = {"model_list": [m.model_dump(mode="json") for m in models]}
+    Path(path).write_text(json.dumps(data))
+
+
+def deserialize_config(path: str | Path) -> List[KilnModel]:
+    raw = json.loads(Path(path).read_text())
+    model_data = raw.get("model_list", raw if isinstance(raw, list) else [])
+    return [KilnModel.model_validate(item) for item in model_data]
+
+
+def load_from_url(url: str) -> List[KilnModel]:
+    response = requests.get(url, timeout=10)
+    response.raise_for_status()
+    data = response.json()
+    if isinstance(data, list):
+        model_data = data
+    else:
+        model_data = data.get("model_list", [])
+    return [KilnModel.model_validate(item) for item in model_data]
+
+
+def dump_builtin_config(path: str | Path) -> None:
+    serialize_config(built_in_models, path)
+
+
+def load_remote_models(url: str) -> None:
+    if os.environ.get("KILN_SKIP_REMOTE_MODEL_LIST") == "true":
+        return
+
+    async def fetch_and_replace() -> None:
+        try:
+            models = await asyncio.to_thread(load_from_url, url)
+            built_in_models[:] = models
+        except Exception:
+            pass
+
+    asyncio.get_event_loop().create_task(fetch_and_replace())
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("path", help="output path")
+    args = parser.parse_args()
+    dump_builtin_config(args.path)
+
+
+if __name__ == "__main__":
+    main()

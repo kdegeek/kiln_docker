@@ -9,6 +9,7 @@ import kiln_ai.datamodel.strict_mode as datamodel_strict_mode
 import kiln_server.server as kiln_server
 import uvicorn
 from fastapi import FastAPI
+from kiln_ai.adapters.remote_config import load_remote_models
 from kiln_ai.utils.logging import setup_litellm_logging
 
 from app.desktop.log_config import log_config
@@ -20,6 +21,8 @@ from app.desktop.studio_server.provider_api import connect_provider_api
 from app.desktop.studio_server.repair_api import connect_repair_api
 from app.desktop.studio_server.settings_api import connect_settings
 from app.desktop.studio_server.webhost import connect_webhost
+
+REMOTE_MODEL_LIST_URL = "https://example.com/kiln_model_list.json"
 
 
 @asynccontextmanager
@@ -40,6 +43,8 @@ async def lifespan(app: FastAPI):
 
 def make_app():
     setup_litellm_logging()
+
+    load_remote_models(REMOTE_MODEL_LIST_URL)
 
     app = kiln_server.make_app(lifespan=lifespan)
     connect_provider_api(app)
