@@ -26,8 +26,11 @@ jobs:
       - name: Install the project
         run: uv sync --all-extras --dev
 
+      - name: Make static dir
+        run: mkdir -p static
+
       - name: Generate Config
-        run: uv run python -m kiln_ai.adapters.remote_config kiln_config.json
+        run: uv run python -m kiln_ai.adapters.remote_config static/kiln_config.json
 
       - name: Setup Pages
         id: pages
@@ -36,7 +39,7 @@ jobs:
       - name: Upload to Pages
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./kiln_config.json
+          path: ./static/
 
   deploy:
     if: ${{ vars.KILN_CONFIG_REPO == 'true' }}
