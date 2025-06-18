@@ -44,8 +44,13 @@ def load_remote_models(url: str) -> None:
         try:
             models = await asyncio.to_thread(load_from_url, url)
             built_in_models[:] = models
-        except Exception:
-            pass
+        except Exception as exc:
+            # Do not crash startup, but surface the issue
+            import logging
+
+            logging.getLogger(__name__).warning(
+                "Failed to fetch remote model list from %s: %s", url, exc
+            )
 
     asyncio.get_event_loop().create_task(fetch_and_replace())
 
