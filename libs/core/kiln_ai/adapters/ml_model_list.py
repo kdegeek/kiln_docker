@@ -93,6 +93,7 @@ class ModelName(str, Enum):
     gemini_2_0_flash_lite = "gemini_2_0_flash_lite"
     gemini_2_5_pro = "gemini_2_5_pro"
     gemini_2_5_flash = "gemini_2_5_flash"
+    gemini_2_5_flash_lite = "gemini_2_5_flash_lite"
     nemotron_70b = "nemotron_70b"
     mixtral_8x7b = "mixtral_8x7b"
     qwen_2p5_7b = "qwen_2p5_7b"
@@ -732,24 +733,31 @@ built_in_models: List[KilnModel] = [
         providers=[
             KilnModelProvider(
                 name=ModelProviderName.openrouter,
-                model_id="google/gemini-2.5-pro-preview-03-25",
+                model_id="google/gemini-2.5-pro",
                 structured_output_mode=StructuredOutputMode.json_schema,
                 suggested_for_data_gen=True,
                 suggested_for_evals=True,
+                reasoning_capable=True,
             ),
             KilnModelProvider(
                 name=ModelProviderName.gemini_api,
-                model_id="gemini-2.5-pro-preview-03-25",
+                model_id="gemini-2.5-pro",
                 structured_output_mode=StructuredOutputMode.json_schema,
                 suggested_for_data_gen=True,
                 suggested_for_evals=True,
+                # TODO: Gemini API doesn't return reasoning here, so we don't ask for it. Strange.
+                # reasoning_capable=True,
+                # thinking_level="medium",
             ),
             KilnModelProvider(
                 name=ModelProviderName.vertex,
-                model_id="gemini-2.5-pro-preview-03-25",
+                model_id="gemini-2.5-pro",
                 structured_output_mode=StructuredOutputMode.json_schema,
                 suggested_for_data_gen=True,
                 suggested_for_evals=True,
+                # TODO: Vertex doesn't return reasoning here, so we don't ask for it. Strange.
+                # reasoning_capable=True,
+                # thinking_level="medium",
             ),
         ],
     ),
@@ -761,18 +769,23 @@ built_in_models: List[KilnModel] = [
         providers=[
             KilnModelProvider(
                 name=ModelProviderName.openrouter,
-                model_id="google/gemini-2.5-flash-preview",
+                model_id="google/gemini-2.5-flash",
                 structured_output_mode=StructuredOutputMode.json_schema,
+                reasoning_capable=True,
             ),
             KilnModelProvider(
                 name=ModelProviderName.gemini_api,
-                model_id="gemini-2.5-flash-preview-04-17",
+                model_id="gemini-2.5-flash",
                 structured_output_mode=StructuredOutputMode.json_schema,
+                reasoning_capable=True,
+                thinking_level="medium",
             ),
             KilnModelProvider(
                 name=ModelProviderName.vertex,
-                model_id="gemini-2.5-flash-preview-04-17",
+                model_id="gemini-2.5-flash",
                 structured_output_mode=StructuredOutputMode.json_schema,
+                reasoning_capable=True,
+                thinking_level="medium",
             ),
         ],
     ),
