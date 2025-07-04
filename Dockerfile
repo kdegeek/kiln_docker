@@ -61,9 +61,10 @@ RUN uv sync --frozen --no-dev --no-cache --index-url https://pypi.org/simple/ --
 # Copy built web UI from build stage
 COPY --from=web-builder /app/app/web_ui/build ./app/web_ui/build/
 
-# Copy admin check script
+# Copy admin check script and startup script
 COPY admin_check.sh ./admin_check.sh
-RUN chmod +x ./admin_check.sh
+COPY start_server.sh ./start_server.sh
+RUN chmod +x ./admin_check.sh ./start_server.sh
 
 # Change ownership to non-root user
 RUN chown -R kiln:kiln /app
@@ -86,5 +87,15 @@ ENV SSL_VERIFY=0
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8757/ || exit 1
 
-# Start the application
-CMD ["uv", "run", "python", "app/desktop/server_runner.py"]
+# Debug: Show directory structure and Python path
+RUN echo "=== Directory structure ===" && \
+    ls -la /app && \
+    echo "=== App directory ===" && \
+    ls -la /app/app && \
+    echo "=== Desktop directory ===" && \
+    ls -la /app/app/desktop && \
+    echo "=== Python path ===" && \
+    echo $PYTHONPATH
+
+# Start the application using our startup script
+CMD ["./start_server.sh"]

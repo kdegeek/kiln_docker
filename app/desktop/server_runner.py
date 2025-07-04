@@ -29,7 +29,35 @@ httpx.Client.__init__ = patched_init
 
 import uvicorn
 
-from app.desktop.desktop_server import make_app
+import sys
+print(f"Python path: {sys.path}")
+print(f"Current working directory: {os.getcwd()}")
+
+try:
+    from app.desktop.desktop_server import make_app
+    print("✓ Successfully imported from app.desktop.desktop_server")
+except ImportError as e:
+    print(f"✗ Failed to import from app.desktop.desktop_server: {e}")
+    try:
+        # Fallback for when running from different paths
+        from desktop_server import make_app
+        print("✓ Successfully imported from desktop_server")
+    except ImportError as e2:
+        print(f"✗ Failed to import from desktop_server: {e2}")
+        # Try adding the current directory to sys.path
+        sys.path.insert(0, '/app')
+        try:
+            from app.desktop.desktop_server import make_app
+            print("✓ Successfully imported after adding /app to sys.path")
+        except ImportError as e3:
+            print(f"✗ Final import attempt failed: {e3}")
+            print("Available modules in /app:")
+            import os
+            for root, dirs, files in os.walk('/app'):
+                for file in files:
+                    if file.endswith('.py'):
+                        print(f"  {os.path.join(root, file)}")
+            raise
 
 
 def main():
