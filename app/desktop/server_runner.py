@@ -4,6 +4,25 @@ Simple server runner for Docker containers.
 Runs the Kiln server without GUI components.
 """
 import os
+import ssl
+
+# Set SSL environment variables before any imports
+os.environ["PYTHONHTTPSVERIFY"] = "0"
+os.environ["SSL_VERIFY"] = "0"
+
+# Disable SSL verification globally
+ssl._create_default_https_context = ssl._create_unverified_context
+
+# Monkey patch httpx to disable SSL verification
+import httpx
+original_init = httpx.Client.__init__
+
+def patched_init(self, *args, **kwargs):
+    kwargs['verify'] = False
+    return original_init(self, *args, **kwargs)
+
+httpx.Client.__init__ = patched_init
+
 import uvicorn
 from app.desktop.desktop_server import make_app
 
