@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  kiln:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8757:8757"
+    environment:
+      # Server configuration
+      - KILN_HOST=0.0.0.0
+      - KILN_PORT=8757
+      - KILN_LOG_LEVEL=info
+      
+      # Kiln-specific configuration
+      - KILN_SKIP_REMOTE_MODEL_LIST=false
+      
+      # Optional: Set user ID for file permissions
+      # - KILN_USER_ID=your-user-id
+    
+    volumes:
+      # Mount volume for persistent data (optional)
+      # Uncomment and adjust the path as needed
+      # - ./kiln-data:/app/data
+      
+      # Mount host directory for datasets (optional)
+      # - ./datasets:/app/datasets
+    
+    # Restart policy
+    restart: unless-stopped
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8757/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    
+    # Resource limits (optional)
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '2.0'
+    #       memory: 4G
+    #     reservations:
+    #       cpus: '0.5'
+    #       memory: 1G
+
+# Optional: Add a reverse proxy service
+# nginx:
+#   image: nginx:alpine
+#   ports:
+#     - "80:80"
+#     - "443:443"
+#   volumes:
+#     - ./nginx.conf:/etc/nginx/nginx.conf:ro
+#     - ./ssl-certs:/etc/nginx/ssl:ro
+#   depends_on:
+#     - kiln
+#   restart: unless-stopped
