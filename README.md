@@ -96,6 +96,27 @@ Our open-source [python library](https://pypi.org/project/kiln-ai/) allows you t
 pip install kiln-ai
 ```
 
+## Docker Deployment
+
+[![Docker](https://img.shields.io/badge/Docker-supported-blue?logo=docker)](./DOCKER.md)
+
+Kiln can be easily deployed using Docker for production environments or isolated development setups.
+
+### Quick Start with Docker
+
+```bash
+# Build and run with Docker
+docker build -t kiln-ai .
+docker run -p 8757:8757 kiln-ai
+
+# Or use Docker Compose (recommended)
+docker compose up
+```
+
+Access the application at http://localhost:8757
+
+For detailed Docker deployment instructions, configuration options, and production setup, see the [Docker Documentation](./DOCKER.md).
+
 ## Learn More
 
 ### Rapid Prototyping
