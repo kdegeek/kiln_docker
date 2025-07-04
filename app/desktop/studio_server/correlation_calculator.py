@@ -78,9 +78,9 @@ class CorrelationCalculator:
         x = [score.measured_score for score in self.scores]
         y = [score.human_score for score in self.scores]
         result = stats.spearmanr(x, y)
-        # library doesn't support proper types
-        correlation = result.__getattribute__("correlation")
-        if math.isnan(correlation) or not isinstance(correlation, float):
+        # scipy doesn't have proper type annotations for correlation attribute
+        correlation = result.correlation  # type: ignore
+        if math.isnan(correlation):
             # Very small samples may have a NaN result (unknown correlation)
             return None
         return correlation
@@ -92,10 +92,12 @@ class CorrelationCalculator:
         x = [score.measured_score for score in self.scores]
         y = [score.human_score for score in self.scores]
         result = stats.pearsonr(x, y)
-        if math.isnan(result.correlation):
+        # scipy doesn't have proper type annotations for correlation attribute
+        correlation = result.correlation  # type: ignore
+        if math.isnan(correlation):
             # Very small samples may have a NaN result (unknown correlation)
             return None
-        return result.correlation
+        return correlation
 
     def calculate_kendalltau_correlation(self) -> float | None:
         if len(self.scores) < 2:
@@ -104,7 +106,9 @@ class CorrelationCalculator:
         x = [score.measured_score for score in self.scores]
         y = [score.human_score for score in self.scores]
         result = stats.kendalltau(x, y)
-        if math.isnan(result.correlation):
+        # scipy doesn't have proper type annotations for correlation attribute
+        correlation = result.correlation  # type: ignore
+        if math.isnan(correlation):
             # Very small samples may have a NaN result (unknown correlation)
             return None
-        return result.correlation
+        return correlation
