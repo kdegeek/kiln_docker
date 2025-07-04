@@ -26,6 +26,10 @@ RUN apt-get update && apt-get install -y \
     procps \
     htop \
     vim \
+    iputils-ping \
+    iproute2 \
+    iptables \
+    wget \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
@@ -61,18 +65,24 @@ RUN uv sync --frozen --no-dev --no-cache --index-url https://pypi.org/simple/ --
 # Copy built web UI from build stage
 COPY --from=web-builder /app/app/web_ui/build ./app/web_ui/build/
 
-# Copy admin check script and startup script
+# Copy admin check script, startup script, and root test script
 COPY admin_check.sh ./admin_check.sh
 COPY start_server.sh ./start_server.sh
-RUN chmod +x ./admin_check.sh ./start_server.sh
+COPY test_root.sh ./test_root.sh
+RUN chmod +x ./admin_check.sh ./start_server.sh ./test_root.sh
 
-# Change ownership to non-root user
-RUN chown -R kiln:kiln /app
+# Set appropriate permissions for both root and kiln user
+RUN chown -R kiln:kiln /app && \
+    chmod -R 755 /app && \
+    # Ensure root can access all files
+    chmod -R g+rwx /app && \
+    # Add root to kiln group for file access
+    usermod -aG kiln root
 
-# Keep running as root for administrator privileges
-# Note: Running as root provides full system access within the container
-# For production, consider using specific capabilities instead of root
-# USER kiln
+# Ensure container runs as root by default for administrator privileges
+# This provides full system access within the container
+# Root access is required for system-level operations and networking
+USER root
 
 # Expose the application port
 EXPOSE 8757
@@ -82,6 +92,10 @@ ENV PYTHONPATH=/app
 ENV KILN_SKIP_REMOTE_MODEL_LIST=false
 ENV PYTHONHTTPSVERIFY=0
 ENV SSL_VERIFY=0
+# Ensure root privileges are maintained
+ENV USER=root
+ENV HOME=/root
+ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \

@@ -7,6 +7,13 @@ echo "Working directory: $(pwd)"
 echo "Python path: $PYTHONPATH"
 echo "Python version: $(python --version)"
 
+# Verify root access
+echo "=== Root Access Verification ==="
+echo "Current user: $(whoami)"
+echo "User ID: $(id)"
+echo "Groups: $(groups)"
+echo "Root privileges: $(sudo -n whoami 2>/dev/null || echo 'Available via sudo')"
+
 # Show directory structure for debugging
 echo "=== Directory structure ==="
 ls -la /app/

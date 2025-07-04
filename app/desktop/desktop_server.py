@@ -64,9 +64,11 @@ def make_app():
 
 
 def server_config(port=8757):
+    # Use 0.0.0.0 for Docker containers to allow external connections
+    host = os.environ.get("KILN_HOST", "0.0.0.0")
     return uvicorn.Config(
         make_app(),
-        host="127.0.0.1",
+        host=host,
         port=port,
         use_colors=False,
         log_config=log_config(),
@@ -101,7 +103,8 @@ class ThreadedServer(uvicorn.Server):
 
 
 def run_studio():
-    uvicorn.run(kiln_server.app, host="127.0.0.1", port=8757, log_level="warning")
+    host = os.environ.get("KILN_HOST", "0.0.0.0")
+    uvicorn.run(kiln_server.app, host=host, port=8757, log_level="warning")
 
 
 def run_studio_thread():
