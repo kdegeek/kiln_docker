@@ -148,9 +148,32 @@ docker run --rm kiln-ai python -m pytest
 docker run -it --entrypoint /bin/bash kiln-ai
 ```
 
-## Publishing to DockerHub
+## Docker Hub Images
 
-To publish the image to DockerHub:
+[![Docker Hub](https://img.shields.io/badge/Docker%20Hub-kiln--ai-blue?logo=docker)](https://hub.docker.com/r/kdegeek/kiln-ai)
+
+Pre-built Docker images are automatically published to Docker Hub on every release.
+
+### Using Pre-built Images
+
+1. **Pull and run the latest version:**
+   ```bash
+   docker run -p 8757:8757 kdegeek/kiln-ai:latest
+   ```
+
+2. **Pull a specific version:**
+   ```bash
+   docker run -p 8757:8757 kdegeek/kiln-ai:v1.0.0
+   ```
+
+3. **Available tags:**
+   - `latest` - Latest stable release from main branch
+   - `v*` - Specific version releases (e.g., `v1.0.0`, `v1.1.0`)
+   - `main` - Latest development build from main branch
+
+### Publishing to DockerHub (Manual)
+
+For manual publishing or custom builds:
 
 1. **Tag the image:**
    ```bash
@@ -162,11 +185,6 @@ To publish the image to DockerHub:
    ```bash
    docker push your-dockerhub-username/kiln-ai:latest
    docker push your-dockerhub-username/kiln-ai:v1.0.0
-   ```
-
-3. **Pull and run from DockerHub:**
-   ```bash
-   docker run -p 8757:8757 your-dockerhub-username/kiln-ai:latest
    ```
 
 ## License
