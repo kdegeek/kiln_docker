@@ -16,11 +16,16 @@ RUN npm run build
 # Production stage
 FROM python:3.12-slim
 
-# Install system dependencies
+# Install system dependencies including sudo and common admin tools
 RUN apt-get update && apt-get install -y \
     curl \
     ca-certificates \
     git \
+    sudo \
+    net-tools \
+    procps \
+    htop \
+    vim \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
@@ -32,8 +37,10 @@ RUN update-ca-certificates && \
 # Install uv for Python dependency management with SSL bypass
 RUN pip install --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org uv
 
-# Create non-root user
-RUN useradd --create-home --shell /bin/bash kiln
+# Create non-root user and add to sudo group
+RUN useradd --create-home --shell /bin/bash kiln && \
+    usermod -aG sudo kiln && \
+    echo "kiln ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
 # Set working directory
 WORKDIR /app
@@ -54,11 +61,17 @@ RUN uv sync --frozen --no-dev --no-cache --index-url https://pypi.org/simple/ --
 # Copy built web UI from build stage
 COPY --from=web-builder /app/app/web_ui/build ./app/web_ui/build/
 
+# Copy admin check script
+COPY admin_check.sh ./admin_check.sh
+RUN chmod +x ./admin_check.sh
+
 # Change ownership to non-root user
 RUN chown -R kiln:kiln /app
 
-# Switch to non-root user
-USER kiln
+# Keep running as root for administrator privileges
+# Note: Running as root provides full system access within the container
+# For production, consider using specific capabilities instead of root
+# USER kiln
 
 # Expose the application port
 EXPOSE 8757

@@ -5,6 +5,17 @@ services:
       dockerfile: Dockerfile
     ports:
       - "8757:8757"
+    # Enable privileged mode for administrator privileges
+    privileged: true
+    # Add additional capabilities
+    cap_add:
+      - SYS_ADMIN
+      - NET_ADMIN
+      - SYS_PTRACE
+      - DAC_OVERRIDE
+    # Security options for extended privileges
+    security_opt:
+      - apparmor:unconfined
     environment:
       # Server configuration
       - KILN_HOST=0.0.0.0

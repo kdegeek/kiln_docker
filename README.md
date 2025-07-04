@@ -115,9 +115,28 @@ docker run -p 8757:8757 kiln-ai
 
 # Or use Docker Compose (recommended for local development)
 docker compose up
+
+# For administrator privileges (run with elevated permissions)
+docker compose --profile admin up
 ```
 
 Access the application at http://localhost:8757
+
+### Administrator Privileges
+
+The Docker container can be configured to run with administrator privileges for advanced use cases:
+
+- **Privileged Mode**: Full system access within the container
+- **Extended Capabilities**: SYS_ADMIN, NET_ADMIN, SYS_PTRACE, DAC_OVERRIDE
+- **Root Access**: Container runs as root user
+- **System Tools**: Includes sudo, network tools, and process management utilities
+
+To verify administrator privileges:
+```bash
+docker exec -it kiln-docker_kiln_1 /app/admin_check.sh
+```
+
+**Security Note**: Administrator privileges should only be used in development environments or when specifically required. For production deployments, use minimal privileges and specific capabilities.
 
 For detailed Docker deployment instructions, configuration options, and production setup, see the [Docker Documentation](./DOCKER.md).
 
