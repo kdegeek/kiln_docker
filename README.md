@@ -99,17 +99,21 @@ pip install kiln-ai
 ## Docker Deployment
 
 [![Docker](https://img.shields.io/badge/Docker-supported-blue?logo=docker)](./DOCKER.md)
+[![Docker Hub](https://img.shields.io/badge/Docker%20Hub-kiln--ai-blue?logo=docker)](https://hub.docker.com/r/kdegeek/kiln-ai)
 
 Kiln can be easily deployed using Docker for production environments or isolated development setups.
 
 ### Quick Start with Docker
 
 ```bash
-# Build and run with Docker
+# Use pre-built image from Docker Hub (recommended)
+docker run -p 8757:8757 kdegeek/kiln-ai:latest
+
+# Or build and run locally
 docker build -t kiln-ai .
 docker run -p 8757:8757 kiln-ai
 
-# Or use Docker Compose (recommended)
+# Or use Docker Compose (recommended for local development)
 docker compose up
 ```
 

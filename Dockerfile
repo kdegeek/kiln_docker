@@ -5,8 +5,9 @@ FROM node:20-slim AS web-builder
 WORKDIR /app/app/web_ui
 # Copy web UI package files
 COPY app/web_ui/package*.json ./
-# Install Node.js dependencies
-RUN npm ci
+COPY app/web_ui/.npmrc ./
+# Install Node.js dependencies including dev dependencies
+RUN npm ci --include=dev
 # Copy web UI source code
 COPY app/web_ui/ ./
 # Build the web UI
